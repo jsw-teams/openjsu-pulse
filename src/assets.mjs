@@ -10,6 +10,7 @@ const packageRoot = path.resolve(__dirname, "..");
 const rootDir = process.env.PAGEKILN_SITE_ROOT || packageRoot;
 const publicDir = path.join(rootDir, "static");
 const assetsDir = path.join(publicDir, "assets");
+const contentAssetsDir = path.join(rootDir, "content", "assets");
 const cacheDir = path.join(rootDir, ".cache");
 const basePath = "";
 
@@ -25,7 +26,10 @@ const themeAssetFiles = [
   "mascot-reading.png",
   "mascot-sleeping.png",
   "mascot-thinking.png",
-  "mascot-writing.png",
+  "mascot-writing.png"
+];
+
+const siteAssetFiles = [
   "icon-192.png",
   "icon-512.png",
   "og-default.png",
@@ -70,8 +74,14 @@ async function copyThemeGeneratedAssets(site) {
   for (const file of themeAssetFiles) {
     await copyIfExists(path.join(sourceDir, file), path.join(assetsDir, file));
   }
+}
+
+async function copySiteGeneratedAssets() {
+  for (const file of siteAssetFiles) {
+    await copyIfExists(path.join(contentAssetsDir, file), path.join(assetsDir, file));
+  }
   for (const file of rootAssetFiles) {
-    await copyIfExists(path.join(sourceDir, file), path.join(publicDir, file));
+    await copyIfExists(path.join(contentAssetsDir, file), path.join(publicDir, file));
   }
 }
 
@@ -79,9 +89,18 @@ async function makeIconPng(size, output, source = null) {
   const image = source
     ? sharp(source)
     : sharp(Buffer.from(`<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
-      <rect width="${size}" height="${size}" fill="#141414"/>
-      <rect x="${Math.max(2, Math.round(size * 0.08))}" y="${Math.max(2, Math.round(size * 0.08))}" width="${Math.round(size * 0.84)}" height="${Math.round(size * 0.84)}" fill="none" stroke="#d99a27" stroke-width="${Math.max(2, Math.round(size * 0.06))}"/>
-      <text x="50%" y="55%" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="${Math.max(14, Math.round(size * 0.38))}" font-weight="700" fill="#ffffff">JS</text>
+      <rect width="${size}" height="${size}" rx="${Math.round(size * 0.18)}" fill="#f7f2e8"/>
+      <path d="M ${size * 0.25} ${size * 0.13} H ${size * 0.61} L ${size * 0.76} ${size * 0.28} V ${size * 0.67} H ${size * 0.25} Q ${size * 0.18} ${size * 0.67} ${size * 0.18} ${size * 0.6} V ${size * 0.2} Q ${size * 0.18} ${size * 0.13} ${size * 0.25} ${size * 0.13} Z" fill="#fffaf0" stroke="#17211d" stroke-width="${Math.max(2, size * 0.045)}" stroke-linejoin="round"/>
+      <path d="M ${size * 0.61} ${size * 0.13} V ${size * 0.24} Q ${size * 0.61} ${size * 0.28} ${size * 0.65} ${size * 0.28} H ${size * 0.76}" fill="#c9583d" stroke="#17211d" stroke-width="${Math.max(2, size * 0.045)}" stroke-linejoin="round"/>
+      <rect x="${size * 0.29}" y="${size * 0.29}" width="${size * 0.3}" height="${size * 0.055}" rx="${size * 0.02}" fill="#17211d"/>
+      <rect x="${size * 0.29}" y="${size * 0.42}" width="${size * 0.38}" height="${size * 0.055}" rx="${size * 0.02}" fill="#17211d"/>
+      <g transform="translate(${size * 0.58} ${size * 0.72}) rotate(-24)">
+        <rect x="${-size * 0.27}" y="${-size * 0.032}" width="${size * 0.39}" height="${size * 0.064}" rx="${size * 0.032}" fill="#667278"/>
+        <circle cx="${size * 0.15}" cy="0" r="${size * 0.12}" fill="#667278"/>
+        <circle cx="${size * 0.21}" cy="${-size * 0.014}" r="${size * 0.07}" fill="#f7f2e8"/>
+        <rect x="${size * 0.13}" y="${-size * 0.12}" width="${size * 0.14}" height="${size * 0.1}" transform="rotate(28 ${size * 0.13} ${-size * 0.12})" fill="#f7f2e8"/>
+        <circle cx="${-size * 0.23}" cy="0" r="${size * 0.03}" fill="#f7f2e8"/>
+      </g>
     </svg>`));
   await image
     .resize(size, size, { fit: "contain", position: "centre" })
@@ -109,7 +128,8 @@ function icoFromPng(pngBuffer, size) {
 }
 
 async function ensureFavicon(site) {
-  const iconSource = resolveProjectPath(site.icons?.source);
+  const defaultIconSource = path.join(contentAssetsDir, "icon-source.png");
+  const iconSource = resolveProjectPath(site.icons?.source) || defaultIconSource;
   const source = iconSource && fsSync.existsSync(iconSource) ? iconSource : null;
   const favicon32 = path.join(publicDir, "favicon-32x32.png");
   if (!source && fsSync.existsSync(favicon32)) return;
@@ -131,8 +151,8 @@ async function writeManifest(site) {
     short_name: site.pwa?.shortName || siteName,
     start_url: withBase("/"),
     display: "minimal-ui",
-    background_color: site.pwa?.backgroundColor || "#f8f4ec",
-    theme_color: site.pwa?.themeColor || "#141414",
+    background_color: site.pwa?.backgroundColor || "#f7f2e8",
+    theme_color: site.pwa?.themeColor || "#17211d",
     icons: [
       {
         src: withBase(site.icons?.icon192 || "/assets/icon-192.png"),
@@ -179,13 +199,35 @@ async function ensureOgImage() {
   const ogJpg = path.join(publicDir, DEFAULT_OG_IMAGE.replace(/^\/+/, ""));
   if (fsSync.existsSync(ogPng) && fsSync.existsSync(ogJpg)) return;
 
+  const ogSource = path.join(contentAssetsDir, "og-default-source.png");
+  if (fsSync.existsSync(ogSource)) {
+    const image = sharp(ogSource).resize(1200, 630, {
+      fit: "cover",
+      position: "attention"
+    });
+    await image.clone().png({ compressionLevel: 9, adaptiveFiltering: true }).toFile(ogPng);
+    await image.clone().jpeg({ quality: 86, mozjpeg: true }).toFile(ogJpg);
+    return;
+  }
+
   const svg = `<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
-    <rect width="1200" height="630" fill="#f8f4ec"/>
-    <rect x="54" y="54" width="1092" height="522" rx="28" fill="#fffdfa" stroke="#241f1a" stroke-width="4"/>
-    <rect x="92" y="138" width="360" height="42" rx="6" fill="#161616"/>
-    <rect x="92" y="212" width="520" height="22" rx="4" fill="#2f6f68"/>
-    <rect x="92" y="260" width="450" height="22" rx="4" fill="#d99a27"/>
-    <text x="790" y="335" text-anchor="middle" font-family="Arial, sans-serif" font-size="156" font-weight="700" fill="#141414">JS</text>
+    <rect width="1200" height="630" fill="#f7f2e8"/>
+    <rect x="64" y="64" width="1072" height="502" rx="26" fill="#fffaf0" stroke="#17211d" stroke-width="5"/>
+    <path d="M 174 126 H 420 L 536 242 V 456 H 174 Q 126 456 126 408 V 174 Q 126 126 174 126 Z" fill="#fffaf0" stroke="#17211d" stroke-width="18" stroke-linejoin="round"/>
+    <path d="M 420 126 V 214 Q 420 242 448 242 H 536" fill="#c9583d" stroke="#17211d" stroke-width="18" stroke-linejoin="round"/>
+    <rect x="190" y="208" width="194" height="24" rx="8" fill="#17211d"/>
+    <rect x="190" y="284" width="276" height="24" rx="8" fill="#17211d"/>
+    <rect x="642" y="146" width="316" height="42" rx="8" fill="#17211d"/>
+    <rect x="642" y="226" width="400" height="24" rx="8" fill="#17211d"/>
+    <rect x="666" y="376" width="276" height="92" rx="22" fill="#c9583d" stroke="#17211d" stroke-width="14"/>
+    <path d="M 760 358 H 848 Q 864 358 864 376 V 390 H 744 V 376 Q 744 358 760 358 Z" fill="#fffaf0" stroke="#17211d" stroke-width="14" stroke-linejoin="round"/>
+    <g transform="translate(696 320) rotate(-24)">
+      <rect x="-180" y="-22" width="260" height="44" rx="22" fill="#667278"/>
+      <circle cx="104" cy="0" r="76" fill="#667278"/>
+      <circle cx="142" cy="-10" r="42" fill="#f7f2e8"/>
+      <rect x="88" y="-76" width="86" height="66" transform="rotate(28 88 -76)" fill="#f7f2e8"/>
+      <circle cx="-150" cy="0" r="18" fill="#f7f2e8"/>
+    </g>
   </svg>`;
   const image = sharp(Buffer.from(svg));
   await image.clone().png({ compressionLevel: 9, adaptiveFiltering: true }).toFile(ogPng);
@@ -199,6 +241,7 @@ export async function generateAssets() {
   await ensureDir(process.env.FONTCONFIG_CACHE);
   await copyThemeFiles(site);
   await copyThemeGeneratedAssets(site);
+  await copySiteGeneratedAssets();
   await ensureFavicon(site);
   await writeManifest(site);
   await ensureOgImage();

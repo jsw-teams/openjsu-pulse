@@ -23,9 +23,21 @@ builder only when the theme API cannot express the needed behavior.
   configuration.
 - `themes/default/scripts/` contains behavior and plugin scripts. Optional
   third-party features should be loaded through consent-aware feature scripts.
-- `themes/default/source-assets/` contains theme-owned images and icons.
+- `content/assets/` contains site-operations assets such as source artwork and
+  derived favicon, app icon, and default OG files. `icon-source.png` and
+  `og-default-source.png` are source artwork; use
+  `scripts/generate-neutral-assets.mjs` only to crop/export derived files.
+- `themes/default/source-assets/` contains theme-owned illustrations and
+  interface images, not site identity icons or OG source art.
 - `static/` contains site-public files copied as-is, such as deployed
   `/AGENTS.md` and other assets that cannot be derived from config.
+- `bin/pagekiln.mjs` is the CLI entry point for init, generate, server, and
+  check commands.
+- `src/*.mjs` contains builder-side Node ESM modules for config loading,
+  content indexing, template rendering, asset generation, i18n, OG images, and
+  discovery outputs.
+- `src/pages/*.js` and `src/pages/**/*.js` are Astro endpoints for generated
+  text, JSON, XML, and Markdown outputs.
 - Agent discovery and site-operations outputs such as `_headers`, `llms.txt`,
   `llms-full.txt`, `openapi.json`, API catalog, and MCP server card are generated
   from `config.yml` and builder code.
@@ -80,7 +92,8 @@ robots, or LLM discovery text, prefer adding or improving a dynamic generator in
 6. Change global visual language in `themes/<your-theme>/style.css`.
 7. Change page-specific layout and polish in `themes/<your-theme>/styles/`.
 8. Change HTML structure in `themes/<your-theme>/templates/`.
-9. Add images, icons, and other theme-owned assets under
+9. Add site identity assets such as icons and default OG artwork under
+   `content/assets/`; add theme-owned illustrations under
    `themes/<your-theme>/source-assets/`.
 10. Add optional behavior under `themes/<your-theme>/scripts/`, then expose it
    from `theme.yml` through `featureScripts` and `featureCategories`.
@@ -97,8 +110,10 @@ The default theme shows the expected shape for custom themes. Its current page
 types are blog-oriented, but custom projects should define page types around
 their own product and content model.
 
-- `theme.yml` declares CSS, JS, page style mapping, feature scripts, icons,
-  footer content, optional plugin defaults, and consent categories.
+- `theme.yml` declares CSS, JS, page style mapping, feature scripts, footer
+  content, optional plugin defaults, and consent categories. Site identity
+  assets such as icons, PWA colors, and default OG artwork belong in
+  `config.yml` and `content/assets/`.
 - `i18n.yml` contains theme-owned UI strings. Site content should not need to
   carry theme interface text.
 - A theme should support a customizable homepage.
@@ -186,6 +201,15 @@ user explicitly wants a locale-specific variation.
 
 ## JavaScript Guidance
 
+- Treat `src/*.mjs` as build-time framework code. It runs in Node.js/Astro
+  contexts and should own reusable generation behavior, not one site's visual
+  preferences.
+- Treat `themes/<name>/scripts/*.js` as browser-side theme behavior. It should
+  handle progressive enhancement, consent-aware feature loading, and optional
+  integrations declared by `theme.yml`.
+- `src/pages/*.js` files are generated-output endpoints. Use them for resources
+  such as robots, feeds, llms, OpenAPI, API catalog, MCP server card, and other
+  structured site-operations files.
 - JavaScript should provide behavior and plugin loading, not layout rendering.
 - `scripts/consent.js` is the minimal consent entry point. Before the user has
   made a cookie choice, optional analytics, comments, ads, and marketing scripts

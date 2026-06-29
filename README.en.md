@@ -3,7 +3,7 @@
 [简体中文 README](README.md)
 
 <p align="center">
-  <img src="themes/default/source-assets/icon-192.png" alt="Pagekiln project icon" width="160">
+  <img src="content/assets/icon-192.png" alt="Pagekiln project icon" width="160">
 </p>
 
 Pagekiln is a Hexo-inspired static site and blog builder. Site settings live in
@@ -44,7 +44,7 @@ npm run generate
 npm run check
 ```
 
-`pagekiln init` uses the neutral root project template bundled in the repository/package. The template does not include production or preview secrets. Forks and downstream projects should set their own site name, `siteUrl`, analytics, robots policy, Cloudflare Pages project, and GitHub Secrets.
+`pagekiln init` uses the neutral root project template bundled in the repository/package. The template does not include production or preview secrets. Forks and downstream projects should set their own site name, `siteUrl`, analytics, robots policy, deployment target, and environment configuration.
 
 - `pagekiln generate` maps to `hexo generate` / `hexo g`.
 - `pagekiln server` maps to `hexo server` / `hexo s`.
@@ -147,7 +147,10 @@ and llms files. `sitemap: false` excludes one post or page from the sitemap.
 config.yml              # Site-level config
 content/posts/          # Post Markdown
 content/pages/          # Page Markdown/HTML
-src/                    # Builder, content parsing, site outputs
+content/assets/         # Site operations icons, OG images, and derived assets
+bin/pagekiln.mjs        # CLI entry point
+src/*.mjs               # Builder-side Node ESM modules
+src/pages/*.js|*.astro  # Astro routes and generated endpoints
 static/                 # Static files that cannot be generated from config
 themes/default/         # Default theme
 dist/                   # Generated output
@@ -163,8 +166,24 @@ themes/default/style.css         # Global theme CSS
 themes/default/styles/*.css      # Page or feature CSS
 themes/default/templates/*.html  # Page templates
 themes/default/scripts/*.js      # Consent entry and feature scripts
-themes/default/source-assets/    # Theme images and icons
+themes/default/source-assets/    # Theme illustrations and interface images
 ```
+
+JavaScript / MJS responsibilities:
+
+- `bin/pagekiln.mjs` is the CLI entry point for `init`, `generate`, `server`, and `check`.
+- `src/*.mjs` is builder-side code that runs in Node.js/Astro build contexts. It reads and merges config, generates assets, renders templates, handles i18n, indexes content, builds OG images, Agent discovery, feeds, sitemap, headers, and other framework outputs.
+- `src/pages/*.js` and `src/pages/**/*.js` are Astro endpoints for generated files such as `robots.txt`, `llms.txt`, `openapi.json`, feeds, and Markdown APIs.
+- `themes/<name>/scripts/*.js` is browser-side theme code. These scripts provide page behavior and consent-aware feature loading, such as search, media enhancement, lightbox, comments, and WebMCP client helpers.
+- For visual changes, interactions, or third-party features, prefer `themes/<name>/theme.yml`, CSS, templates, and theme `scripts/*.js`. Edit `src/*.mjs` only for build-time capabilities, generated outputs, or reusable theme APIs.
+
+Site operations asset contract:
+
+- `content/assets/icon-source.png` is the site icon source image.
+- `content/assets/og-default-source.png` is the default Open Graph source image.
+- `scripts/generate-neutral-assets.mjs` only crops and exports derived files: `favicon.ico`, `favicon-32x32.png`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `og-default.png`, and `og-default.jpg`. It does not design the icon or redraw the OG image.
+- Site identity details such as icons, PWA colors, and the default OG image belong in `config.yml` and `content/assets/`; theme `source-assets/` should contain only theme-owned illustrations or interface images.
+- Other theme illustrations or state images should be maintained directly as theme source assets, not added to the site operations cropping script.
 
 ## Site Config
 
@@ -355,19 +374,6 @@ Build command: npm install && npm run generate
 Build output directory: dist
 Node.js version: 22.12 or newer
 ```
-
-If your fork or downstream project uses GitHub Actions / Wrangler Direct Upload,
-create your own Cloudflare project and manage sensitive values only through
-GitHub Secrets or the Cloudflare Dashboard. These names are placeholders:
-
-```text
-CLOUDFLARE_ACCOUNT_ID = Cloudflare account ID
-CLOUDFLARE_API_TOKEN  = Cloudflare API token
-CLOUDFLARE_PROJECT_NAME = Cloudflare Pages project name
-```
-
-Do not reuse the original project's production or preview configuration. Never
-commit Cloudflare tokens, analytics secrets, AWS keys, or real API secrets.
 
 ## License
 

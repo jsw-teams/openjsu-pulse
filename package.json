@@ -1,6 +1,6 @@
 {
   "name": "pagekiln",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Hexo-inspired static site and blog builder with theme-first customization and agent discovery.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
@@ -44,6 +44,7 @@
   },
   "scripts": {
     "assets": "node src/assets.mjs",
+    "assets:site": "node scripts/generate-neutral-assets.mjs",
     "prebuild": "node src/prebuild.mjs",
     "build": "node bin/pagekiln.mjs generate",
     "generate": "node bin/pagekiln.mjs generate",

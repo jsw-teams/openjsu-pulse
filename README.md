@@ -3,7 +3,7 @@
 [English README](README.en.md)
 
 <p align="center">
-  <img src="themes/default/source-assets/icon-192.png" alt="Pagekiln project icon" width="160">
+  <img src="content/assets/icon-192.png" alt="Pagekiln project icon" width="160">
 </p>
 
 Pagekiln 是一个偏 Hexo 思路的静态网站/博客构建器。站点信息放在 `config.yml`，文章和页面放在 `content/`，主题放在 `themes/<name>/`，构建输出到 `dist/`。
@@ -35,7 +35,7 @@ npm run generate
 npm run check
 ```
 
-`pagekiln init` 使用仓库/包内的中立根项目模板。模板不包含生产/预览环境 secrets；站点名、`siteUrl`、analytics、robots、Cloudflare Pages 项目与 GitHub Secrets 都应由 fork 或二次开发者自行配置。
+`pagekiln init` 使用仓库/包内的中立根项目模板。模板不包含生产/预览环境 secrets；站点名、`siteUrl`、analytics、robots、部署目标和环境配置都应由 fork 或二次开发者自行填写。
 
 - `pagekiln generate` 类似 `hexo generate` / `hexo g`。
 - `pagekiln server` 类似 `hexo server` / `hexo s`。
@@ -122,7 +122,10 @@ cover: ""
 config.yml              # 站点级配置
 content/posts/          # 文章 Markdown
 content/pages/          # 普通页面 Markdown/HTML
-src/                    # 构建器、内容解析、站务渲染
+content/assets/         # 站务图标、OG 图和派生站点资产
+bin/pagekiln.mjs        # CLI 入口
+src/*.mjs               # 构建器 Node ESM 模块
+src/pages/*.js|*.astro  # Astro 路由与生成端点
 static/                 # 只放无法从配置生成的静态文件
 themes/default/         # 默认主题
 dist/                   # 构建产物
@@ -138,8 +141,24 @@ themes/default/style.css         # 全局主题 CSS
 themes/default/styles/*.css      # 页面/功能 CSS
 themes/default/templates/*.html  # 页面模板
 themes/default/scripts/*.js      # Consent 入口与功能脚本
-themes/default/source-assets/    # 主题图片和图标源文件
+themes/default/source-assets/    # 主题自带插图和界面图片
 ```
+
+JavaScript / MJS 分工：
+
+- `bin/pagekiln.mjs` 是 CLI 入口，负责 `init`、`generate`、`server`、`check` 等命令分发。
+- `src/*.mjs` 是构建器代码，运行在 Node.js/Astro 构建阶段。它们负责读取和合并配置、生成资产、渲染模板、处理 i18n、内容索引、OG 图片、Agent discovery、feed、sitemap、headers 等框架能力。
+- `src/pages/*.js` 和 `src/pages/**/*.js` 是 Astro 端点，用来输出 `robots.txt`、`llms.txt`、`openapi.json`、feed、Markdown API 等生成文件。
+- `themes/<name>/scripts/*.js` 是浏览器端主题脚本。它们只负责页面行为和 consent-aware 功能加载，例如搜索、媒体增强、lightbox、评论加载和 WebMCP 客户端辅助逻辑。
+- 修改站点视觉、交互或第三方功能时，优先改 `themes/<name>/theme.yml`、CSS、模板和主题 `scripts/*.js`。只有新增构建期能力、输出文件或通用主题 API 时，才改 `src/*.mjs`。
+
+站务资产约定：
+
+- `content/assets/icon-source.png` 是站点图标源图。
+- `content/assets/og-default-source.png` 是默认 Open Graph 源图。
+- `scripts/generate-neutral-assets.mjs` 只负责裁切和导出派生文件：`favicon.ico`、`favicon-32x32.png`、`apple-touch-icon.png`、`icon-192.png`、`icon-512.png`、`og-default.png` 和 `og-default.jpg`。它不负责设计图标或重新绘制 OG 图。
+- 图标、PWA 颜色、OG 默认图这类站点身份信息属于 `config.yml` 和 `content/assets/`；主题 `source-assets/` 只放主题自己的插图或界面图片。
+- 其他主题插图或状态图应直接作为主题源资产维护，不要塞进站务裁切脚本。
 
 ## 站点配置
 
@@ -271,16 +290,6 @@ Build command: npm install && npm run generate
 Build output directory: dist
 Node.js version: 22.12 或更新
 ```
-
-如果你在 fork 或二次开发项目中使用 GitHub Actions / Wrangler Direct Upload，请创建自己的 Cloudflare 项目，并只通过 GitHub Secrets 或 Cloudflare Dashboard 管理敏感配置。示例变量名只能作为 placeholder：
-
-```text
-CLOUDFLARE_ACCOUNT_ID = Cloudflare 账号 ID
-CLOUDFLARE_API_TOKEN  = Cloudflare API token
-CLOUDFLARE_PROJECT_NAME = Cloudflare Pages 项目名
-```
-
-不要复用原项目的生产/预览配置。不要把 Cloudflare API Token、统计密钥、AWS key 或其他真实密钥写进代码、README、issue 或聊天记录。
 
 ## 开源协议
 
