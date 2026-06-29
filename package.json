@@ -46,11 +46,11 @@
     "assets": "node src/assets.mjs",
     "assets:site": "node scripts/generate-neutral-assets.mjs",
     "prebuild": "node src/prebuild.mjs",
-    "build": "node bin/pagekiln.mjs generate",
-    "generate": "node bin/pagekiln.mjs generate",
-    "serve": "node bin/pagekiln.mjs server",
-    "server": "node bin/pagekiln.mjs server",
-    "check": "node bin/pagekiln.mjs check"
+    "build": "node bin/pagekiln.mjs g",
+    "generate": "node bin/pagekiln.mjs g",
+    "serve": "node bin/pagekiln.mjs s",
+    "server": "node bin/pagekiln.mjs s",
+    "check": "node bin/pagekiln.mjs c"
   },
   "dependencies": {
     "@astrojs/rss": "^4.0.18",

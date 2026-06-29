@@ -21,41 +21,40 @@ and optional third-party script loading.
 For a blog or regular content site, you do not need to learn theme development
 first:
 
-1. Create a site with `node bin/pagekiln.mjs init my-site` from this repository; after npm publication, use `npx pagekiln@latest init my-site`.
-2. Edit `config.yml` for site name, description, author, locales, navigation,
+1. Create a site directory and install Pagekiln: `mkdir my-site && cd my-site && npm i pagekiln`.
+2. Initialize the site with the installed CLI: `npx pagekiln init .`. Use `node bin/pagekiln.mjs init my-site` only when debugging the framework repository itself.
+3. Edit `config.yml` for site name, description, author, locales, navigation,
    footer, robots, llms, feeds, plugin toggles, and discovery data.
-3. Edit `content/posts/` to add or update posts.
-4. Edit `content/pages/` to customize the homepage, about page, archive,
+4. Edit `content/posts/` to add or update posts.
+5. Edit `content/pages/` to customize the homepage, about page, archive,
    categories, tags, search page, or ordinary pages.
-5. Run `npx pagekiln server` for local live preview.
-6. Run `npx pagekiln generate` and `npx pagekiln check` before publishing.
+6. Run `pagekiln s` for local live preview.
+7. Run `pagekiln g` and `pagekiln c` before publishing.
 
 Commands for Hexo users:
 
 ```bash
-git clone https://github.com/jsw-teams/pagekiln.git
-cd pagekiln
-npm install
-npx pagekiln@latest init my-site
+mkdir my-site
 cd my-site
-npm install
-npx pagekiln server
-npx pagekiln generate
-npx pagekiln check
+npm i pagekiln
+npx pagekiln init .
+pagekiln s
+pagekiln g
+pagekiln c
 ```
 
 `pagekiln init` uses the neutral root project template bundled in the repository/package. The template does not include production or preview secrets. Forks and downstream projects should set their own site name, `siteUrl`, analytics, robots policy, deployment target, and environment configuration.
 
-- `pagekiln generate` maps to `hexo generate` / `hexo g`.
-- `pagekiln server` maps to `hexo server` / `hexo s`.
-- `pagekiln check` verifies `dist/`, theme assets, sitemap, feed, agent
+- `pagekiln g` / `pagekiln generate` maps to `hexo generate` / `hexo g`.
+- `pagekiln s` / `pagekiln server` maps to `hexo server` / `hexo s`.
+- `pagekiln c` / `pagekiln check` verifies `dist/`, theme assets, sitemap, feed, agent
   discovery, and WebMCP bootstrap.
 
 `pagekiln init` writes compatibility scripts such as `generate`, `server`, and
 `check` into the new project's `package.json`; public docs should prefer
-`npx pagekiln generate/server/check` so they do not depend on a global install.
+`pagekiln g/s/c`. The full commands `pagekiln generate/server/check` also work.
 When working in the framework repository or debugging the CLI directly, you can
-use `node bin/pagekiln.mjs generate/server/check`.
+use `node bin/pagekiln.mjs init/generate/server/check`.
 
 Local preview:
 
@@ -63,7 +62,7 @@ Local preview:
 http://127.0.0.1:4173/
 ```
 
-`npx pagekiln server` polls `content/`, `themes/`, `static/`, and `config.yml`
+`pagekiln s` polls `content/`, `themes/`, `static/`, and `config.yml`
 every 10 seconds. It rebuilds only after detected changes. Build errors stay
 visible in the browser and do not stop the preview process. Changes to
 `content/pages/<slug>/index.<locale>.md` prefer page-level incremental output.
@@ -287,7 +286,7 @@ Workflow:
 6. Attach CSS and JS through `theme.yml` using `pageStyles`, `pageScripts`,
    `featureScripts`, or `featureStyles`.
 7. Update README, `AGENTS.md`, and `static/AGENTS.md`.
-8. Run `npx pagekiln generate` and `npx pagekiln check`; extend checks for new framework
+8. Run `pagekiln g` and `pagekiln c`; extend checks for new framework
    contracts.
 
 A slot should own its accessible markup, loading state, empty state, error
@@ -371,7 +370,7 @@ secrets.
 For Cloudflare Pages Git integration, configure your own project:
 
 ```text
-Build command: npm install && npx pagekiln generate
+Build command: npm install && pagekiln g
 Build output directory: dist
 Node.js version: 22.12 or newer
 ```

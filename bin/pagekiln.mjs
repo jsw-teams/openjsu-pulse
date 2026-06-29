@@ -51,9 +51,9 @@ pagekiln-preview.err.log
 function help() {
   console.log(`Usage:
   pagekiln init <directory>
-  pagekiln generate
-  pagekiln server
-  pagekiln check
+  pagekiln generate | g
+  pagekiln server   | s
+  pagekiln check    | c
 
 Create a Pagekiln site in <directory>.
 Generate, preview, or check an existing Pagekiln site from its project root.
@@ -109,11 +109,11 @@ async function writeProjectPackage(targetRoot) {
   data.description = "A Pagekiln site.";
   data.scripts = {
     "assets:site": "node scripts/generate-neutral-assets.mjs",
-    generate: "pagekiln generate",
-    build: "pagekiln generate",
-    server: "pagekiln server",
-    serve: "pagekiln server",
-    check: "pagekiln check"
+    generate: "pagekiln g",
+    build: "pagekiln g",
+    server: "pagekiln s",
+    serve: "pagekiln s",
+    check: "pagekiln c"
   };
   data.devDependencies = {
     ...(data.devDependencies || {}),
@@ -145,9 +145,9 @@ async function init() {
   console.log("Next steps:");
   console.log(`  cd ${path.relative(process.cwd(), targetRoot) || "."}`);
   console.log("  npm install");
-  console.log("  npx pagekiln server");
-  console.log("  npx pagekiln generate");
-  console.log("  npx pagekiln check");
+  console.log("  pagekiln s");
+  console.log("  pagekiln g");
+  console.log("  pagekiln c");
 }
 
 function run(commandName, args, options = {}) {
@@ -203,10 +203,13 @@ if (!command || command === "-h" || command === "--help") {
 const commands = {
   init,
   generate,
+  g: generate,
   build: generate,
   server,
+  s: server,
   serve: server,
-  check
+  check,
+  c: check
 };
 
 if (!commands[command]) {

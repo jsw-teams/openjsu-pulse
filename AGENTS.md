@@ -97,7 +97,7 @@ robots, or LLM discovery text, prefer adding or improving a dynamic generator in
    `themes/<your-theme>/source-assets/`.
 10. Add optional behavior under `themes/<your-theme>/scripts/`, then expose it
    from `theme.yml` through `featureScripts` and `featureCategories`.
-11. Run `npx pagekiln generate` and `npx pagekiln check`.
+11. Run `pagekiln g` and `pagekiln c`.
 
 If a requested customization can be done by changing theme config, templates,
 CSS, or theme scripts, do that instead of editing `src/`.
@@ -259,15 +259,15 @@ in `static/AGENTS.md`.
 
 Use Node 22 or newer.
 
-For Hexo-oriented users, document `npx pagekiln generate` as the public static
-generation command. The underlying command maps to Hexo's `hexo generate`;
+For Hexo-oriented users, document `pagekiln g` as the public static generation
+command. The underlying command maps to Hexo's `hexo generate`;
 `npm run generate` remains only a compatibility wrapper created by
 `pagekiln init`.
 
 ```bash
 npm install
-npx pagekiln generate
-npx pagekiln check
+pagekiln g
+pagekiln c
 ```
 
 The build output directory is `dist/`.
@@ -275,7 +275,7 @@ The build output directory is `dist/`.
 For local preview, use:
 
 ```bash
-npx pagekiln server
+pagekiln s
 ```
 
 The preview server polls source files every 10 seconds and rebuilds only after a
@@ -316,7 +316,7 @@ When asked to build a custom site or theme with pagekiln:
    config, templates, CSS, scripts, content, or builder core.
 4. Prefer config, Markdown/HTML page edits, and theme-level changes before
    builder code.
-5. Run `npx pagekiln generate` and `npx pagekiln check`.
+5. Run `pagekiln g` and `pagekiln c`.
 6. Summarize changed files and explain whether the change is structured site
    config, user-editable page
    content, reusable theme work,

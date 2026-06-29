@@ -14,34 +14,33 @@ Pagekiln 是一个偏 Hexo 思路的静态网站/博客构建器。站点信息�
 
 只写博客或维护普通内容站时，不需要先理解主题开发。按这个路径走：
 
-1. 用仓库里的 `node bin/pagekiln.mjs init my-site` 创建站点；npm 发布后可改用 `npx pagekiln@latest init my-site`。
-2. 改 `config.yml`：站点名、描述、作者、语言、导航、页脚、robots、llms、feed、插件开关和 discovery 信息都放这里。
-3. 改 `content/posts/`：新增或编辑文章。
-4. 改 `content/pages/`：调整首页、关于页、归档页、分类页、标签页、搜索页或其他普通页面。
-5. 运行 `npx pagekiln server` 本地实时预览。
-6. 发布前运行 `npx pagekiln generate` 和 `npx pagekiln check`。
+1. 新建站点目录并安装 Pagekiln：`mkdir my-site && cd my-site && npm i pagekiln`。
+2. 用已安装的 CLI 初始化站点：`npx pagekiln init .`。只有在调试框架仓库本身时，才需要用 `node bin/pagekiln.mjs init my-site`。
+3. 改 `config.yml`：站点名、描述、作者、语言、导航、页脚、robots、llms、feed、插件开关和 discovery 信息都放这里。
+4. 改 `content/posts/`：新增或编辑文章。
+5. 改 `content/pages/`：调整首页、关于页、归档页、分类页、标签页、搜索页或其他普通页面。
+6. 运行 `pagekiln s` 本地实时预览。
+7. 发布前运行 `pagekiln g` 和 `pagekiln c`。
 
 常用命令对应 Hexo 用户习惯：
 
 ```bash
-git clone https://github.com/jsw-teams/pagekiln.git
-cd pagekiln
-npm install
-npx pagekiln@latest init my-site
+mkdir my-site
 cd my-site
-npm install
-npx pagekiln server
-npx pagekiln generate
-npx pagekiln check
+npm i pagekiln
+npx pagekiln init .
+pagekiln s
+pagekiln g
+pagekiln c
 ```
 
 `pagekiln init` 使用仓库/包内的中立根项目模板。模板不包含生产/预览环境 secrets；站点名、`siteUrl`、analytics、robots、部署目标和环境配置都应由 fork 或二次开发者自行填写。
 
-- `pagekiln generate` 类似 `hexo generate` / `hexo g`。
-- `pagekiln server` 类似 `hexo server` / `hexo s`。
-- `pagekiln check` 检查 `dist/`、主题资源、sitemap、feed、Agent discovery 和 WebMCP bootstrap。
+- `pagekiln g` / `pagekiln generate` 类似 `hexo generate` / `hexo g`。
+- `pagekiln s` / `pagekiln server` 类似 `hexo server` / `hexo s`。
+- `pagekiln c` / `pagekiln check` 检查 `dist/`、主题资源、sitemap、feed、Agent discovery 和 WebMCP bootstrap。
 
-`pagekiln init` 会在新项目的 `package.json` 中写入 `generate`、`server`、`check` 等兼容脚本；公开文档优先写 `npx pagekiln generate/server/check`，以免依赖全局安装。若你在框架仓库或调试环境中直接调用 CLI，也可以使用 `node bin/pagekiln.mjs generate/server/check`。
+`pagekiln init` 会在新项目的 `package.json` 中写入 `generate`、`server`、`check` 等兼容脚本；公开文档优先写 `pagekiln g/s/c`，完整命令 `pagekiln generate/server/check` 也可用。若你在框架仓库或调试环境中直接调用 CLI，也可以使用 `node bin/pagekiln.mjs init/generate/server/check`。
 
 本地预览默认地址：
 
@@ -49,7 +48,7 @@ npx pagekiln check
 http://127.0.0.1:4173/
 ```
 
-`npx pagekiln server` 每 10 秒监听 `content/`、`themes/`、`static/` 和 `config.yml`。检测到变更才重新生成。构建出错时预览进程不会退出，浏览器会显示错误；修好后会继续重建。`content/pages/<slug>/index.<locale>.md` 的变更会优先只重建对应页面。
+`pagekiln s` 每 10 秒监听 `content/`、`themes/`、`static/` 和 `config.yml`。检测到变更才重新生成。构建出错时预览进程不会退出，浏览器会显示错误；修好后会继续重建。`content/pages/<slug>/index.<locale>.md` 的变更会优先只重建对应页面。
 
 ## 内容与页面
 
@@ -225,7 +224,7 @@ slot 不是“插入静态 HTML 的另一种语法”。如果内容可以直接
 5. 组件文案放进 `themes/default/i18n.yml`，并同步 `src/i18n.mjs` 默认值。
 6. 样式和脚本通过 `theme.yml` 的 `pageStyles`、`pageScripts`、`featureScripts` 或 `featureStyles` 挂载。
 7. 更新 README、`AGENTS.md` 和 `static/AGENTS.md` 的 slot 列表。
-8. 运行 `npx pagekiln generate` 和 `npx pagekiln check`。如果是新的框架契约，也补检查脚本。
+8. 运行 `pagekiln g` 和 `pagekiln c`。如果是新的框架契约，也补检查脚本。
 
 slot 组件应自己输出完整、可访问、可运行的内部状态，不应要求用户在 slot 后面补“这里会显示结果”之类说明。
 
@@ -286,7 +285,7 @@ Pagekiln 可以部署到 Cloudflare Pages，也可以部署到任何能托管 `d
 如果使用 Cloudflare Pages Git 集成，可以按自己的项目填写：
 
 ```text
-Build command: npm install && npx pagekiln generate
+Build command: npm install && pagekiln g
 Build output directory: dist
 Node.js version: 22.12 或更新
 ```
