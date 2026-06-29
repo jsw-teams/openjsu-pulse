@@ -1,7 +1,24 @@
 import fs from "node:fs/promises";
+import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import sharp from "sharp";
+
+const require = createRequire(import.meta.url);
+
+function loadSharp() {
+  try {
+    return require("sharp");
+  } catch (error) {
+    try {
+      const pagekilnPackage = require.resolve("pagekiln/package.json");
+      return createRequire(pagekilnPackage)("sharp");
+    } catch {
+      throw error;
+    }
+  }
+}
+
+const sharp = loadSharp();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, "..");
