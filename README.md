@@ -18,8 +18,8 @@ Pagekiln 是一个偏 Hexo 思路的静态网站/博客构建器。站点信息�
 2. 改 `config.yml`：站点名、描述、作者、语言、导航、页脚、robots、llms、feed、插件开关和 discovery 信息都放这里。
 3. 改 `content/posts/`：新增或编辑文章。
 4. 改 `content/pages/`：调整首页、关于页、归档页、分类页、标签页、搜索页或其他普通页面。
-5. 运行 `npm run server` 本地实时预览。
-6. 发布前运行 `npm run generate` 和 `npm run check`。
+5. 运行 `npx pagekiln server` 本地实时预览。
+6. 发布前运行 `npx pagekiln generate` 和 `npx pagekiln check`。
 
 常用命令对应 Hexo 用户习惯：
 
@@ -27,12 +27,12 @@ Pagekiln 是一个偏 Hexo 思路的静态网站/博客构建器。站点信息�
 git clone https://github.com/jsw-teams/pagekiln.git
 cd pagekiln
 npm install
-node bin/pagekiln.mjs init my-site
+npx pagekiln@latest init my-site
 cd my-site
 npm install
-npm run server
-npm run generate
-npm run check
+npx pagekiln server
+npx pagekiln generate
+npx pagekiln check
 ```
 
 `pagekiln init` 使用仓库/包内的中立根项目模板。模板不包含生产/预览环境 secrets；站点名、`siteUrl`、analytics、robots、部署目标和环境配置都应由 fork 或二次开发者自行填写。
@@ -41,7 +41,7 @@ npm run check
 - `pagekiln server` 类似 `hexo server` / `hexo s`。
 - `pagekiln check` 检查 `dist/`、主题资源、sitemap、feed、Agent discovery 和 WebMCP bootstrap。
 
-`pagekiln init` 会在新项目的 `package.json` 中写入这些脚本；如果你在框架仓库或调试环境中直接调用 CLI，也可以使用 `node bin/pagekiln.mjs generate/server/check`。npm 包发布后，等价命令是 `npx pagekiln generate/server/check`。
+`pagekiln init` 会在新项目的 `package.json` 中写入 `generate`、`server`、`check` 等兼容脚本；公开文档优先写 `npx pagekiln generate/server/check`，以免依赖全局安装。若你在框架仓库或调试环境中直接调用 CLI，也可以使用 `node bin/pagekiln.mjs generate/server/check`。
 
 本地预览默认地址：
 
@@ -49,7 +49,7 @@ npm run check
 http://127.0.0.1:4173/
 ```
 
-`npm run server` 每 10 秒监听 `content/`、`themes/`、`static/` 和 `config.yml`。检测到变更才重新生成。构建出错时预览进程不会退出，浏览器会显示错误；修好后会继续重建。`content/pages/<slug>/index.<locale>.md` 的变更会优先只重建对应页面。
+`npx pagekiln server` 每 10 秒监听 `content/`、`themes/`、`static/` 和 `config.yml`。检测到变更才重新生成。构建出错时预览进程不会退出，浏览器会显示错误；修好后会继续重建。`content/pages/<slug>/index.<locale>.md` 的变更会优先只重建对应页面。
 
 ## 内容与页面
 
@@ -156,7 +156,7 @@ JavaScript / MJS 分工：
 
 - `content/assets/icon-source.png` 是站点图标源图。
 - `content/assets/og-default-source.png` 是默认 Open Graph 源图。
-- `scripts/generate-neutral-assets.mjs` 只负责裁切和导出派生文件：`favicon.ico`、`favicon-32x32.png`、`apple-touch-icon.png`、`icon-192.png`、`icon-512.png`、`og-default.png` 和 `og-default.jpg`。它不负责设计图标或重新绘制 OG 图。
+- `pagekiln init` 会写入 `npm run assets:site`，它调用 `scripts/generate-neutral-assets.mjs`。这个脚本只负责裁切和导出派生文件：`favicon.ico`、`favicon-32x32.png`、`apple-touch-icon.png`、`icon-192.png`、`icon-512.png`、`og-default.png` 和 `og-default.jpg`。它不负责设计图标或重新绘制 OG 图。
 - 图标、PWA 颜色、OG 默认图这类站点身份信息属于 `config.yml` 和 `content/assets/`；主题 `source-assets/` 只放主题自己的插图或界面图片。
 - 其他主题插图或状态图应直接作为主题源资产维护，不要塞进站务裁切脚本。
 
@@ -225,7 +225,7 @@ slot 不是“插入静态 HTML 的另一种语法”。如果内容可以直接
 5. 组件文案放进 `themes/default/i18n.yml`，并同步 `src/i18n.mjs` 默认值。
 6. 样式和脚本通过 `theme.yml` 的 `pageStyles`、`pageScripts`、`featureScripts` 或 `featureStyles` 挂载。
 7. 更新 README、`AGENTS.md` 和 `static/AGENTS.md` 的 slot 列表。
-8. 运行 `npm run generate` 和 `npm run check`。如果是新的框架契约，也补检查脚本。
+8. 运行 `npx pagekiln generate` 和 `npx pagekiln check`。如果是新的框架契约，也补检查脚本。
 
 slot 组件应自己输出完整、可访问、可运行的内部状态，不应要求用户在 slot 后面补“这里会显示结果”之类说明。
 
@@ -286,7 +286,7 @@ Pagekiln 可以部署到 Cloudflare Pages，也可以部署到任何能托管 `d
 如果使用 Cloudflare Pages Git 集成，可以按自己的项目填写：
 
 ```text
-Build command: npm install && npm run generate
+Build command: npm install && npx pagekiln generate
 Build output directory: dist
 Node.js version: 22.12 或更新
 ```

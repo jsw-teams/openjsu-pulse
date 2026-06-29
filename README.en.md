@@ -27,8 +27,8 @@ first:
 3. Edit `content/posts/` to add or update posts.
 4. Edit `content/pages/` to customize the homepage, about page, archive,
    categories, tags, search page, or ordinary pages.
-5. Run `npm run server` for local live preview.
-6. Run `npm run generate` and `npm run check` before publishing.
+5. Run `npx pagekiln server` for local live preview.
+6. Run `npx pagekiln generate` and `npx pagekiln check` before publishing.
 
 Commands for Hexo users:
 
@@ -36,12 +36,12 @@ Commands for Hexo users:
 git clone https://github.com/jsw-teams/pagekiln.git
 cd pagekiln
 npm install
-node bin/pagekiln.mjs init my-site
+npx pagekiln@latest init my-site
 cd my-site
 npm install
-npm run server
-npm run generate
-npm run check
+npx pagekiln server
+npx pagekiln generate
+npx pagekiln check
 ```
 
 `pagekiln init` uses the neutral root project template bundled in the repository/package. The template does not include production or preview secrets. Forks and downstream projects should set their own site name, `siteUrl`, analytics, robots policy, deployment target, and environment configuration.
@@ -51,10 +51,11 @@ npm run check
 - `pagekiln check` verifies `dist/`, theme assets, sitemap, feed, agent
   discovery, and WebMCP bootstrap.
 
-`pagekiln init` writes these scripts into the new project's `package.json`.
+`pagekiln init` writes compatibility scripts such as `generate`, `server`, and
+`check` into the new project's `package.json`; public docs should prefer
+`npx pagekiln generate/server/check` so they do not depend on a global install.
 When working in the framework repository or debugging the CLI directly, you can
-use `node bin/pagekiln.mjs generate/server/check`. After npm publication, the
-equivalent commands are `npx pagekiln generate/server/check`.
+use `node bin/pagekiln.mjs generate/server/check`.
 
 Local preview:
 
@@ -62,7 +63,7 @@ Local preview:
 http://127.0.0.1:4173/
 ```
 
-`npm run server` polls `content/`, `themes/`, `static/`, and `config.yml`
+`npx pagekiln server` polls `content/`, `themes/`, `static/`, and `config.yml`
 every 10 seconds. It rebuilds only after detected changes. Build errors stay
 visible in the browser and do not stop the preview process. Changes to
 `content/pages/<slug>/index.<locale>.md` prefer page-level incremental output.
@@ -181,7 +182,7 @@ Site operations asset contract:
 
 - `content/assets/icon-source.png` is the site icon source image.
 - `content/assets/og-default-source.png` is the default Open Graph source image.
-- `scripts/generate-neutral-assets.mjs` only crops and exports derived files: `favicon.ico`, `favicon-32x32.png`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `og-default.png`, and `og-default.jpg`. It does not design the icon or redraw the OG image.
+- `pagekiln init` writes `npm run assets:site`, which calls `scripts/generate-neutral-assets.mjs`. This script only crops and exports derived files: `favicon.ico`, `favicon-32x32.png`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `og-default.png`, and `og-default.jpg`. It does not design the icon or redraw the OG image.
 - Site identity details such as icons, PWA colors, and the default OG image belong in `config.yml` and `content/assets/`; theme `source-assets/` should contain only theme-owned illustrations or interface images.
 - Other theme illustrations or state images should be maintained directly as theme source assets, not added to the site operations cropping script.
 
@@ -286,7 +287,7 @@ Workflow:
 6. Attach CSS and JS through `theme.yml` using `pageStyles`, `pageScripts`,
    `featureScripts`, or `featureStyles`.
 7. Update README, `AGENTS.md`, and `static/AGENTS.md`.
-8. Run `npm run generate` and `npm run check`; extend checks for new framework
+8. Run `npx pagekiln generate` and `npx pagekiln check`; extend checks for new framework
    contracts.
 
 A slot should own its accessible markup, loading state, empty state, error
@@ -370,7 +371,7 @@ secrets.
 For Cloudflare Pages Git integration, configure your own project:
 
 ```text
-Build command: npm install && npm run generate
+Build command: npm install && npx pagekiln generate
 Build output directory: dist
 Node.js version: 22.12 or newer
 ```

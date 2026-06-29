@@ -19,6 +19,7 @@ const copiedEntries = [
   "README.en.md",
   "config.yml",
   "content",
+  "scripts",
   "static",
   "themes"
 ];
@@ -107,6 +108,7 @@ async function writeProjectPackage(targetRoot) {
   data.private = true;
   data.description = "A Pagekiln site.";
   data.scripts = {
+    "assets:site": "node scripts/generate-neutral-assets.mjs",
     generate: "pagekiln generate",
     build: "pagekiln generate",
     server: "pagekiln server",
@@ -143,9 +145,9 @@ async function init() {
   console.log("Next steps:");
   console.log(`  cd ${path.relative(process.cwd(), targetRoot) || "."}`);
   console.log("  npm install");
-  console.log("  npm run server");
-  console.log("  npm run generate");
-  console.log("  npm run check");
+  console.log("  npx pagekiln server");
+  console.log("  npx pagekiln generate");
+  console.log("  npx pagekiln check");
 }
 
 function run(commandName, args, options = {}) {
