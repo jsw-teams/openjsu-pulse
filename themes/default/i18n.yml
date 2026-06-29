@@ -1,0 +1,179 @@
+locales:
+  zh-CN:
+    label: 简体中文
+    htmlLang: zh-CN
+    dateLocale: zh-CN
+  zh-TW:
+    label: 繁體中文
+    htmlLang: zh-TW
+    dateLocale: zh-TW
+  en:
+    label: English
+    htmlLang: en
+    dateLocale: en-US
+messages:
+  zh-CN:
+    home: 首页
+    archive: 归档
+    categories: 分类
+    tags: 标签
+    search: 搜索
+    about: 关于
+    privacy: 隐私政策
+    sitemap: 站点地图
+    latestPosts: 最新文章
+    allCategories: 所有分类
+    allTags: 所有标签
+    published: 发布
+    updated: 更新
+    category: 分类
+    taggedWith: 标签
+    availableLanguages: 本文可用语言
+    backHome: 返回首页
+    newerPost: 上一篇
+    olderPost: 下一篇
+    noPosts: 暂时还没有文章。
+    postsInCategory: 分类文章
+    postsWithTag: 标签文章
+    archiveDescription: 按时间查看所有公开文章。
+    categoriesDescription: 按主题浏览文章。
+    tagsDescription: 按标签浏览文章。
+    searchDescription: 搜索公开文章、标签和摘要。
+    searchPlaceholder: 输入关键词
+    searchEmpty: ""
+    searchNoResults: 没有找到匹配的文章。
+    searchLoading: 正在加载搜索索引...
+    searchError: 搜索索引加载失败。
+    searchResultsCount: 条结果
+    articleEnd: 读到这里
+    commentsTitle: 评论
+    commentsLoading: 正在加载评论...
+    commentsEmpty: 还没有公开评论。
+    commentsError: 评论读取失败，可以稍后刷新页面。
+    commentsReadOnlyMainland: 评论服务暂不可用，正在显示只读备份评论。
+    commentsRules: 评论请保持相关、友善，明显广告、重复内容或恶意链接会被移除。
+    mediaRegionTitle: 视频暂不可播放
+    mediaRegionMessage: 由于区域限制，中国大陆访问暂不提供视频播放，还请谅解。你仍可以阅读正文内容。
+    skip: 跳到主内容
+    siteIntro: 记录技术实践、网络服务、写作与观察。
+    feed: 订阅
+    consentTitle: 隐私偏好
+    consentIntro: 我们只在获得允许后加载评论、统计或其他可选第三方脚本。必要功能始终启用。
+    consentNecessary: 必要功能
+    consentPreferences: 偏好与评论
+    consentAnalytics: 统计分析
+    consentMarketing: 营销
+    consentAcceptAll: 接受全部
+    consentRejectAll: 仅必要
+    consentSave: 保存选择
+    consentManage: Cookie 偏好
+  zh-TW:
+    home: 首頁
+    archive: 歸檔
+    categories: 分類
+    tags: 標籤
+    search: 搜尋
+    about: 關於
+    privacy: 隱私政策
+    sitemap: 站點地圖
+    latestPosts: 最新文章
+    allCategories: 所有分類
+    allTags: 所有標籤
+    published: 發布
+    updated: 更新
+    category: 分類
+    taggedWith: 標籤
+    availableLanguages: 本文可用語言
+    backHome: 返回首頁
+    newerPost: 上一篇
+    olderPost: 下一篇
+    noPosts: 暫時還沒有文章。
+    postsInCategory: 分類文章
+    postsWithTag: 標籤文章
+    archiveDescription: 按時間查看所有公開文章。
+    categoriesDescription: 按主題瀏覽文章。
+    tagsDescription: 按標籤瀏覽文章。
+    searchDescription: 搜尋公開文章、標籤與摘要。
+    searchPlaceholder: 輸入關鍵字
+    searchEmpty: ""
+    searchNoResults: 沒有找到符合的文章。
+    searchLoading: 正在載入搜尋索引...
+    searchError: 搜尋索引載入失敗。
+    searchResultsCount: 筆結果
+    articleEnd: 讀到這裡
+    commentsTitle: 評論
+    commentsLoading: 正在載入評論...
+    commentsEmpty: 還沒有公開評論。
+    commentsError: 評論讀取失敗，可以稍後重新整理頁面。
+    commentsReadOnlyMainland: 評論服務暫不可用，正在顯示唯讀備份評論。
+    commentsRules: 評論請保持相關、友善，明顯廣告、重複內容或惡意連結會被移除。
+    mediaRegionTitle: 影片暫不可播放
+    mediaRegionMessage: 由於區域限制，中國大陸訪問暫不提供影片播放，還請諒解。你仍可以閱讀正文內容。
+    skip: 跳到主內容
+    siteIntro: 記錄技術實踐、網路服務、寫作與觀察。
+    feed: 訂閱
+    consentTitle: 隱私偏好
+    consentIntro: 我們只會在獲得允許後載入評論、統計或其他可選第三方腳本。必要功能始終啟用。
+    consentNecessary: 必要功能
+    consentPreferences: 偏好與評論
+    consentAnalytics: 統計分析
+    consentMarketing: 行銷
+    consentAcceptAll: 接受全部
+    consentRejectAll: 僅必要
+    consentSave: 儲存選擇
+    consentManage: Cookie 偏好
+  en:
+    home: Home
+    archive: Archive
+    categories: Categories
+    tags: Tags
+    search: Search
+    about: About
+    privacy: Privacy
+    sitemap: Sitemap
+    latestPosts: Latest Posts
+    allCategories: All Categories
+    allTags: All Tags
+    published: Published
+    updated: Updated
+    category: Category
+    taggedWith: Tags
+    availableLanguages: Available languages
+    backHome: Back home
+    newerPost: Newer post
+    olderPost: Older post
+    noPosts: No posts yet.
+    postsInCategory: Posts in category
+    postsWithTag: Posts tagged
+    archiveDescription: Browse all public posts by date.
+    categoriesDescription: Browse posts by topic.
+    tagsDescription: Browse posts by tag.
+    searchDescription: Search public posts, tags, and summaries.
+    searchPlaceholder: Search posts
+    searchEmpty: ""
+    searchNoResults: No matching posts found.
+    searchLoading: Loading search index...
+    searchError: Could not load the search index.
+    searchResultsCount: results
+    articleEnd: End note
+    commentsTitle: Comments
+    commentsLoading: Loading comments...
+    commentsEmpty: No public comments yet.
+    commentsError: Comments could not be loaded. Please refresh later.
+    commentsReadOnlyMainland: The comment service is unavailable, so read-only backup comments are shown.
+    commentsRules: Please stay relevant and kind; obvious ads, repeated posts, or malicious links may be removed.
+    mediaRegionTitle: Video unavailable
+    mediaRegionMessage: Due to regional restrictions, video playback is not available for Mainland China access. The article text remains available.
+    skip: Skip to main content
+    siteIntro: Notes on technical practice, web services, writing, and observation.
+    feed: Feed
+    consentTitle: Privacy preferences
+    consentIntro: Optional third-party scripts such as comments or analytics load only after permission. Necessary features stay on.
+    consentNecessary: Necessary
+    consentPreferences: Preferences and comments
+    consentAnalytics: Analytics
+    consentMarketing: Marketing
+    consentAcceptAll: Accept all
+    consentRejectAll: Necessary only
+    consentSave: Save choices
+    consentManage: Cookie preferences

@@ -1,0 +1,72 @@
+{
+  "name": "pagekiln",
+  "version": "1.0.1",
+  "description": "Hexo-inspired static site and blog builder with theme-first customization and agent discovery.",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "packageManager": "pnpm@10.18.0",
+  "bin": {
+    "pagekiln": "bin/pagekiln.mjs"
+  },
+  "files": [
+    "AGENTS.md",
+    "LICENSE",
+    "NOTICE",
+    "README.md",
+    "README.en.md",
+    "astro.config.mjs",
+    "bin/",
+    "config.yml",
+    "content/",
+    "scripts/",
+    "src/",
+    "static/",
+    "themes/"
+  ],
+  "keywords": [
+    "static-site-generator",
+    "markdown",
+    "astro",
+    "llms-txt",
+    "agent-discovery",
+    "webmcp"
+  ],
+  "homepage": "https://github.com/jsw-teams/pagekiln#readme",
+  "bugs": {
+    "url": "https://github.com/jsw-teams/pagekiln/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jsw-teams/pagekiln.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "assets": "node src/assets.mjs",
+    "prebuild": "node src/prebuild.mjs",
+    "build": "node bin/pagekiln.mjs generate",
+    "generate": "node bin/pagekiln.mjs generate",
+    "serve": "node bin/pagekiln.mjs server",
+    "server": "node bin/pagekiln.mjs server",
+    "check": "node bin/pagekiln.mjs check"
+  },
+  "dependencies": {
+    "@astrojs/rss": "^4.0.18",
+    "@astrojs/sitemap": "^3.7.3",
+    "astro": "^6.2.1",
+    "fast-glob": "^3.3.3",
+    "feed": "^4.2.2",
+    "gray-matter": "^4.0.3",
+    "html-minifier-terser": "^7.2.0",
+    "markdown-it": "^14.1.0",
+    "markdown-it-anchor": "^9.2.0",
+    "sharp": "^0.34.1"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

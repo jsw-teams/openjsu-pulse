@@ -1,0 +1,214 @@
+name: default
+description: Default blog theme example.
+style: style.css
+script: scripts/consent.js
+templates: templates
+i18n: i18n.yml
+
+features:
+  search: true
+  lightbox: true
+  media: true
+  comments: false
+  webMcp: true
+
+featureScripts:
+  search: scripts/search.js
+  lightbox: scripts/lightbox.js
+  media: scripts/media.js
+  comments: scripts/comments.js
+
+featureStyles:
+  consent: styles/consent.css
+
+featureCategories:
+  search: necessary
+  lightbox: necessary
+  media: necessary
+  comments: preferences
+  webMcp: necessary
+
+pagination:
+  homePageSize: 8
+
+icons:
+  favicon: /favicon.ico
+  icon32: /favicon-32x32.png
+  appleTouchIcon: /apple-touch-icon.png
+  icon192: /assets/icon-192.png
+  icon512: /assets/icon-512.png
+  manifest: /site.webmanifest
+
+head:
+  meta:
+    - name: theme-color
+      content: "#141414"
+      enabled: true
+  links:
+    - rel: preconnect
+      href: https://static.cloudflareinsights.com
+      enabled: false
+
+nav:
+  links:
+    - key: home
+      href: /:locale/
+      label:
+        zh-CN: 首页
+        zh-TW: 首頁
+        en: Home
+    - key: archive
+      href: /:locale/archive/
+      enabled: true
+      label:
+        zh-CN: 归档
+        zh-TW: 歸檔
+        en: Archive
+    - key: categories
+      href: /:locale/categories/
+      enabled: true
+      label:
+        zh-CN: 分类
+        zh-TW: 分類
+        en: Categories
+    - key: tags
+      href: /:locale/tags/
+      enabled: true
+      label:
+        zh-CN: 标签
+        zh-TW: 標籤
+        en: Tags
+    - key: about
+      href: /:locale/about/
+      enabled: true
+      label:
+        zh-CN: 关于
+        zh-TW: 關於
+        en: About
+  utilityLinks:
+    - key: search
+      href: /:locale/search/
+      icon: ⌕
+      enabled: true
+      label:
+        zh-CN: 搜索
+        zh-TW: 搜尋
+        en: Search
+
+footer:
+  copyright:
+    enabled: true
+    text:
+      zh-CN: "© :year :siteName"
+      zh-TW: "© :year :siteName"
+      en: "© :year :siteName"
+  links:
+    - href: /:locale/feed.xml
+      enabled: true
+      label:
+        zh-CN: 订阅
+        zh-TW: 訂閱
+        en: Feed
+    - href: /:locale/about/
+      enabled: true
+      label:
+        zh-CN: 隐私政策
+        zh-TW: 隱私政策
+        en: Privacy
+    - href: /sitemap.xml
+      enabled: true
+      label:
+        zh-CN: 站点地图
+        zh-TW: 站點地圖
+        en: Sitemap
+
+plugins:
+  comments:
+    enabled: false
+    # Only one provider can be active at a time: twikoo, waline, giscus, utterances, disqus, custom, or none.
+    provider: twikoo
+    twikoo:
+      envId: https://api-comments.example.com
+      script: https://example.com/twikoo.min.js
+    waline:
+      serverURL: https://waline.example.com
+      script: https://unpkg.com/@waline/client@v3/dist/waline.js
+      css: https://unpkg.com/@waline/client@v3/dist/waline.css
+      lang: zh-CN
+    giscus:
+      script: https://giscus.app/client.js
+      repo: owner/repo
+      repo-id: REPO_ID
+      category: General
+      category-id: CATEGORY_ID
+      mapping: pathname
+      reactions-enabled: "1"
+      emit-metadata: "0"
+      input-position: bottom
+      theme: preferred_color_scheme
+      lang: zh-CN
+      crossorigin: anonymous
+    utterances:
+      script: https://utteranc.es/client.js
+      repo: owner/repo
+      issue-term: pathname
+      theme: github-light
+      crossorigin: anonymous
+    disqus:
+      shortname: example
+      script: https://example.disqus.com/embed.js
+    custom:
+      script: https://example.com/comments.js
+      attrs:
+        data-site-id: example
+  analytics:
+    cloudflareWebAnalytics:
+      enabled: false
+      src: https://static.cloudflareinsights.com/beacon.min.js
+      token: YOUR_CLOUDFLARE_WEB_ANALYTICS_TOKEN
+      defer: true
+      consent: analytics
+      beacon:
+        spa: false
+        send_page_view: true
+    plausible:
+      enabled: false
+      src: https://plausible.io/js/script.js
+      domain: example.com
+      defer: true
+      consent: analytics
+    umami:
+      enabled: false
+      src: https://analytics.example.com/script.js
+      websiteId: 00000000-0000-0000-0000-000000000000
+      defer: true
+      consent: analytics
+      attrs:
+        data-auto-track: "true"
+    googleAnalytics:
+      enabled: false
+      measurementId: G-XXXXXXXXXX
+      async: true
+      consent: analytics
+    custom:
+      - enabled: false
+        src: https://example.com/analytics.js
+        defer: true
+        consent: analytics
+        attrs:
+          data-site: example
+  advertising:
+    googleAdsense:
+      enabled: false
+      client: ca-pub-0000000000000000
+      host: ca-host-pub-0000000000000000
+      async: true
+      crossorigin: anonymous
+      consent: marketing
+    custom:
+      - enabled: false
+        src: https://example.com/ad-network.js
+        defer: true
+        consent: marketing
+        attrs:
+          data-zone: sidebar

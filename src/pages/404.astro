@@ -1,0 +1,6 @@
+---
+import { buildNotFoundHtml } from "../lib/content.mjs";
+
+const html = await buildNotFoundHtml();
+---
+<Fragment set:html={html} />

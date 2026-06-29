@@ -1,0 +1,25 @@
+siteUrl: https://example.com
+defaultLocale: en
+activeLocales:
+  - en
+siteName:
+  en: Pagekiln Starter
+description:
+  en: A neutral Pagekiln starter site.
+author:
+  en: Site Owner
+theme:
+  name: default
+
+robots:
+  rules:
+    - userAgent: "*"
+      allow:
+        - /
+
+llms:
+  title: Pagekiln Starter
+  description: A neutral starter site for Pagekiln.
+
+feed:
+  title: Pagekiln Starter

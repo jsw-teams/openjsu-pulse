@@ -1,0 +1,298 @@
+# Pagekiln Agent Guide
+
+This file is for AI agents and developers who want to build sites or custom
+themes on top of Pagekiln with minimal project-specific knowledge.
+
+Pagekiln is a small static site builder inspired by Hexo's separation of site
+content, theme configuration, layouts, assets, and plugins. Treat it as a
+frontend framework for content sites: customize themes first, change the core
+builder only when the theme API cannot express the needed behavior.
+
+## Fast Orientation
+
+- `config.yml` is the site-level entry point. It selects a theme, declares site
+  metadata, locales, navigation, content behavior, and optional plugins.
+- `themes/<name>/` is the theme boundary. A new project should usually start by
+  copying `themes/default` and changing the copy.
+- `themes/default/theme.yml` is the active default theme configuration.
+- `themes/default/theme.example.yml` is the copyable reference for theme users.
+- The repository root is the neutral default project copied by `pagekiln init`; keep it free of production domains, author identity, analytics tokens, Cloudflare settings, and deployment secrets.
+- `themes/default/templates/` contains HTML template fragments for page types.
+- `themes/default/style.css` is the theme baseline stylesheet.
+- `themes/default/styles/` contains page or feature styles loaded by theme
+  configuration.
+- `themes/default/scripts/` contains behavior and plugin scripts. Optional
+  third-party features should be loaded through consent-aware feature scripts.
+- `themes/default/source-assets/` contains theme-owned images and icons.
+- `static/` contains site-public files copied as-is, such as deployed
+  `/AGENTS.md` and other assets that cannot be derived from config.
+- Agent discovery and site-operations outputs such as `_headers`, `llms.txt`,
+  `llms-full.txt`, `openapi.json`, API catalog, and MCP server card are generated
+  from `config.yml` and builder code.
+- `src/` contains the builder. Avoid changing it for purely visual or
+  project-specific theme work.
+- `dist/` is generated output. Do not edit it by hand.
+
+## License And Attribution
+
+Pagekiln is licensed under `AGPL-3.0-or-later`. Modified, redistributed,
+publicly deployed, or downstream versions should keep their corresponding source
+code open under the AGPL.
+
+Preserve the original author attribution: `Pagekiln by JSW Teams`. Keep the
+root `NOTICE` file, or provide equivalent visible attribution with a link to the
+original repository.
+
+## Config As Secondary-Development Source
+
+When doing secondary development or helping a user shape a new site, read
+`config.yml` before making frontend decisions. Treat it as structured
+site-operations data that can generate UI and metadata, not as a passive build
+appendix. Site names, descriptions, locales, navigation, utility links, footer
+content, icons, PWA settings, plugin toggles, consent categories, comments,
+analytics, ads, search, WebMCP settings, robots rules, LLM discovery metadata,
+OpenAPI/API catalog data, MCP server card metadata, and response headers should
+be expressed through `config.yml` and theme config where possible.
+
+This reduces frontend communication cost: the user can fill in YAML values once,
+and the builder can generate headers, navigation, language links, SEO metadata,
+feeds, sitemap hints, robots.txt, llms.txt, llms-full.txt, OpenAPI, API catalog,
+MCP server card, consent behavior, footer content, and discovery resources.
+Do not ask the user to repeatedly describe these details in prose when they can
+be represented in `config.yml`.
+
+If a site-operations file can be derived from `config.yml`, do not maintain a
+separate handwritten copy under `static/`. When you find duplicated static
+metadata such as `openapi.json`, API catalog, MCP server card, `_headers`,
+robots, or LLM discovery text, prefer adding or improving a dynamic generator in
+`src/` and document the contract.
+
+## Theme-First Workflow
+
+1. Read `config.yml` and identify which site-level content can be generated from
+   structured config.
+2. Copy `themes/default` to `themes/<your-theme>`.
+3. Rename `<your-theme>` to a project-appropriate theme name, not a leftover
+   generic or source-project name.
+4. Set `theme.name: <your-theme>` in `config.yml`.
+5. Move migrated site metadata, locales, navigation, footer, plugin choices, and
+   consent behavior into `config.yml` / `theme.yml`.
+6. Change global visual language in `themes/<your-theme>/style.css`.
+7. Change page-specific layout and polish in `themes/<your-theme>/styles/`.
+8. Change HTML structure in `themes/<your-theme>/templates/`.
+9. Add images, icons, and other theme-owned assets under
+   `themes/<your-theme>/source-assets/`.
+10. Add optional behavior under `themes/<your-theme>/scripts/`, then expose it
+   from `theme.yml` through `featureScripts` and `featureCategories`.
+11. Run `npm run generate` and `npm run check`.
+
+If a requested customization can be done by changing theme config, templates,
+CSS, or theme scripts, do that instead of editing `src/`.
+
+When changing the default project created for new users, edit the neutral root `config.yml`, `content/`, `static/`, and `themes/`. Do not sync real production domains, author identity, analytics tokens, Cloudflare settings, or deployment secrets into the public Pagekiln repository.
+
+## Theme Contracts
+
+The default theme shows the expected shape for custom themes. Its current page
+types are blog-oriented, but custom projects should define page types around
+their own product and content model.
+
+- `theme.yml` declares CSS, JS, page style mapping, feature scripts, icons,
+  footer content, optional plugin defaults, and consent categories.
+- `i18n.yml` contains theme-owned UI strings. Site content should not need to
+  carry theme interface text.
+- A theme should support a customizable homepage.
+- A theme should support customizable ordinary pages.
+- A theme should be able to add project-specific page types, such as product
+  pages, documentation sections, portfolio entries, landing pages, tools, case
+  studies, blog posts, archive listings, category pages, tag pages, or search
+  pages.
+- Blog-specific templates such as `home.html`, `archive.html`,
+  `terms-index.html`, `terms-page.html`, and `page.html` are examples from the
+  default theme, not mandatory page types for every Pagekiln-based project.
+
+When adding a new reusable page type, prefer adding a theme template and a small
+builder hook that passes structured data into it. Do not hardcode one site's
+layout into `src/templates.mjs`.
+
+## Markdown Pages And Dynamic Slots
+
+`content/pages/<slug>/index.<locale>.md` is a first-class customization surface.
+Page Markdown may contain static HTML directly, not only prose Markdown. Use this
+for low-cost user-editable page structure: headings, sections, small static
+layout wrappers, images, and the position of Pagekiln dynamic components.
+
+Special default pages are also content-owned:
+
+- `content/pages/home/index.<locale>.md` -> `/<locale>/`
+- `content/pages/archive/index.<locale>.md` -> `/<locale>/archive/`
+- `content/pages/categories/index.<locale>.md` -> `/<locale>/categories/`
+- `content/pages/tags/index.<locale>.md` -> `/<locale>/tags/`
+- `content/pages/search/index.<locale>.md` -> `/<locale>/search/`
+
+Use Pagekiln slots where the builder should inject dynamic output:
+
+```html
+<!-- pagekiln:post-list -->
+<!-- pagekiln:pagination -->
+<!-- pagekiln:archive-list -->
+<!-- pagekiln:terms -->
+<!-- pagekiln:search-panel -->
+<!-- pagekiln:languages -->
+```
+
+Treat slots as real components, not as comments that need explanatory text below
+them. For example, do not add a paragraph such as "输入关键词开始搜索。" after
+`<!-- pagekiln:search-panel -->`; the search component already owns its input,
+status, results, and error states. Put durable page intent in the page header,
+then place the slot exactly where the component should render.
+
+When developing a new slot, add it only for generated or interactive UI whose
+placement should remain user-editable in Markdown/HTML. Use kebab-case in page
+content, such as `<!-- pagekiln:related-posts -->`, and camelCase in renderer
+code, such as `relatedPosts`. Generate and replace the slot in
+`src/lib/theme-html.mjs`; mirror the behavior in `src/templates.mjs` when a
+fallback renderer exists. Put UI strings in `themes/default/i18n.yml` and
+`src/i18n.mjs`, attach CSS/JS through `theme.yml`, and update README plus both
+AGENTS documents. Do not add a slot for static copy that can live directly in
+`content/pages`.
+
+When the user edits zh-CN content first, use it as the source of truth for
+structure and meaning. Sync zh-TW and en pages to the same structure unless the
+user explicitly wants a locale-specific variation.
+
+## CSS Guidance
+
+- Keep the theme baseline and small reusable page rules in `style.css`.
+- Keep page or feature-specific rules in `styles/*.css` only when the CSS is
+  substantial, low-reuse, or dedicated to complex layouts, animations, or
+  component states for a small set of pages.
+- Small page-specific rules, especially differences of only a few dozen lines,
+  should usually be merged into `style.css` to avoid extra render-blocking CSS
+  requests and `theme.yml` fragmentation.
+- Clearly bounded feature styles such as consent, search, comments, ads,
+  gallery, or docs toc may stay separate when that helps feature or page
+  loading.
+- Do not put production CSS in Markdown/HTML. Page Markdown controls structure
+  and dynamic slot placement; theme CSS controls visual language.
+- Use stable layout constraints such as `max-width`, grid tracks, aspect ratios,
+  and predictable spacing so content cannot overlap on mobile or desktop.
+- Prefer CSS custom properties for colors, spacing, borders, and typography that
+  a downstream theme may want to override.
+- Keep consent UI styles separate from unrelated page styles.
+- Do not rely on JavaScript to fix basic layout.
+- Do not bake one site's brand, mascot, palette, or copy into reusable theme
+  names unless the theme is explicitly brand-specific.
+
+## JavaScript Guidance
+
+- JavaScript should provide behavior and plugin loading, not layout rendering.
+- `scripts/consent.js` is the minimal consent entry point. Before the user has
+  made a cookie choice, optional analytics, comments, ads, and marketing scripts
+  must not load.
+- Optional scripts should be mapped in `theme.yml` and gated by consent
+  categories.
+- Plugins are optional and project-specific. A simple site may need none; a
+  larger site may enable search, comments, analytics, ads, commerce, maps, or
+  custom integrations.
+- Only one comments provider should be active at a time when comments are used.
+  Keep provider examples in example config, not as mandatory defaults.
+- Analytics providers such as Cloudflare Web Analytics should be configurable
+  through `plugins.analytics`, including token, source URL, consent category, and
+  provider-specific beacon options.
+- WebMCP discovery is intentionally inline in the document shell so agent tools
+  can be detected on page load without an extra external script.
+
+## Builder Boundary
+
+Edit `src/` only when you are improving the framework itself:
+
+- loading or merging site and theme config
+- adding a reusable page type
+- exposing new structured data to theme templates
+- improving generated feeds, sitemap, headers, or agent discovery files
+- changing asset copying or build output behavior
+- adding checks that protect all downstream themes
+
+Do not edit `src/` to change colors, spacing, a single site's hero layout, a
+footer label, comment provider preference, analytics token, or mascot image.
+
+## Agent Discovery
+
+Pagekiln exposes agent-facing resources for deployed sites:
+
+- `static/AGENTS.md` is the deployed site-level guide.
+- `_headers` is generated from config and defines RFC 8288 `Link` headers for
+  useful resources.
+- `llms.txt` and `llms-full.txt` are generated from config and content.
+- `openapi.json`, `.well-known/api-catalog`, and
+  `.well-known/mcp/server-card.json` are generated discovery endpoints.
+
+Keep repository guidance in this root `AGENTS.md`. Keep deployed-site guidance
+in `static/AGENTS.md`.
+
+## Build And Verify
+
+Use Node 22 or newer.
+
+For Hexo-oriented users, prefer documenting `pagekiln generate` as the public
+static generation command. It maps to Hexo's `hexo generate`; `npm run generate`
+remains a compatibility wrapper.
+
+```bash
+npm install
+npm run generate
+npm run check
+```
+
+The build output directory is `dist/`.
+
+For local preview, use:
+
+```bash
+npm run server
+```
+
+The preview server polls source files every 10 seconds and rebuilds only after a
+detected change. Changes to `content/pages/<slug>/index.<locale>.md` should
+prefer page-level incremental output for the matching URL; changes to posts,
+theme files, config, static assets, or builder code may still require a full
+generation pass. Build errors should remain visible in the browser and must not
+terminate preview unless the user explicitly stops it.
+
+`pagekiln check` verifies important generated files, theme assets, sitemap shape,
+agent discovery headers, and WebMCP bootstrap behavior. If you add new framework
+contracts, extend the check script so future themes do not silently regress.
+
+## What Not To Do
+
+- Do not edit generated files in `dist/`.
+- Do not put theme assets in `src/`.
+- Do not make optional third-party scripts unconditional.
+- Do not reintroduce a `public/` build output directory unless the deployment
+  contract is intentionally changed.
+- Do not add XSL styling to sitemap output just to make it look nicer in a
+  browser. The sitemap should remain valid XML that browsers can inspect as an
+  XML tree.
+- Do not copy large chunks of another static-site generator. Reuse design ideas,
+  not source code.
+- Do not commit real API tokens, Cloudflare tokens, analytics secrets, or AWS
+  keys.
+
+## Recommended Agent Routine
+
+When asked to build a custom site or theme with pagekiln:
+
+1. Read `config.yml`, `themes/default/theme.yml`, and the relevant template.
+2. Extract site-level secondary-development facts from `config.yml`: names,
+   locales, navigation, footer, plugin toggles, consent categories, robots/LLM
+   policy, and discovery needs.
+3. Decide whether the request belongs in `config.yml`, `content/pages`, theme
+   config, templates, CSS, scripts, content, or builder core.
+4. Prefer config, Markdown/HTML page edits, and theme-level changes before
+   builder code.
+5. Run `npm run generate` and `npm run check`.
+6. Summarize changed files and explain whether the change is structured site
+   config, user-editable page
+   content, reusable theme work,
+   or framework work.
