@@ -4,10 +4,13 @@ import { createServer } from "node:http";
 import path from "node:path";
 import process from "node:process";
 import { spawn } from "node:child_process";
+import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { buildHtmlPagesForUrls } from "../src/lib/content.mjs";
 
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const requireFromPackage = createRequire(import.meta.url);
+const astroBin = path.join(path.dirname(requireFromPackage.resolve("astro/package.json")), "bin/astro.mjs");
 const rootDir = process.env.PAGEKILN_SITE_ROOT || process.cwd();
 const outputDir = path.join(rootDir, "dist");
 const host = process.env.HOST || "127.0.0.1";
@@ -262,7 +265,7 @@ async function build(reason = "change") {
       const prebuild = await run(nodeBin, [path.join(packageRoot, "src/prebuild.mjs")]);
       if (prebuild.code !== 0) throw new Error(prebuild.output || "prebuild failed");
       const astro = await run(nodeBin, [
-        path.join(packageRoot, "node_modules/astro/bin/astro.mjs"),
+        astroBin,
         "build"
       ], { cwd: packageRoot });
       if (astro.code !== 0) throw new Error(astro.output || "build failed");

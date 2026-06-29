@@ -2,9 +2,12 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { spawn } from "node:child_process";
+import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const requireFromPackage = createRequire(import.meta.url);
+const astroBin = path.join(path.dirname(requireFromPackage.resolve("astro/package.json")), "bin/astro.mjs");
 const siteRoot = process.cwd();
 const [command, targetArg] = process.argv.slice(2);
 
@@ -175,7 +178,7 @@ async function generate() {
   await assertProjectFile("config.yml");
   await run(process.execPath, [path.join(packageRoot, "src/prebuild.mjs")]);
   await run(process.execPath, [
-    path.join(packageRoot, "node_modules/astro/bin/astro.mjs"),
+    astroBin,
     "build"
   ], { cwd: packageRoot });
 }
