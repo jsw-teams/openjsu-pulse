@@ -380,10 +380,37 @@ Guidance:
 - Do not put one site's colors, layout, interactions, third-party scripts, page copy, or images in `src/`; use `config.yml`, `content/`, `themes/`, or `/backend`.
 - After changing `src/`, run `pagekiln g` and `pagekiln c`. If you add a new framework contract, update README, AGENTS, and `src/scripts/check-build.mjs`.
 
-Deployment and license: Pagekiln can be deployed to Cloudflare Pages or any
-static hosting service that can serve `dist/`. This public repository does not
-commit real Cloudflare credentials, account IDs, project names, zone IDs, or
-production deployment secrets.
+### Agent Collaboration
+
+Root `AGENTS.md` is the project guide for Codex, Claude, and other coding
+agents.
+
+For blogging:
+
+```text
+Please read README.md, AGENTS.md, and config.yml first. I am using Pagekiln as a blog. Prefer config.yml and content/ edits; do not edit themes/ or src/ unless I explicitly ask for theme customization or builder behavior.
+```
+
+For secondary development:
+
+```text
+Please read AGENTS.md and config.yml first. Treat config.yml as the structured source for site name, locales, navigation, plugins, consent, footer, robots, llms, OpenAPI, API catalog, MCP server card, headers, and other site operations. Prefer config.yml, content/pages, and theme-level changes before editing src/.
+```
+
+If [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) or
+[anthropics/skills](https://github.com/anthropics/skills/) is installed, name
+the relevant skill in the prompt. They are collaboration constraints, not runtime
+dependencies.
+
+When syncing localized pages, treat `zh-CN` as the source of content and
+structure unless a locale-specific variation is intentional.
+
+### Deployment Notes
+
+Pagekiln can be deployed to Cloudflare Pages or any static hosting service that
+can serve `dist/`. This public repository does not commit real Cloudflare
+credentials, account IDs, project names, zone IDs, or production deployment
+secrets.
 
 For Cloudflare Pages Git integration, configure your own project:
 

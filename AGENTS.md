@@ -95,6 +95,8 @@ The secondary headings should stay aligned across both languages:
 - How To Develop Themes
 - How To Develop Dynamic Slots
 - How To Develop The /src Builder
+- Agent Collaboration
+- Deployment Notes
 
 Do not add extra top-level README sections for deployment, license, plugins, or
 agent collaboration. Fold those details into the relevant primary section unless

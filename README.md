@@ -319,6 +319,28 @@ slot 组件应自己输出完整、可访问、可运行的内部状态，不应
 - 单个站点的颜色、布局、交互、第三方脚本、页面文案和图片不要写进 `src/`；放在 `config.yml`、`content/`、`themes/` 或 `/backend`。
 - 改 `src/` 后运行 `pagekiln g` 和 `pagekiln c`。如果新增了框架契约，同步更新 README、AGENTS 和 `src/scripts/check-build.mjs`。
 
+### Agent 协作
+
+根目录 `AGENTS.md` 是给 Codex、Claude 或其他代码代理看的项目说明。
+
+只是写博客时，可以这样提示：
+
+```text
+请先阅读 README.md、AGENTS.md 和 config.yml。我只是使用 Pagekiln 写博客，请优先修改 config.yml 和 content/ 下的文章或页面；除非我明确要求客制化主题或构建器能力，不要改 themes/ 或 src/。
+```
+
+做二次开发时，可以这样提示：
+
+```text
+请先阅读 AGENTS.md 和 config.yml。把 config.yml 当作站点名、多语言、导航、插件、consent、页脚、robots、llms、OpenAPI、API catalog、MCP server card、headers 和其他站务配置的结构化来源。优先修改 config.yml、content/pages 和主题目录；只有主题 API 无法表达需求时才修改 src/。
+```
+
+如果已安装 [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) 或 [anthropics/skills](https://github.com/anthropics/skills/)，可以在提示里点名使用对应 skill。它们不是运行依赖，只是协作约束。
+
+多语言页面同步时，以 `zh-CN` 为内容和结构源，除非某个语言版本明确需要差异化。
+
+### 部署说明
+
 Pagekiln 可以部署到 Cloudflare Pages，也可以部署到任何能托管 `dist/` 的静态托管服务。当前公开仓库不提交真实 Cloudflare credentials、account IDs、project names、zone IDs 或生产部署 secrets。
 
 如果使用 Cloudflare Pages Git 集成，可以按自己的项目填写：
