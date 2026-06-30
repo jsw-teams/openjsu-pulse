@@ -77,6 +77,30 @@ duplicated metadata such as `openapi.json`, API catalog, MCP server card,
 `_headers`, robots, LLM discovery text, or deployed agent guidance, prefer
 adding or improving a dynamic generator in `src/` and document the contract.
 
+## README Structure
+
+Keep `README.md` and `README.en.md` in the same shape. Aside from the top
+`# Pagekiln` document title, the README body should use exactly three primary
+sections: Quick Start / 快速上手, Start Writing / 开始写作, and Secondary
+Development / 二次开发.
+
+The secondary headings should stay aligned across both languages:
+
+- How To Install pagekiln / 如何安装pagekiln
+- How To Run pagekiln / 如何运行pagekiln
+- How To Configure Site Config / 如何配置站点配置
+- How To Configure Site ICO And OG Images / 如何配置站点ICO图标和OG图
+- How To Write Your First Post / 如何开始写第一篇文章
+- How To Edit Your Pages / 如何开始编辑你的页面
+- Understand This Project / 了解这个项目
+- How To Develop Themes / 如何开发主题
+- How To Develop Dynamic Slots / 如何开发动态sol
+- How To Develop The /src Builder / 如何开发/src构建器
+
+Do not add extra top-level README sections for deployment, license, plugins, or
+agent collaboration. Fold those details into the relevant primary section unless
+the user asks for a new documentation structure.
+
 ## Theme-First Workflow
 
 1. Read `config.yml` and identify which site-level content can be generated from
