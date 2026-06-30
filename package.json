@@ -1,6 +1,6 @@
 {
   "name": "pagekiln",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Hexo-inspired static site builder with theme-first customization, site operations assets, and agent discovery.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
