@@ -265,9 +265,9 @@ CSS 放置建议：
 
 插件是可选能力。简单站点可以完全不用插件；复杂站点可以按需启用搜索、评论、统计、RUM、广告、地图、表单、商务或自定义脚本。默认主题只有 `scripts/consent.js` 无条件加载。未保存隐私偏好前，评论、统计、广告和营销脚本不会加载；用户保存选择后，构建器按 `necessary`、`preferences`、`analytics`、`marketing` 等分类加载对应功能。
 
-### 如何开发动态sol
+### 如何开发动态solt
 
-这里的 `sol` 指 Pagekiln 动态 slot：当页面需要“用户能在 Markdown/HTML 里决定位置，但内容由构建器生成”的区域时，才新增 `<!-- pagekiln:xxx -->`。
+当页面需要“用户能在 Markdown/HTML 里决定位置，但内容由构建器生成”的区域时，才新增 `<!-- pagekiln:xxx -->`。
 
 文章列表、分页、归档列表、标签集合、语言切换、相关文章、搜索面板适合做 slot；固定文案、静态链接或一次性 HTML 直接写在 `content/pages` 里。
 

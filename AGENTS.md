@@ -94,7 +94,7 @@ The secondary headings should stay aligned across both languages:
 - How To Edit Your Pages / 如何开始编辑你的页面
 - Understand This Project / 了解这个项目
 - How To Develop Themes / 如何开发主题
-- How To Develop Dynamic Slots / 如何开发动态sol
+- How To Develop Dynamic Slots / 如何开发动态solt
 - How To Develop The /src Builder / 如何开发/src构建器
 
 Do not add extra top-level README sections for deployment, license, plugins, or
