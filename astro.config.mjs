@@ -79,7 +79,7 @@ export default defineConfig({
   site: site.siteUrl,
   srcDir: path.join(packageRoot, "src"),
   outDir: path.join(siteRoot, "dist"),
-  publicDir: path.join(siteRoot, "static"),
+  publicDir: path.join(packageRoot, "src", "public"),
   integrations: [
     sitemap({
       entryLimit: Number(sitemapOptions.entryLimit || 50000),

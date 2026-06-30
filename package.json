@@ -1,12 +1,12 @@
 {
   "name": "pagekiln",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "description": "Hexo-inspired static site builder with theme-first customization, site operations assets, and agent discovery.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "packageManager": "pnpm@10.18.0",
   "bin": {
-    "pagekiln": "bin/pagekiln.mjs"
+    "pagekiln": "src/bin/pagekiln.mjs"
   },
   "files": [
     "AGENTS.md",
@@ -15,12 +15,9 @@
     "README.md",
     "README.en.md",
     "astro.config.mjs",
-    "bin/",
     "config.yml",
     "content/",
-    "scripts/",
     "src/",
-    "static/",
     "themes/"
   ],
   "keywords": [
@@ -44,13 +41,12 @@
   },
   "scripts": {
     "assets": "node src/assets.mjs",
-    "assets:site": "node scripts/generate-neutral-assets.mjs",
     "prebuild": "node src/prebuild.mjs",
-    "build": "node bin/pagekiln.mjs g",
-    "generate": "node bin/pagekiln.mjs g",
-    "serve": "node bin/pagekiln.mjs s",
-    "server": "node bin/pagekiln.mjs s",
-    "check": "node bin/pagekiln.mjs c"
+    "build": "node src/bin/pagekiln.mjs g",
+    "generate": "node src/bin/pagekiln.mjs g",
+    "serve": "node src/bin/pagekiln.mjs s",
+    "server": "node src/bin/pagekiln.mjs s",
+    "check": "node src/bin/pagekiln.mjs c"
   },
   "dependencies": {
     "@astrojs/rss": "^4.0.18",

@@ -69,7 +69,6 @@ export function loadHtmlThemeTemplates(site, themeDir, templateDir) {
           <h1 id="home-title">${escapeHtml(title)}</h1>
           <p class="lead">${escapeHtml(pageContent?.description || t(locale, "siteIntro"))}</p>
         </div>
-        <img class="hero-mascot pixel-art" src="/assets/mascot-laptop.png" alt="" width="280" height="301" loading="eager" decoding="async" fetchpriority="high">
       </section>
       <section class="home-section" aria-labelledby="latest-posts">
         <div class="section-heading">

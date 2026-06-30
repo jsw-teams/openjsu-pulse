@@ -21,7 +21,8 @@ function loadSharp() {
 const sharp = loadSharp();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const rootDir = path.resolve(__dirname, "..");
+const packageRoot = path.resolve(__dirname, "../..");
+const rootDir = process.env.PAGEKILN_SITE_ROOT || packageRoot;
 const sourceDir = path.join(rootDir, "content", "assets");
 
 const iconSource = path.join(sourceDir, "icon-source.png");

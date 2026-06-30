@@ -3,15 +3,14 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
-import { loadBlogData } from "../src/lib/content.mjs";
+import { loadBlogData } from "../lib/content.mjs";
 
-const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const root = process.env.PAGEKILN_SITE_ROOT || process.cwd();
 const outputDir = path.join(root, "dist");
 const { site, posts, pages } = await loadBlogData();
 const locales = site.locales || [];
 const themeName = site.theme?.name || "default";
-const themeDir = path.join(root, "themes", themeName);
 const siteOrigin = String(site.siteUrl || "").replace(/\/+$/, "");
 const specialPageSlugs = new Set(["home", "archive", "categories", "tags", "search"]);
 
@@ -66,7 +65,7 @@ function unique(values) {
   return [...new Set(values.filter(Boolean))];
 }
 
-if (!(await exists(outputDir))) fail("missing dist output directory; run npm run generate first");
+if (!(await exists(outputDir))) fail("missing dist output directory; run pagekiln g first");
 if (!siteOrigin) fail("config.yml is missing siteUrl");
 if (!locales.length) fail("config.yml must define at least one active locale");
 if (!themeName) fail("config.yml must define theme.name");
@@ -138,18 +137,6 @@ const forbiddenDistFiles = [
 ];
 for (const file of forbiddenDistFiles) {
   if (await exists(path.join(outputDir, file))) fail(`stale dist/${file}`);
-}
-
-const forbiddenStaticGeneratedFiles = [
-  "_headers",
-  "openapi.json",
-  path.join(".well-known", "api-catalog"),
-  path.join(".well-known", "mcp", "server-card.json")
-];
-for (const file of forbiddenStaticGeneratedFiles) {
-  if (await exists(path.join(root, "static", file))) {
-    fail(`static/${file} should be generated from config.yml, not maintained by hand`);
-  }
 }
 
 if (routeSourceExists("llms.txt.js")) {

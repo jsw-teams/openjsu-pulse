@@ -18,8 +18,8 @@ import { DEFAULT_OG_IMAGE, OG_IMAGE_HEIGHT, OG_IMAGE_WIDTH } from "../og-images.
 
 const rootDir = process.env.PAGEKILN_SITE_ROOT || process.cwd();
 const contentDir = path.join(rootDir, "content");
-const staticDir = path.join(rootDir, "static");
-const staticAssetsDir = path.join(staticDir, "assets");
+const publicDir = process.env.PAGEKILN_PUBLIC_DIR || path.join(rootDir, "dist");
+const publicAssetsDir = path.join(publicDir, "assets");
 const moreMarker = /<!--\s*more\s*-->/i;
 const today = "2026-04-27";
 const specialPageSlugs = new Set(["home", "archive", "categories", "tags", "search"]);
@@ -373,7 +373,7 @@ function copyContentAsset(src, baseDir, contentKey) {
   const hash = crypto.createHash("sha1").update(`${relativeToContent}:${fsSync.statSync(sourcePath).mtimeMs}`).digest("hex").slice(0, 10);
   const filename = `${hash}-${safeName(path.basename(assetPath))}`;
   const normalizedKey = contentKey.split(/[\\/]+/).map((part) => encodeURIComponent(part)).join("/");
-  const outputDir = path.join(staticAssetsDir, "content", normalizedKey);
+  const outputDir = path.join(publicAssetsDir, "content", normalizedKey);
   fsSync.mkdirSync(outputDir, { recursive: true });
   fsSync.copyFileSync(sourcePath, path.join(outputDir, filename));
   return `/assets/content/${normalizedKey}/${filename}${suffix}`;

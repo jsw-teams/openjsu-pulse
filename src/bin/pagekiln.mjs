@@ -5,7 +5,7 @@ import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
-const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const requireFromPackage = createRequire(import.meta.url);
 const astroBin = path.join(path.dirname(requireFromPackage.resolve("astro/package.json")), "bin/astro.mjs");
 const siteRoot = process.cwd();
@@ -19,8 +19,6 @@ const copiedEntries = [
   "README.en.md",
   "config.yml",
   "content",
-  "scripts",
-  "static",
   "themes"
 ];
 
@@ -29,11 +27,6 @@ public/
 dist/
 .astro/
 .cache/
-static/assets/
-static/apple-touch-icon.png
-static/favicon-32x32.png
-static/favicon.ico
-static/site.webmanifest
 .npm-cache/
 .wrangler/
 .env
@@ -108,7 +101,6 @@ async function writeProjectPackage(targetRoot) {
   data.private = true;
   data.description = "A Pagekiln site.";
   data.scripts = {
-    "assets:site": "node scripts/generate-neutral-assets.mjs",
     generate: "pagekiln g",
     build: "pagekiln g",
     server: "pagekiln s",
@@ -178,21 +170,30 @@ async function assertProjectFile(file) {
 
 async function generate() {
   await assertProjectFile("config.yml");
-  await run(process.execPath, [path.join(packageRoot, "src/prebuild.mjs")]);
+  const outputDir = path.join(siteRoot, "dist");
+  await run(process.execPath, [path.join(packageRoot, "src/prebuild.mjs")], {
+    env: { PAGEKILN_PUBLIC_DIR: outputDir }
+  });
   await run(process.execPath, [
     astroBin,
     "build"
-  ], { cwd: packageRoot });
+  ], {
+    cwd: packageRoot,
+    env: { PAGEKILN_PUBLIC_DIR: outputDir }
+  });
+  await run(process.execPath, [path.join(packageRoot, "src/assets.mjs")], {
+    env: { PAGEKILN_PUBLIC_DIR: outputDir }
+  });
 }
 
 async function server() {
   await assertProjectFile("config.yml");
-  await run(process.execPath, [path.join(packageRoot, "scripts/serve-public.mjs")]);
+  await run(process.execPath, [path.join(packageRoot, "src/scripts/serve-public.mjs")]);
 }
 
 async function check() {
   await assertProjectFile("config.yml");
-  await run(process.execPath, [path.join(packageRoot, "scripts/check-build.mjs")]);
+  await run(process.execPath, [path.join(packageRoot, "src/scripts/check-build.mjs")]);
 }
 
 if (!command || command === "-h" || command === "--help") {

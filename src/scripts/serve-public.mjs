@@ -6,9 +6,9 @@ import process from "node:process";
 import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import { buildHtmlPagesForUrls } from "../src/lib/content.mjs";
+import { buildHtmlPagesForUrls } from "../lib/content.mjs";
 
-const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const requireFromPackage = createRequire(import.meta.url);
 const astroBin = path.join(path.dirname(requireFromPackage.resolve("astro/package.json")), "bin/astro.mjs");
 const rootDir = process.env.PAGEKILN_SITE_ROOT || process.cwd();
@@ -16,7 +16,7 @@ const outputDir = path.join(rootDir, "dist");
 const host = process.env.HOST || "127.0.0.1";
 const preferredPort = Number(process.env.PORT || 4173);
 const nodeBin = process.execPath;
-const watchTargets = ["content", "themes", "static", "config.yml"];
+const watchTargets = ["content", "themes", "config.yml"];
 const pollIntervalMs = 10000;
 let pollingStarted = false;
 
@@ -292,11 +292,6 @@ function scheduleBuild(reason) {
 function shouldIgnoreChange(relativePath) {
   const normalized = relativePath.replaceAll("\\", "/");
   return (
-    normalized.startsWith("static/assets/") ||
-    normalized === "static/favicon.ico" ||
-    normalized === "static/favicon-32x32.png" ||
-    normalized === "static/apple-touch-icon.png" ||
-    normalized === "static/site.webmanifest" ||
     normalized.endsWith(".log")
   );
 }
@@ -428,7 +423,7 @@ function listen(server, port) {
   server.listen(port, host, () => {
     const address = `http://${host}:${port}/`;
     console.log(`Serving live preview at ${address}`);
-    console.log("Polling content, themes, static, and config.yml every 10 seconds.");
+    console.log("Polling content, themes, and config.yml every 10 seconds.");
     console.log("Build errors stay visible in the browser; press Ctrl+C to stop.");
   });
 }

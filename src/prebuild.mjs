@@ -1,11 +1,8 @@
-import { generateAssets } from "./assets.mjs";
 import { loadPosts, readSiteConfig } from "./lib/content.mjs";
 
 process.env.OG_FETCH_REMOTE_COVERS = "true";
 
 const site = await readSiteConfig();
-await generateAssets();
-
 const posts = await loadPosts(site);
 const generatedOgImages = posts.filter((post) => post.ogImage?.startsWith("/assets/og/")).length;
 

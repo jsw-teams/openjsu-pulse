@@ -22,7 +22,7 @@ For a blog or regular content site, you do not need to learn theme development
 first:
 
 1. Create a site directory and install Pagekiln: `mkdir my-site && cd my-site && npm i pagekiln`.
-2. Initialize the site with the installed CLI: `npx pagekiln init .`. Use `node bin/pagekiln.mjs init my-site` only when debugging the framework repository itself.
+2. Initialize the site with the installed CLI: `npx pagekiln init .`. Use `node src/bin/pagekiln.mjs init my-site` only when debugging the framework repository itself.
 3. Edit `config.yml` for site name, description, author, locales, navigation,
    footer, robots, llms, feeds, plugin toggles, and discovery data.
 4. Edit `content/posts/` to add or update posts.
@@ -54,7 +54,7 @@ pagekiln c
 `check` into the new project's `package.json`; public docs should prefer
 `pagekiln g/s/c`. The full commands `pagekiln generate/server/check` also work.
 When working in the framework repository or debugging the CLI directly, you can
-use `node bin/pagekiln.mjs init/generate/server/check`.
+use `node src/bin/pagekiln.mjs init/generate/server/check`.
 
 Local preview:
 
@@ -62,7 +62,7 @@ Local preview:
 http://127.0.0.1:4173/
 ```
 
-`pagekiln s` polls `content/`, `themes/`, `static/`, and `config.yml`
+`pagekiln s` polls `content/`, `themes/`, and `config.yml`
 every 10 seconds. It rebuilds only after detected changes. Build errors stay
 visible in the browser and do not stop the preview process. Changes to
 `content/pages/<slug>/index.<locale>.md` prefer page-level incremental output.
@@ -148,10 +148,10 @@ config.yml              # Site-level config
 content/posts/          # Post Markdown
 content/pages/          # Page Markdown/HTML
 content/assets/         # Site operations icons, OG images, and derived assets
-bin/pagekiln.mjs        # CLI entry point
+src/bin/pagekiln.mjs    # CLI entry point
 src/*.mjs               # Builder-side Node ESM modules
+src/scripts/*.mjs       # Internal builder helper commands
 src/pages/*.js|*.astro  # Astro routes and generated endpoints
-static/                 # Static files that cannot be generated from config
 themes/default/         # Default theme
 dist/                   # Generated output
 ```
@@ -166,24 +166,38 @@ themes/default/style.css         # Global theme CSS
 themes/default/styles/*.css      # Page or feature CSS
 themes/default/templates/*.html  # Page templates
 themes/default/scripts/*.js      # Consent entry and feature scripts
-themes/default/source-assets/    # Theme illustrations and interface images
 ```
 
 JavaScript / MJS responsibilities:
 
-- `bin/pagekiln.mjs` is the CLI entry point for `init`, `generate`, `server`, and `check`.
-- `src/*.mjs` is builder-side code that runs in Node.js/Astro build contexts. It reads and merges config, generates assets, renders templates, handles i18n, indexes content, builds OG images, Agent discovery, feeds, sitemap, headers, and other framework outputs.
-- `src/pages/*.js` and `src/pages/**/*.js` are Astro endpoints for generated files such as `robots.txt`, `llms.txt`, `openapi.json`, feeds, and Markdown APIs.
+- `src/bin/pagekiln.mjs` is the CLI entry point for `init`, `g/generate`, `s/server`, and `c/check`. It also defines the default `package.json` scripts written by `pagekiln init`.
 - `themes/<name>/scripts/*.js` is browser-side theme code. These scripts provide page behavior and consent-aware feature loading, such as search, media enhancement, lightbox, comments, and WebMCP client helpers.
-- For visual changes, interactions, or third-party features, prefer `themes/<name>/theme.yml`, CSS, templates, and theme `scripts/*.js`. Edit `src/*.mjs` only for build-time capabilities, generated outputs, or reusable theme APIs.
+- For visual changes, interactions, or third-party features, prefer `themes/<name>/theme.yml`, CSS, templates, and theme `scripts/*.js`. Edit `src/` only for build-time capabilities, generated outputs, or reusable theme APIs.
+
+`src/` file map:
+
+- `src/prebuild.mjs` is the preparation step before `pagekiln g` enters Astro build. It reads site config and post data so content issues fail early.
+- `src/assets.mjs` owns build-time asset preparation: copying theme assets, copying `content/assets` site identity assets, generating favicon / app icons / `site.webmanifest` / default OG images, and writing them into `dist/`.
+- `src/og-images.mjs` crops post covers into 1200x630 share images, supports local and remote covers, and uses a manifest cache so unchanged images are not regenerated every build.
+- `src/i18n.mjs` stores built-in locales, language labels, date formatting, and default UI strings. Theme `i18n.yml` can override or extend these strings.
+- `src/templates.mjs` is the built-in fallback renderer for the HTML shell, SEO meta, Open Graph, JSON-LD, navigation, footer, WebMCP bootstrap, post cards, pagination, search panel, term lists, and default page rendering.
+- `src/lib/content.mjs` is the builder data core. It reads and merges `config.yml` with theme config, normalizes plugin and consent settings, renders Markdown, copies content images, loads posts and pages, and prepares data for localized routes, categories, tags, search indexes, feeds, sitemap, headers, robots, llms, OpenAPI, API catalog, and MCP server card.
+- `src/lib/theme-html.mjs` is the HTML theme adapter. It reads `themes/<name>/templates/*.html`, applies simple `{{ }}` / `{{{ }}}` replacements, and replaces `<!-- pagekiln:xxx -->` slots with builder-owned components such as post lists, pagination, archive lists, terms, search panel, and language links.
+- `src/scripts/check-build.mjs` and `src/scripts/serve-public.mjs` are internal commands called by `pagekiln c` and `pagekiln s`; `src/scripts/generate-neutral-assets.mjs` is a site-operations crop helper for framework development.
+- `src/pages/[...route].astro` is the Astro catch-all page output for static HTML routes returned by `buildHtmlPages()`.
+- `src/pages/404.astro` outputs the 404 page.
+- `src/pages/feed.xml.js` and `src/pages/[locale]/feed.xml.js` output the global feed and locale feeds.
+- `src/pages/robots.txt.js`, `src/pages/llms.txt.js`, `src/pages/llms-full.txt.js`, `src/pages/openapi.json.js`, `src/pages/.well-known/api-catalog.js`, and `src/pages/.well-known/mcp/server-card.json.js` output site-operations and agent discovery files.
+- `src/pages/assets/[file].json.js` outputs JSON assets such as search indexes.
+- `src/pages/md/[locale]/posts/[slug].md.js` exposes public posts as a Markdown API for agents and external tools.
 
 Site operations asset contract:
 
-- `content/assets/icon-source.png` is the site icon source image.
-- `content/assets/og-default-source.png` is the default Open Graph source image.
-- `pagekiln init` writes `npm run assets:site`, which calls `scripts/generate-neutral-assets.mjs`. This script only crops and exports derived files: `favicon.ico`, `favicon-32x32.png`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `og-default.png`, and `og-default.jpg`. It does not design the icon or redraw the OG image.
-- Site identity details such as icons, PWA colors, and the default OG image belong in `config.yml` and `content/assets/`; theme `source-assets/` should contain only theme-owned illustrations or interface images.
-- Other theme illustrations or state images should be maintained directly as theme source assets, not added to the site operations cropping script.
+- `content/assets/icon-source.png` is the site icon source image. A customized site should replace at least this image. Use a clear square PNG, at least 512x512, and make sure it is still recognizable at 32px favicon size.
+- `content/assets/og-default-source.png` is the default Open Graph source image. A customized site should replace at least this image. Use a 1200x630 PNG/JPG that represents the site and works well in social, chat, and link-preview crops.
+- After replacing `icon-source.png` or `og-default-source.png`, run `pagekiln g` directly. The builder will generate the ICO, PWA icons, and OG share images from the source artwork and write them into the final output so the site icon and link-preview assets match the project customization.
+- Derived files may still live in `content/assets/` as template resources, but they are not the build entry point; `pagekiln g` reads the source artwork first. Framework developers who need to refresh derived files manually can run `node src/scripts/generate-neutral-assets.mjs`.
+- Site identity details such as icons, PWA colors, and the default OG image belong in `config.yml` and `content/assets/`. A theme may create `themes/<name>/source-assets/` for its own interface images, but the default theme does not require that directory.
 
 ## Site Config
 
@@ -221,8 +235,9 @@ Good `config.yml` responsibilities:
   `.well-known/mcp/server-card.json`, and `_headers`.
 
 If a site-operations file can be derived from `config.yml`, do not maintain a
-second handwritten copy under `static/`. For robots, llms, OpenAPI, API catalog,
-MCP server card, or `_headers`, prefer config or dynamic generation.
+second handwritten public copy. For robots, llms, OpenAPI, API catalog, MCP
+server card, `AGENTS.md`, or `_headers`, prefer config, the root guide, or
+dynamic generation.
 
 ## Customization And Secondary Development
 
@@ -259,6 +274,92 @@ CSS placement guidance:
 - Do not put production CSS in Markdown/HTML. `content/pages` owns content
   structure and dynamic slot placement; theme CSS owns the visual system.
 
+## Developing src
+
+Normal sites use the default `src/` bundled in the npm package and do not need
+to copy or maintain builder source. Enter `src/` only for Pagekiln framework
+development, maintaining a fork, or adding reusable build-time capabilities.
+
+Use this data flow when developing `src/`:
+
+1. `src/bin/pagekiln.mjs` receives CLI commands and dispatches `g/s/c` to
+   `src/prebuild.mjs`, Astro build, `src/scripts/serve-public.mjs`, or
+   `src/scripts/check-build.mjs`.
+2. `src/lib/content.mjs` reads `config.yml`, theme config, and `content/`, then
+   prepares posts, pages, locales, terms, search, discovery, and site-operations
+   data.
+3. `src/assets.mjs` runs during `pagekiln g` and prepares static assets,
+   including site icons and OG output generated from
+   `content/assets/icon-source.png` and `content/assets/og-default-source.png`.
+4. `src/templates.mjs` and `src/lib/theme-html.mjs` render data into HTML.
+   Page structure that a theme can express should stay in
+   `themes/<name>/templates/`.
+5. `src/pages/` contains Astro endpoints that publish builder data as HTML,
+   XML, JSON, Markdown, OpenAPI, llms, and well-known discovery files.
+
+Guidance:
+
+- Edit `src/` only for reusable page types, site-operations outputs, slots,
+  config merging rules, asset generation rules, or checks.
+- Do not put one site's colors, layout, interactions, third-party scripts,
+  page copy, or images in `src/`; use `config.yml`, `content/`, `themes/`, or
+  `/backend`.
+- After changing `src/`, run `pagekiln g` and `pagekiln c`. If you add a new
+  framework contract, update README, AGENTS, and `src/scripts/check-build.mjs`.
+
+## Backend Boundary
+
+Pagekiln is static-first, but it can be organized as a frontend + backend
+project. When a site needs Cloudflare Functions, Workers, a Node service, a
+traditional server, or another backend runtime, put that code under `/backend`
+as an independent boundary instead of mixing it into `content/`, `themes/`,
+or builder `src/`.
+
+Recommended principles:
+
+- Keep `content/` and `themes/` as static frontend sources. `pagekiln g` writes
+  HTML, CSS, JS, images, search indexes, feeds, and discovery files to `dist/`
+  so they can keep high CDN cache hit rates.
+- `/backend` is the only place that should touch secrets, database connections,
+  private API tokens, signing keys, privileged permissions, and write-side
+  business logic.
+- Frontend files should call backend services through public endpoints like a
+  normal web frontend. Endpoint paths are project decisions; Pagekiln should not
+  require fixed URL naming.
+- `config.yml` should describe only the site-level public calling contract, such as base
+  URL, endpoint keys, methods, consent category, CAPTCHA requirement, cache
+  intent, and whether an endpoint appears in OpenAPI/API catalog/MCP discovery.
+  Never put real secrets in `config.yml`.
+- Browser-side identifiers that third-party frontend services require publicly,
+  such as a Cloudflare Web Analytics token, Google Ads client id, or Giscus repo
+  id, should live in the corresponding theme plugin config, for example
+  `themes/<name>/theme.yml` under `plugins.analytics` or `plugins.advertising`.
+  Fill them only when the matching plugin has been developed and enabled. They
+  are not backend secrets, but reusable default templates should still avoid
+  real production values.
+- Future builder support can generate `/assets/backend-manifest.json`, OpenAPI
+  fragments, and agent discovery notes from those public contracts, but the
+  manifest must contain only public information.
+
+Backend APIs should declare cache and discovery behavior by semantics, not by
+hardcoded path names:
+
+- Public, anonymous, idempotent read endpoints may allow CDN caching with
+  `max-age` / `stale-while-revalidate` based on freshness needs.
+- Reads tied to user identity, sessions, subscriptions, or private data should
+  use `private` or `no-store` so shared caches do not store them.
+- Writes, form submissions, comment posting, webhooks, login, logout, and token
+  refresh endpoints should default to `no-store` and use input validation,
+  Origin/CORS policy, request size limits, rate limiting, and CAPTCHA/Turnstile
+  where appropriate.
+- Admin endpoints, privileged endpoints, and internal tools should not appear in
+  the public manifest, OpenAPI, API catalog, MCP server card, or frontend
+  discovery.
+
+This keeps the static site fast and cache-friendly while leaving a clear
+extension path for comments, forms, enhanced search, webhooks, AI tools,
+user-state features, and other backend capabilities.
+
 ## Developing Dynamic Slots
 
 Add a new `<!-- pagekiln:xxx -->` slot only when users should control placement
@@ -285,7 +386,7 @@ Workflow:
    `src/i18n.mjs`.
 6. Attach CSS and JS through `theme.yml` using `pageStyles`, `pageScripts`,
    `featureScripts`, or `featureStyles`.
-7. Update README, `AGENTS.md`, and `static/AGENTS.md`.
+7. Update README and `AGENTS.md`.
 8. Run `pagekiln g` and `pagekiln c`; extend checks for new framework
    contracts.
 

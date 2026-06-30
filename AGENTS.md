@@ -25,19 +25,17 @@ builder only when the theme API cannot express the needed behavior.
   third-party features should be loaded through consent-aware feature scripts.
 - `content/assets/` contains site-operations assets such as source artwork and
   derived favicon, app icon, and default OG files. `icon-source.png` and
-  `og-default-source.png` are source artwork; use
-  `scripts/generate-neutral-assets.mjs` only to crop/export derived files.
-- `themes/default/source-assets/` contains theme-owned illustrations and
-  interface images, not site identity icons or OG source art.
-- `static/` contains site-public files copied as-is, such as deployed
-  `/AGENTS.md` and other assets that cannot be derived from config.
-- `bin/pagekiln.mjs` is the CLI entry point for init, generate, server, and
+  `og-default-source.png` are source artwork. `pagekiln g` should generate the
+  final favicon, app icon, and OG output from these sources.
+- `src/bin/pagekiln.mjs` is the CLI entry point for init, generate, server, and
   check commands.
 - `src/*.mjs` contains builder-side Node ESM modules for config loading,
   content indexing, template rendering, asset generation, i18n, OG images, and
   discovery outputs.
 - `src/pages/*.js` and `src/pages/**/*.js` are Astro endpoints for generated
   text, JSON, XML, and Markdown outputs.
+- `src/scripts/*.mjs` contains internal builder helper commands used by
+  `pagekiln s`, `pagekiln c`, and framework development utilities.
 - Agent discovery and site-operations outputs such as `_headers`, `llms.txt`,
   `llms-full.txt`, `openapi.json`, API catalog, and MCP server card are generated
   from `config.yml` and builder code.
@@ -73,11 +71,11 @@ MCP server card, consent behavior, footer content, and discovery resources.
 Do not ask the user to repeatedly describe these details in prose when they can
 be represented in `config.yml`.
 
-If a site-operations file can be derived from `config.yml`, do not maintain a
-separate handwritten copy under `static/`. When you find duplicated static
-metadata such as `openapi.json`, API catalog, MCP server card, `_headers`,
-robots, or LLM discovery text, prefer adding or improving a dynamic generator in
-`src/` and document the contract.
+If a site-operations file can be derived from `config.yml` or root
+`AGENTS.md`, do not maintain a separate handwritten public copy. When you find
+duplicated metadata such as `openapi.json`, API catalog, MCP server card,
+`_headers`, robots, LLM discovery text, or deployed agent guidance, prefer
+adding or improving a dynamic generator in `src/` and document the contract.
 
 ## Theme-First Workflow
 
@@ -93,8 +91,9 @@ robots, or LLM discovery text, prefer adding or improving a dynamic generator in
 7. Change page-specific layout and polish in `themes/<your-theme>/styles/`.
 8. Change HTML structure in `themes/<your-theme>/templates/`.
 9. Add site identity assets such as icons and default OG artwork under
-   `content/assets/`; add theme-owned illustrations under
-   `themes/<your-theme>/source-assets/`.
+   `content/assets/`. If a custom theme needs its own interface images, it may
+   create `themes/<your-theme>/source-assets/`; the default theme does not
+   require this directory.
 10. Add optional behavior under `themes/<your-theme>/scripts/`, then expose it
    from `theme.yml` through `featureScripts` and `featureCategories`.
 11. Run `pagekiln g` and `pagekiln c`.
@@ -102,7 +101,7 @@ robots, or LLM discovery text, prefer adding or improving a dynamic generator in
 If a requested customization can be done by changing theme config, templates,
 CSS, or theme scripts, do that instead of editing `src/`.
 
-When changing the default project created for new users, edit the neutral root `config.yml`, `content/`, `static/`, and `themes/`. Do not sync real production domains, author identity, analytics tokens, Cloudflare settings, or deployment secrets into the public Pagekiln repository.
+When changing the default project created for new users, edit the neutral root `config.yml`, `content/`, `themes/`, and framework generators under `src/` when needed. Do not sync real production domains, author identity, analytics tokens, Cloudflare settings, or deployment secrets into the public Pagekiln repository.
 
 ## Theme Contracts
 
@@ -196,8 +195,8 @@ user explicitly wants a locale-specific variation.
   a downstream theme may want to override.
 - Keep consent UI styles separate from unrelated page styles.
 - Do not rely on JavaScript to fix basic layout.
-- Do not bake one site's brand, mascot, palette, or copy into reusable theme
-  names unless the theme is explicitly brand-specific.
+- Do not bake one site's brand, palette, or copy into reusable theme names
+  unless the theme is explicitly brand-specific.
 
 ## JavaScript Guidance
 
@@ -224,6 +223,12 @@ user explicitly wants a locale-specific variation.
 - Analytics providers such as Cloudflare Web Analytics should be configurable
   through `plugins.analytics`, including token, source URL, consent category, and
   provider-specific beacon options.
+- Browser-side identifiers required by third-party frontend services, such as
+  Cloudflare Web Analytics tokens, Google Ads client ids, or Giscus repo ids,
+  may live in theme plugin config only when the corresponding plugin exists and
+  is enabled. These values are public client identifiers, not backend secrets;
+  reusable default templates should keep placeholders instead of real production
+  values.
 - WebMCP discovery is intentionally inline in the document shell so agent tools
   can be detected on page load without an extra external script.
 
@@ -239,21 +244,87 @@ Edit `src/` only when you are improving the framework itself:
 - adding checks that protect all downstream themes
 
 Do not edit `src/` to change colors, spacing, a single site's hero layout, a
-footer label, comment provider preference, analytics token, or mascot image.
+footer label, comment provider preference, analytics token, or theme image.
+
+## Developing src
+
+Normal Pagekiln sites use the default `src/` from the installed npm package.
+They should not copy or maintain builder source. Work in `src/` only for
+framework development, forks, or reusable build-time capabilities.
+
+Use this flow:
+
+1. `src/bin/pagekiln.mjs` dispatches CLI commands.
+2. `src/lib/content.mjs` reads and normalizes config, theme config, Markdown
+   content, pages, terms, search data, discovery data, and site operations data.
+3. `src/assets.mjs` prepares static assets during `pagekiln g`, including icons
+   and OG output generated from `content/assets/*-source.png`.
+4. `src/templates.mjs` and `src/lib/theme-html.mjs` render built-in fallback
+   HTML and HTML theme templates.
+5. `src/pages/` exposes generated HTML, XML, JSON, Markdown, OpenAPI, llms, and
+   well-known discovery endpoints through Astro.
+6. `src/scripts/` contains internal CLI helper commands such as preview,
+   checking, and framework asset utilities.
+
+When changing `src/`, update README and AGENTS if the public contract changes.
+Extend `src/scripts/check-build.mjs` for new framework contracts so downstream
+themes do not silently regress.
+
+## Backend Boundary
+
+Pagekiln may be used as a static-first frontend + backend project, but backend
+runtime code belongs under `/backend`. Do not place backend secrets or business
+runtime logic in `content/`, `themes/`, or builder `src/`.
+
+When adding backend support:
+
+- Keep the frontend static by default so HTML, CSS, JS, images, search indexes,
+  feeds, and discovery files can be cached effectively.
+- Treat `/backend` as the only directory that may access secrets, databases,
+  private API tokens, signing keys, privileged permissions, and write-side
+  business logic.
+- Let project developers choose endpoint paths. Do not require fixed API path
+  names in Pagekiln conventions.
+- Put only public backend calling contracts in `config.yml`: base URL, endpoint
+  keys, methods, consent category, CAPTCHA requirement, cache intent, and
+  whether a public endpoint should appear in OpenAPI/API catalog/MCP discovery.
+- Put public browser-side third-party identifiers in the matching theme plugin
+  config when that plugin is implemented and enabled. Examples include
+  Cloudflare Web Analytics token, Google Ads client id, and Giscus repo id.
+- Never put real secrets in `config.yml`, README, AGENTS files, generated
+  manifests, OpenAPI, API catalog, MCP server card, issues, or chat logs.
+- If a backend manifest is generated, it must expose only public metadata needed
+  by frontend scripts and agents.
+
+Recommend cache and discovery behavior by endpoint semantics instead of path
+prefixes:
+
+- Public, anonymous, idempotent reads may use CDN caching with an explicit
+  freshness policy.
+- Reads tied to user identity, sessions, subscriptions, or private data should
+  be `private` or `no-store`.
+- Writes, form submissions, comments, webhooks, login, logout, and token refresh
+  endpoints should default to `no-store` and should include validation,
+  Origin/CORS checks, request size limits, rate limiting, and CAPTCHA/Turnstile
+  where appropriate.
+- Admin, privileged, and internal endpoints must not be included in public
+  manifests, OpenAPI, API catalog, MCP server card, or frontend discovery.
 
 ## Agent Discovery
 
 Pagekiln exposes agent-facing resources for deployed sites:
 
-- `static/AGENTS.md` is the deployed site-level guide.
+- Root `AGENTS.md` is the development and agent-collaboration guide.
+- `pagekiln g` copies root `AGENTS.md` to `dist/AGENTS.md` for deployed
+  site-level agent guidance.
 - `_headers` is generated from config and defines RFC 8288 `Link` headers for
   useful resources.
 - `llms.txt` and `llms-full.txt` are generated from config and content.
 - `openapi.json`, `.well-known/api-catalog`, and
   `.well-known/mcp/server-card.json` are generated discovery endpoints.
 
-Keep repository guidance in this root `AGENTS.md`. Keep deployed-site guidance
-in `static/AGENTS.md`.
+Keep repository guidance in this root `AGENTS.md`; the deployed copy is
+generated into `dist/`.
 
 ## Build And Verify
 
@@ -281,7 +352,7 @@ pagekiln s
 The preview server polls source files every 10 seconds and rebuilds only after a
 detected change. Changes to `content/pages/<slug>/index.<locale>.md` should
 prefer page-level incremental output for the matching URL; changes to posts,
-theme files, config, static assets, or builder code may still require a full
+theme files, config, or builder code may still require a full
 generation pass. Build errors should remain visible in the browser and must not
 terminate preview unless the user explicitly stops it.
 

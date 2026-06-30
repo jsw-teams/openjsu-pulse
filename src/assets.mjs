@@ -8,7 +8,7 @@ import { readSiteConfig } from "./lib/content.mjs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const packageRoot = path.resolve(__dirname, "..");
 const rootDir = process.env.PAGEKILN_SITE_ROOT || packageRoot;
-const publicDir = path.join(rootDir, "static");
+const publicDir = process.env.PAGEKILN_PUBLIC_DIR || path.join(rootDir, "dist");
 const assetsDir = path.join(publicDir, "assets");
 const contentAssetsDir = path.join(rootDir, "content", "assets");
 const cacheDir = path.join(rootDir, ".cache");
@@ -19,15 +19,7 @@ process.env.FONTCONFIG_CACHE ??= path.join(cacheDir, "fontconfig");
 
 const { default: sharp } = await import("sharp");
 
-const themeAssetFiles = [
-  "mascot-404.png",
-  "mascot-happy.png",
-  "mascot-laptop.png",
-  "mascot-reading.png",
-  "mascot-sleeping.png",
-  "mascot-thinking.png",
-  "mascot-writing.png"
-];
+const themeAssetFiles = [];
 
 const siteAssetFiles = [
   "icon-192.png",
@@ -173,6 +165,10 @@ async function writeManifest(site) {
   );
 }
 
+async function copyAgentGuide() {
+  await copyIfExists(path.join(rootDir, "AGENTS.md"), path.join(publicDir, "AGENTS.md"));
+}
+
 async function copyThemeFiles(site) {
   const themeName = site.theme?.name || "default";
   const themeDir = path.join(rootDir, "themes", themeName);
@@ -197,8 +193,6 @@ async function copyThemeFiles(site) {
 async function ensureOgImage() {
   const ogPng = path.join(assetsDir, "og-default.png");
   const ogJpg = path.join(publicDir, DEFAULT_OG_IMAGE.replace(/^\/+/, ""));
-  if (fsSync.existsSync(ogPng) && fsSync.existsSync(ogJpg)) return;
-
   const ogSource = path.join(contentAssetsDir, "og-default-source.png");
   if (fsSync.existsSync(ogSource)) {
     const image = sharp(ogSource).resize(1200, 630, {
@@ -209,6 +203,8 @@ async function ensureOgImage() {
     await image.clone().jpeg({ quality: 86, mozjpeg: true }).toFile(ogJpg);
     return;
   }
+
+  if (fsSync.existsSync(ogPng) && fsSync.existsSync(ogJpg)) return;
 
   const svg = `<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
     <rect width="1200" height="630" fill="#f7f2e8"/>
@@ -245,6 +241,7 @@ export async function generateAssets() {
   await ensureFavicon(site);
   await writeManifest(site);
   await ensureOgImage();
+  await copyAgentGuide();
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

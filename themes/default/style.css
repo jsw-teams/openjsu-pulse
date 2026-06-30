@@ -94,15 +94,6 @@ img {
   max-width: 100%;
 }
 
-.pixel-art,
-.hero-mascot,
-.article-end img,
-.language-choice img,
-.not-found-panel img {
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
-}
-
 .skip-link {
   background: var(--text);
   border: 3px solid var(--gold);
@@ -237,16 +228,6 @@ img {
   grid-template-columns: minmax(0, 1fr) auto;
   min-height: 30vh;
   padding: clamp(1rem, 4vw, 2rem);
-}
-
-.language-choice,
-.not-found-panel {
-  grid-template-columns: auto minmax(0, 1fr);
-}
-
-.hero-mascot {
-  max-height: 300px;
-  object-fit: contain;
 }
 
 h1,
@@ -1034,13 +1015,6 @@ html[data-preferred-locale="en"] .not-found-panel[data-i18n-panel="en"] {
   .language-choice,
   .not-found-panel {
     grid-template-columns: 1fr;
-  }
-
-  .language-choice img,
-  .not-found-panel img,
-  .hero-mascot {
-    justify-self: start;
-    max-width: 220px;
   }
 
   .home-meta-grid,
