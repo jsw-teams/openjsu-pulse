@@ -81,21 +81,20 @@ adding or improving a dynamic generator in `src/` and document the contract.
 
 Keep `README.md` and `README.en.md` in the same shape. Aside from the top
 `# Pagekiln` document title, the README body should use exactly three primary
-sections: Quick Start / 快速上手, Start Writing / 开始写作, and Secondary
-Development / 二次开发.
+sections: Quick Start, Start Writing, and Secondary Development.
 
 The secondary headings should stay aligned across both languages:
 
-- How To Install pagekiln / 如何安装pagekiln
-- How To Run pagekiln / 如何运行pagekiln
-- How To Configure Site Config / 如何配置站点配置
-- How To Configure Site ICO And OG Images / 如何配置站点ICO图标和OG图
-- How To Write Your First Post / 如何开始写第一篇文章
-- How To Edit Your Pages / 如何开始编辑你的页面
-- Understand This Project / 了解这个项目
-- How To Develop Themes / 如何开发主题
-- How To Develop Dynamic Slots / 如何开发动态solt
-- How To Develop The /src Builder / 如何开发/src构建器
+- How To Install pagekiln
+- How To Run pagekiln
+- How To Configure Site Config
+- How To Configure Site ICO And OG Images
+- How To Write Your First Post
+- How To Edit Your Pages
+- Understand This Project
+- How To Develop Themes
+- How To Develop Dynamic Slots
+- How To Develop The /src Builder
 
 Do not add extra top-level README sections for deployment, license, plugins, or
 agent collaboration. Fold those details into the relevant primary section unless
@@ -180,7 +179,7 @@ Use Pagekiln slots where the builder should inject dynamic output:
 ```
 
 Treat slots as real components, not as comments that need explanatory text below
-them. For example, do not add a paragraph such as "输入关键词开始搜索。" after
+them. For example, do not add a paragraph such as "Enter a query to start searching." after
 `<!-- pagekiln:search-panel -->`; the search component already owns its input,
 status, results, and error states. Put durable page intent in the page header,
 then place the slot exactly where the component should render.
