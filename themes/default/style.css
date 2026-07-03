@@ -1076,6 +1076,7 @@ html[data-preferred-locale="en"] .not-found-panel[data-i18n-panel="en"] {
 }
 
 .home-main {
+  display: grid;
   gap: 4rem;
 }
 
@@ -1085,6 +1086,10 @@ html[data-preferred-locale="en"] .not-found-panel[data-i18n-panel="en"] {
 
 .home-section .post-list {
   margin-top: 1.5rem;
+}
+
+.home-main > .post-list {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .archive-main .archive-list {
