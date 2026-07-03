@@ -180,6 +180,18 @@ Use Pagekiln slots where the builder should inject dynamic output:
 <!-- pagekiln:languages -->
 ```
 
+Slot syntax is recognized globally, but some slots require page context:
+
+- `post-list` and `pagination` require homepage list context.
+- `archive-list` requires archive page context.
+- `terms` requires category or tag index context.
+- `search-panel` only requires the current locale and can be used on any page.
+- `languages` requires translations for the current page or article.
+
+If a context-dependent slot is placed on a page without the required data,
+`pagekiln c` should report the unresolved slot instead of letting the component
+silently disappear.
+
 Treat slots as real components, not as comments that need explanatory text below
 them. For example, do not add a paragraph such as "Enter a query to start searching." after
 `<!-- pagekiln:search-panel -->`; the search component already owns its input,
@@ -187,11 +199,12 @@ status, results, and error states. Put durable page intent in the page header,
 then place the slot exactly where the component should render.
 
 When developing a new slot, add it only for generated or interactive UI whose
-placement should remain user-editable in Markdown/HTML. Use kebab-case in page
-content, such as `<!-- pagekiln:related-posts -->`, and camelCase in renderer
-code, such as `relatedPosts`. Generate and replace the slot in
-`src/lib/theme-html.mjs`; mirror the behavior in `src/templates.mjs` when a
-fallback renderer exists. Put UI strings in `themes/default/i18n.yml` and
+placement should remain user-editable in Markdown/HTML. Use one lowercase marker
+in page content, such as `<!-- pagekiln:relatedposts -->`, and camelCase in renderer
+code, such as `relatedPosts`. Do not keep compatibility aliases for old marker
+names. Declare component HTML, required context, and
+missing-context behavior in `src/lib/slots.mjs`; page renderers should only pass
+the context data they own. Put UI strings in `themes/default/i18n.yml` and
 `src/i18n.mjs`, attach CSS/JS through `theme.yml`, and update README plus both
 AGENTS documents. Do not add a slot for static copy that can live directly in
 `content/pages`.

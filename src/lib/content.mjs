@@ -833,7 +833,8 @@ function rewriteRelativePaths(html, urlPath) {
     const cleanTarget = target.replace(/^\/+/, "");
     let prefix = path.posix.relative(fromDir.replace(/^\/|\/$/g, ""), path.posix.dirname(cleanTarget));
     if (!prefix) prefix = ".";
-    return `${attr}="${prefix}/${path.posix.basename(cleanTarget)}"`;
+    const rewritten = `${prefix}/${path.posix.basename(cleanTarget)}`;
+    return `${attr}="${target.endsWith("/") ? `${rewritten}/` : rewritten}"`;
   });
 }
 

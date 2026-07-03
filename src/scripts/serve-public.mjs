@@ -269,6 +269,8 @@ async function build(reason = "change") {
         "build"
       ], { cwd: packageRoot });
       if (astro.code !== 0) throw new Error(astro.output || "build failed");
+      const assets = await run(nodeBin, [path.join(packageRoot, "src/assets.mjs")]);
+      if (assets.code !== 0) throw new Error(assets.output || "asset generation failed");
       setStatus({ state: "ok", message: "Build complete." });
     }
   } catch (error) {

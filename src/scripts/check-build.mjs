@@ -262,6 +262,7 @@ for (const file of htmlFiles) {
   if (!/<title>[^<]+<\/title>/i.test(html)) fail(`${relative} is missing title`);
   if (!/<meta[^>]+name=["']description["'][^>]*>/i.test(html)) fail(`${relative} is missing description`);
   if (!/<main\b/i.test(html)) fail(`${relative} is missing main`);
+  if (/pagekiln:|\{\{\s*pagekiln\./.test(html)) fail(`${relative} contains an unresolved Pagekiln slot`);
 }
 
 if (site.theme?.features?.search !== false) {

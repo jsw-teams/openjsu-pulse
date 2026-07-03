@@ -169,6 +169,16 @@ content/pages/search/index.<locale>.md      # /<locale>/search/
 
 例如首页可以在 `content/pages/home/index.zh-CN.md` 里写页面介绍，然后把 `<!-- pagekiln:post-list -->` 放在文章列表位置。归档页可以写自己的标题和说明，再放 `<!-- pagekiln:archive-list -->`。
 
+Slot 语法是全局识别的，但部分 slot 需要页面上下文：
+
+- `post-list`、`pagination`：需要首页列表上下文。
+- `archive-list`：需要归档页上下文。
+- `terms`：需要分类页或标签页上下文。
+- `search-panel`：只需要当前 locale，可放在任意页面。
+- `languages`：需要当前页面或文章有翻译入口。
+
+如果把上下文依赖 slot 放到没有对应数据的页面，`pagekiln c` 会报告未解析 slot，避免构建结果静默缺组件。
+
 把 slot 当成完整组件，不要在下面补重复说明。反例：
 
 ```html
@@ -265,7 +275,7 @@ CSS 放置建议：
 
 插件是可选能力。简单站点可以完全不用插件；复杂站点可以按需启用搜索、评论、统计、RUM、广告、地图、表单、商务或自定义脚本。默认主题只有 `scripts/consent.js` 无条件加载。未保存隐私偏好前，评论、统计、广告和营销脚本不会加载；用户保存选择后，构建器按 `necessary`、`preferences`、`analytics`、`marketing` 等分类加载对应功能。
 
-### 如何开发动态solt
+### 如何开发动态 slot
 
 当页面需要“用户能在 Markdown/HTML 里决定位置，但内容由构建器生成”的区域时，才新增 `<!-- pagekiln:xxx -->`。
 
@@ -273,14 +283,14 @@ CSS 放置建议：
 
 开发流程：
 
-1. 使用短横线小写命名：`<!-- pagekiln:related-posts -->`，代码里对应 `relatedPosts`。
-2. 在 `src/lib/theme-html.mjs` 的页面渲染函数中生成组件 HTML，并传给 `replaceSlots(pageContent.html, { relatedPosts })`。
-3. 如果 `src/templates.mjs` 有 fallback 渲染路径，同步加入同名 slot。
+1. 使用小写连续命名：`<!-- pagekiln:relatedposts -->`，代码里对应 `relatedPosts`。不要为旧名称保留兼容别名。
+2. 在 `src/lib/slots.mjs` 的 `slotRegistry` 中声明组件 HTML、所需上下文和缺失上下文行为。
+3. 在相关页面渲染函数中只传页面拥有的上下文数据，例如 posts、pagination、groups、terms 或 translations。
 4. 模板中保留 `{{{content}}}`，让 Markdown 和 slot 输出进入主题模板。
 5. 组件文案放进 `themes/default/i18n.yml`，并同步 `src/i18n.mjs` 默认值。
 6. 样式和脚本通过 `theme.yml` 的 `pageStyles`、`pageScripts`、`featureScripts` 或 `featureStyles` 挂载。
 7. 更新 README 和 `AGENTS.md` 的 slot 列表。
-8. 运行 `pagekiln g` 和 `pagekiln c`。如果是新的框架契约，也补检查脚本。
+8. 运行 `pagekiln g` 和 `pagekiln c`。新增上下文依赖 slot 时，确保检查脚本能发现未解析 slot。
 
 slot 组件应自己输出完整、可访问、可运行的内部状态，不应要求用户在 slot 后面补“这里会显示结果”之类说明。
 
@@ -304,7 +314,8 @@ slot 组件应自己输出完整、可访问、可运行的内部状态，不应
 - `src/i18n.mjs` 保存内置 locale、语言标签、日期格式化和默认 UI 字符串，并允许主题 `i18n.yml` 覆盖或补充文案。
 - `src/templates.mjs` 是内置 fallback 渲染层，负责 HTML shell、SEO meta、Open Graph、JSON-LD、导航、页脚、WebMCP bootstrap、文章卡片、分页、搜索面板、分类/标签列表和默认页面渲染。
 - `src/lib/content.mjs` 是构建器的数据层核心。它读取并合并 `config.yml` 与主题配置，规范化插件和 consent 设置，渲染 Markdown，复制内容图片，加载文章和 pages，生成多语言路由、分类、标签、搜索索引、feed、sitemap、headers、robots、llms、OpenAPI、API catalog 和 MCP server card 所需数据。
-- `src/lib/theme-html.mjs` 是 HTML 主题适配层。它读取 `themes/<name>/templates/*.html`，执行 `{{ }}` / `{{{ }}}` 简单模板替换，并把 `<!-- pagekiln:xxx -->` slot 替换为文章列表、分页、归档、terms、搜索面板和语言切换等构建器组件。
+- `src/lib/slots.mjs` 集中声明 `<!-- pagekiln:xxx -->` slot registry、上下文依赖校验、搜索面板和归档列表等构建器组件。
+- `src/lib/theme-html.mjs` 是 HTML 主题适配层。它读取 `themes/<name>/templates/*.html`，执行 `{{ }}` / `{{{ }}}` 简单模板替换，并通过 `src/lib/slots.mjs` 替换文章列表、分页、归档、terms、搜索面板和语言切换等 slot。
 - `src/scripts/check-build.mjs` 和 `src/scripts/serve-public.mjs` 是 `pagekiln c`、`pagekiln s` 调用的内部命令；`src/scripts/generate-neutral-assets.mjs` 是框架开发时可用的站务资产裁切辅助脚本。
 - `src/pages/[...route].astro` 是 Astro catch-all 页面出口，接收 `buildHtmlPages()` 生成的静态 HTML 路由。
 - `src/pages/404.astro` 输出 404 页面。

@@ -205,6 +205,18 @@ For example, the homepage can write its own introduction in
 where the post list belongs. An archive page can write its own heading and then
 place `<!-- pagekiln:archive-list -->`.
 
+Slot syntax is recognized globally, but some slots require page context:
+
+- `post-list` and `pagination` require homepage list context.
+- `archive-list` requires archive page context.
+- `terms` requires category or tag index context.
+- `search-panel` only requires the current locale and can be used on any page.
+- `languages` requires translations for the current page or article.
+
+If a context-dependent slot is placed on a page without the required data,
+`pagekiln c` reports the unresolved slot instead of silently dropping the
+component.
+
 Treat slots as complete components. Do not duplicate what a slot already
 renders. Avoid this:
 
@@ -330,14 +342,14 @@ should stay directly in `content/pages`.
 
 Workflow:
 
-1. Use a kebab-case slot name such as `<!-- pagekiln:related-posts -->`; use the matching camelCase key in code, such as `relatedPosts`.
-2. Generate component HTML in the relevant renderer in `src/lib/theme-html.mjs`, then pass it to `replaceSlots(pageContent.html, { relatedPosts })`.
-3. If `src/templates.mjs` has a fallback path, add the same slot there.
+1. Use a lowercase slot name such as `<!-- pagekiln:relatedposts -->`; use the matching camelCase key in code, such as `relatedPosts`. Do not keep compatibility aliases for old names.
+2. Declare component HTML, required context, and missing-context behavior in `src/lib/slots.mjs`.
+3. Pass only the page data that each renderer owns, such as posts, pagination, groups, terms, or translations.
 4. Keep `{{{content}}}` in templates so Markdown and slot output flow into the theme.
 5. Put component strings in `themes/default/i18n.yml` and sync defaults in `src/i18n.mjs`.
 6. Attach CSS and JS through `theme.yml` using `pageStyles`, `pageScripts`, `featureScripts`, or `featureStyles`.
 7. Update README and `AGENTS.md`.
-8. Run `pagekiln g` and `pagekiln c`; extend checks for new framework contracts.
+8. Run `pagekiln g` and `pagekiln c`; make sure new context-dependent slots are caught when unresolved.
 
 A slot should own its accessible markup, loading state, empty state, error
 state, and runtime behavior. It should not require users to add "results will
@@ -365,7 +377,8 @@ Use this data flow when developing `src/`:
 - `src/i18n.mjs` stores built-in locales, language labels, date formatting, and default UI strings. Theme `i18n.yml` can override or extend these strings.
 - `src/templates.mjs` is the built-in fallback renderer for the HTML shell, SEO meta, Open Graph, JSON-LD, navigation, footer, WebMCP bootstrap, post cards, pagination, search panel, term lists, and default page rendering.
 - `src/lib/content.mjs` is the builder data core. It reads and merges `config.yml` with theme config, normalizes plugin and consent settings, renders Markdown, copies content images, loads posts and pages, and prepares data for localized routes, categories, tags, search indexes, feeds, sitemap, headers, robots, llms, OpenAPI, API catalog, and MCP server card.
-- `src/lib/theme-html.mjs` is the HTML theme adapter. It reads `themes/<name>/templates/*.html`, applies simple `{{ }}` / `{{{ }}}` replacements, and replaces `<!-- pagekiln:xxx -->` slots with builder-owned components such as post lists, pagination, archive lists, terms, search panel, and language links.
+- `src/lib/slots.mjs` centralizes the `<!-- pagekiln:xxx -->` slot registry, context checks, search panel, archive list, and other builder-owned slot components.
+- `src/lib/theme-html.mjs` is the HTML theme adapter. It reads `themes/<name>/templates/*.html`, applies simple `{{ }}` / `{{{ }}}` replacements, and uses `src/lib/slots.mjs` to replace builder-owned slots such as post lists, pagination, archive lists, terms, search panel, and language links.
 - `src/scripts/check-build.mjs` and `src/scripts/serve-public.mjs` are internal commands called by `pagekiln c` and `pagekiln s`; `src/scripts/generate-neutral-assets.mjs` is a site-operations crop helper for framework development.
 - `src/pages/[...route].astro` is the Astro catch-all page output for static HTML routes returned by `buildHtmlPages()`.
 - `src/pages/404.astro` outputs the 404 page.

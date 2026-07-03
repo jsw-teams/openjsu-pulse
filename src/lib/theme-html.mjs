@@ -1,6 +1,7 @@
 import path from "node:path";
 import fsSync from "node:fs";
-import { formatDate, t } from "../i18n.mjs";
+import { t } from "../i18n.mjs";
+import { renderArchiveList, renderSearchPanel, replaceSlots, slotTemplateData } from "./slots.mjs";
 import {
   baseJsonLd,
   breadcrumbJsonLd,
@@ -26,25 +27,11 @@ function renderHtmlTemplate(source, data) {
     .replace(/\{\{\s*([\w.-]+)\s*\}\}/g, (_, key) => escapeHtml(data[key] ?? ""));
 }
 
-function replaceSlots(html, slots) {
-  let output = html || "";
-  for (const [key, value] of Object.entries(slots)) {
-    const normalized = key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
-    const pattern = new RegExp(`<!--\\s*pagekiln:${normalized}\\s*-->|\\{\\{\\s*pagekiln\\.${key}\\s*\\}\\}`, "g");
-    output = output.replace(pattern, value || "");
-  }
-  return output;
-}
-
-function searchPanel(locale) {
-  return `<section class="search-panel" data-search-root data-search-locale="${escapeHtml(locale)}" data-search-empty="${escapeHtml(t(locale, "searchEmpty"))}" data-search-no-results="${escapeHtml(t(locale, "searchNoResults"))}" data-search-loading="${escapeHtml(t(locale, "searchLoading"))}" data-search-error="${escapeHtml(t(locale, "searchError"))}" data-search-results-label="${escapeHtml(t(locale, "searchResultsCount"))}">
-    <form class="search-form" data-search-form role="search">
-      <label class="visually-hidden" for="search-input">${escapeHtml(t(locale, "search"))}</label>
-      <input id="search-input" class="search-input" data-search-input type="search" name="q" autocomplete="off" placeholder="${escapeHtml(t(locale, "searchPlaceholder"))}">
-    </form>
-    <p class="search-status empty" data-search-status aria-live="polite">${escapeHtml(t(locale, "searchLoading"))}</p>
-    <div class="search-results" data-search-results></div>
-  </section>`;
+function renderSlotTemplate(source, data, context) {
+  return renderHtmlTemplate(replaceSlots(source, context), {
+    ...slotTemplateData(context),
+    ...data
+  });
 }
 
 export function loadHtmlThemeTemplates(site, themeDir, templateDir) {
@@ -77,19 +64,28 @@ export function loadHtmlThemeTemplates(site, themeDir, templateDir) {
         ${renderPostList(posts, locale)}
         ${renderPagination({ locale, page, totalPages, pageUrl })}
       </section>`;
-      const main = renderHtmlTemplate(files.home, {
+      const slotContext = {
+        site,
+        locale,
+        posts,
+        page,
+        totalPages,
+        pageUrl,
+        renderLanguageAvailability,
+        renderPagination,
+        renderPostList,
+        renderTermLinks
+      };
+      const main = renderSlotTemplate(files.home, {
         siteName,
         title,
         description: pageContent?.description || t(locale, "siteIntro"),
         intro: pageContent?.description || t(locale, "siteIntro"),
-        content: pageContent?.html ? replaceSlots(pageContent.html, {
-          postList: renderPostList(posts, locale),
-          pagination: renderPagination({ locale, page, totalPages, pageUrl })
-        }) : fallbackContent,
+        content: pageContent?.html ? replaceSlots(pageContent.html, slotContext) : fallbackContent,
         latestPosts: t(locale, "latestPosts"),
         postList: renderPostList(posts, locale),
         pagination: renderPagination({ locale, page, totalPages, pageUrl })
-      });
+      }, slotContext);
       return renderLayout({
         site,
         locale,
@@ -110,23 +106,28 @@ export function loadHtmlThemeTemplates(site, themeDir, templateDir) {
       const locales = siteLocales(site);
       const title = pageContent?.title || t(locale, "archive");
       const description = pageContent?.description || t(locale, "archiveDescription");
-      const archiveList = groups.map((group) => `<section aria-labelledby="year-${group.year}">
-        <h2 id="year-${group.year}">${escapeHtml(group.year)}</h2>
-        <ul>
-          ${group.posts.map((post) => `<li><time datetime="${escapeHtml(post.date)}">${escapeHtml(formatDate(post.date, locale))}</time><a href="${post.url}">${escapeHtml(post.title)}</a></li>`).join("")}
-        </ul>
-      </section>`).join("");
+      const archiveList = renderArchiveList(groups, locale);
       const fallbackContent = `<header class="page-heading">
         <h1>${escapeHtml(title)}</h1>
         <p class="lead">${escapeHtml(description)}</p>
       </header>
       <div class="archive-list">${archiveList}</div>`;
-      const main = renderHtmlTemplate(files.archive, {
+      const slotContext = {
+        site,
+        locale,
+        groups,
+        archiveList,
+        renderLanguageAvailability,
+        renderPagination,
+        renderPostList,
+        renderTermLinks
+      };
+      const main = renderSlotTemplate(files.archive, {
         title,
         description,
-        content: pageContent?.html ? replaceSlots(pageContent.html, { archiveList }) : fallbackContent,
+        content: pageContent?.html ? replaceSlots(pageContent.html, slotContext) : fallbackContent,
         archiveList
-      });
+      }, slotContext);
       return renderLayout({
         site,
         locale,
@@ -157,12 +158,22 @@ export function loadHtmlThemeTemplates(site, themeDir, templateDir) {
         <p class="lead">${escapeHtml(description)}</p>
       </header>
       ${termsHtml}`;
-      const main = renderHtmlTemplate(files.termsIndex, {
+      const slotContext = {
+        site,
+        locale,
+        terms,
+        termsHtml,
+        renderLanguageAvailability,
+        renderPagination,
+        renderPostList,
+        renderTermLinks
+      };
+      const main = renderSlotTemplate(files.termsIndex, {
         title,
         description,
-        content: pageContent?.html ? replaceSlots(pageContent.html, { terms: termsHtml }) : fallbackContent,
+        content: pageContent?.html ? replaceSlots(pageContent.html, slotContext) : fallbackContent,
         terms: termsHtml
-      });
+      }, slotContext);
       return renderLayout({
         site,
         locale,
@@ -187,16 +198,24 @@ export function loadHtmlThemeTemplates(site, themeDir, templateDir) {
       const locales = siteLocales(site);
       const title = pageContent?.title || t(locale, "search");
       const description = pageContent?.description || t(locale, "searchDescription");
-      const panel = searchPanel(locale);
+      const panel = renderSearchPanel(locale);
       const fallbackContent = `<header class="page-heading">
         <h1>${escapeHtml(title)}</h1>
         <p class="lead">${escapeHtml(description)}</p>
       </header>
       ${panel}`;
-      const main = renderHtmlTemplate(files.search, {
+      const slotContext = {
+        site,
+        locale,
+        renderLanguageAvailability,
+        renderPagination,
+        renderPostList,
+        renderTermLinks
+      };
+      const main = renderSlotTemplate(files.search, {
         title,
         description,
-        content: pageContent?.html ? replaceSlots(pageContent.html, { searchPanel: panel }) : fallbackContent,
+        content: pageContent?.html ? replaceSlots(pageContent.html, slotContext) : fallbackContent,
         locale,
         search: t(locale, "search"),
         searchPlaceholder: t(locale, "searchPlaceholder"),
@@ -205,7 +224,7 @@ export function loadHtmlThemeTemplates(site, themeDir, templateDir) {
         searchLoading: t(locale, "searchLoading"),
         searchError: t(locale, "searchError"),
         searchResultsCount: t(locale, "searchResultsCount")
-      });
+      }, slotContext);
       return renderLayout({
         site,
         locale,
@@ -227,11 +246,20 @@ export function loadHtmlThemeTemplates(site, themeDir, templateDir) {
 
     renderTermPage({ site, locale, title, description, posts, url, current, parentKey }) {
       if (!files.termsPage) return null;
-      const main = renderHtmlTemplate(files.termsPage, {
+      const slotContext = {
+        site,
+        locale,
+        posts,
+        renderLanguageAvailability,
+        renderPagination,
+        renderPostList,
+        renderTermLinks
+      };
+      const main = renderSlotTemplate(files.termsPage, {
         title,
         description,
         postList: renderPostList(posts, locale)
-      });
+      }, slotContext);
       return renderLayout({
         site,
         locale,
@@ -254,14 +282,23 @@ export function loadHtmlThemeTemplates(site, themeDir, templateDir) {
     renderAboutPage({ site, locale, page, translations }) {
       if (!files.page) return null;
       const languageBlock = renderLanguageAvailability(locale, translations);
-      const main = renderHtmlTemplate(files.page, {
+      const slotContext = {
+        site,
+        locale,
+        page,
+        translations,
+        languageBlock,
+        renderLanguageAvailability,
+        renderPagination,
+        renderPostList,
+        renderTermLinks
+      };
+      const main = renderSlotTemplate(files.page, {
         title: page.title,
         description: page.description,
         languages: languageBlock,
-        content: replaceSlots(page.html, {
-          languages: languageBlock
-        })
-      });
+        content: replaceSlots(page.html, slotContext)
+      }, slotContext);
       const alternates = translations
         .map((entry) => ({ hreflang: entry.locale, url: entry.url }))
         .concat({ hreflang: "x-default", url: translations.find((entry) => entry.locale === siteDefaultLocale(site))?.url ?? translations[0].url });
