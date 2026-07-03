@@ -72,8 +72,26 @@ async function pathExists(file) {
 async function assertEmptyOrMissing(target) {
   if (!(await pathExists(target))) return;
   const entries = await fs.readdir(target);
-  if (entries.length) {
+  if (entries.length && !(await isPagekilnInstallFootprint(target, entries))) {
     throw new Error(`Target directory is not empty: ${target}`);
+  }
+}
+
+async function isPagekilnInstallFootprint(target, entries) {
+  const allowedEntries = new Set([
+    "node_modules",
+    "package.json",
+    "package-lock.json",
+    "npm-shrinkwrap.json",
+    ".package-lock.json"
+  ]);
+  if (entries.some((entry) => !allowedEntries.has(entry))) return false;
+  if (!entries.includes("package.json")) return false;
+  try {
+    const data = JSON.parse(await fs.readFile(path.join(target, "package.json"), "utf8"));
+    return Boolean(data.dependencies?.pagekiln || data.devDependencies?.pagekiln);
+  } catch {
+    return false;
   }
 }
 
