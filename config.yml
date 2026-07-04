@@ -8,11 +8,15 @@ description:
   en: A neutral Pagekiln starter site.
 author:
   en: Site Owner
-content:
-  posts:
-    enabled: false
 theme:
   name: default
+  nav:
+    links:
+      - key: home
+        href: /:locale/
+      - key: about
+        href: /:locale/about/
+    utilityLinks: []
 
 icons:
   favicon: /favicon.ico

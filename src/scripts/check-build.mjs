@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
-import { loadBlogData, postsEnabled } from "../lib/content.mjs";
+import { loadBlogData, pagesUseSlot } from "../lib/content.mjs";
 
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const root = process.env.PAGEKILN_SITE_ROOT || process.cwd();
@@ -12,8 +12,9 @@ const { site, posts, pages } = await loadBlogData();
 const locales = site.locales || [];
 const themeName = site.theme?.name || "default";
 const siteOrigin = String(site.siteUrl || "").replace(/\/+$/, "");
-const includePosts = postsEnabled(site);
-const specialPageSlugs = new Set(["home", "archive", "categories", "tags", "search"]);
+const includePosts = posts.length > 0;
+const includeSearch = pagesUseSlot(pages, "search-panel");
+const specialPageSlugs = new Set(["home"]);
 
 function fail(message) {
   console.error(`check-build: ${message}`);
@@ -89,13 +90,7 @@ for (const file of requiredFiles) await requireDist(file);
 
 for (const locale of locales) {
   await requireDist(path.join(locale, "index.html"), `locale home for ${locale}`);
-  if (includePosts) {
-    await requireDist(path.join(locale, "archive", "index.html"), `archive page for ${locale}`);
-    await requireDist(path.join(locale, "categories", "index.html"), `categories page for ${locale}`);
-    await requireDist(path.join(locale, "tags", "index.html"), `tags page for ${locale}`);
-  }
-  if (includePosts && site.theme?.features?.search !== false) {
-    await requireDist(path.join(locale, "search", "index.html"), `search page for ${locale}`);
+  if (includeSearch && site.theme?.features?.search !== false) {
     await requireDist(path.join("assets", `search-index.${locale}.json`), `search index for ${locale}`);
   }
   if (includePosts && routeSourceExists("[locale]/feed.xml.js")) {
@@ -107,16 +102,17 @@ if (!includePosts) {
   const disabledPostOutputs = [
     "feed.xml",
     ...locales.flatMap((locale) => [
-      path.join(locale, "archive", "index.html"),
-      path.join(locale, "categories", "index.html"),
-      path.join(locale, "tags", "index.html"),
-      path.join(locale, "search", "index.html"),
       path.join(locale, "feed.xml"),
-      path.join("assets", `search-index.${locale}.json`)
     ])
   ];
   for (const file of disabledPostOutputs) {
-    if (await exists(path.join(outputDir, file))) fail(`dist/${file} should not be generated when content.posts.enabled is false`);
+    if (await exists(path.join(outputDir, file))) fail(`dist/${file} should not be generated without public posts`);
+  }
+}
+if (!includeSearch) {
+  for (const locale of locales) {
+    const file = path.join("assets", `search-index.${locale}.json`);
+    if (await exists(path.join(outputDir, file))) fail(`dist/${file} should not be generated without a search-panel slot`);
   }
 }
 
@@ -172,7 +168,7 @@ if (routeSourceExists("llms.txt.js")) {
     if (!llms.includes(expected)) fail(`llms.txt is missing ${expected}`);
   }
   if (includePosts && !llms.includes("## Latest Markdown Mirrors")) fail("llms.txt is missing Latest Markdown Mirrors");
-  if (!includePosts && llms.includes("## Latest Markdown Mirrors")) fail("llms.txt should not list Markdown mirrors when posts are disabled");
+  if (!includePosts && llms.includes("## Latest Markdown Mirrors")) fail("llms.txt should not list Markdown mirrors without public posts");
 }
 
 const sitemap = await readFile(path.join(outputDir, "sitemap.xml"), "utf8");
@@ -219,11 +215,11 @@ if (routeSourceExists("openapi.json.js")) {
   if (openapi.servers?.[0]?.url !== siteOrigin) {
     fail("openapi.json should be generated from config.yml siteUrl");
   }
-  if (includePosts && site.theme?.features?.search !== false && !openapi.paths?.["/assets/search-index.{locale}.json"]) {
+  if (includeSearch && site.theme?.features?.search !== false && !openapi.paths?.["/assets/search-index.{locale}.json"]) {
     fail("openapi.json is missing search index path");
   }
-  if (!includePosts && openapi.paths?.["/assets/search-index.{locale}.json"]) {
-    fail("openapi.json should not expose search index path when posts are disabled");
+  if (!includeSearch && openapi.paths?.["/assets/search-index.{locale}.json"]) {
+    fail("openapi.json should not expose search index path without a search-panel slot");
   }
 }
 
@@ -239,8 +235,8 @@ if (routeSourceExists(".well-known/mcp/server-card.json.js")) {
   if (!JSON.stringify(serverCard).includes(`${siteOrigin}/`)) {
     fail("MCP server card should be generated from config.yml siteUrl");
   }
-  if (!includePosts && JSON.stringify(serverCard).includes("search_public_posts")) {
-    fail("MCP server card should not expose post search when posts are disabled");
+  if (!includeSearch && JSON.stringify(serverCard).includes("search_public_posts")) {
+    fail("MCP server card should not expose post search without a search-panel slot");
   }
 }
 
@@ -291,15 +287,12 @@ for (const file of htmlFiles) {
   if (!/<meta[^>]+name=["']description["'][^>]*>/i.test(html)) fail(`${relative} is missing description`);
   if (!/<main\b/i.test(html)) fail(`${relative} is missing main`);
   if (/pagekiln:|\{\{\s*pagekiln\./.test(html)) fail(`${relative} contains an unresolved Pagekiln slot`);
-  if (!includePosts) {
-    if (/search_public_posts|search-index/.test(html)) fail(`${relative} should not expose post search when posts are disabled`);
-    if (/href=["'][^"']*\/(?:archive|categories|tags|search|posts)(?:\/|["'])/.test(html)) {
-      fail(`${relative} should not link to blog routes when posts are disabled`);
-    }
+  if (!includeSearch && /search_public_posts|search-index/.test(html)) {
+    fail(`${relative} should not expose post search without a search-panel slot`);
   }
 }
 
-if (includePosts && site.theme?.features?.search !== false) {
+if (includeSearch && site.theme?.features?.search !== false) {
   for (const locale of locales) {
     const searchIndex = path.join(outputDir, "assets", `search-index.${locale}.json`);
     if (await exists(searchIndex)) {

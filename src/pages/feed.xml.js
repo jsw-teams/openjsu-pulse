@@ -1,9 +1,9 @@
 import rss from "@astrojs/rss";
-import { absoluteUrl, loadBlogData, postsEnabled } from "../lib/content.mjs";
+import { absoluteUrl, loadBlogData } from "../lib/content.mjs";
 
 export async function GET(context) {
   const { site, posts } = await loadBlogData();
-  if (!postsEnabled(site)) return new Response("Not found\n", { status: 404 });
+  if (!posts.length) return new Response("Not found\n", { status: 404 });
   return rss({
     title: site.feed?.title || site.siteName[site.defaultLocale],
     description: site.feed?.description || site.description[site.defaultLocale],

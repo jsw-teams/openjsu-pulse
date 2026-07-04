@@ -1,16 +1,16 @@
 import rss from "@astrojs/rss";
-import { absoluteUrl, groupByLocale, readSiteConfig, loadBlogData, postsEnabled } from "../../lib/content.mjs";
+import { absoluteUrl, groupByLocale, loadBlogData } from "../../lib/content.mjs";
 
 export async function getStaticPaths() {
-  const site = await readSiteConfig();
-  if (!postsEnabled(site)) return [];
+  const { site, posts } = await loadBlogData();
+  if (!posts.length) return [];
   return site.locales.map((locale) => ({ params: { locale } }));
 }
 
 export async function GET(context) {
   const { locale } = context.params;
   const { site, posts } = await loadBlogData();
-  if (!postsEnabled(site)) return new Response("Not found\n", { status: 404 });
+  if (!posts.length) return new Response("Not found\n", { status: 404 });
   const localePosts = groupByLocale(posts, locale);
   return rss({
     title: site.siteName[locale],

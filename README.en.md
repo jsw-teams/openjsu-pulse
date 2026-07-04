@@ -97,7 +97,6 @@ theme:
 Good `config.yml` responsibilities:
 
 - `siteName`, `description`, and `author`: titles, SEO summaries, JSON-LD, feeds, and default page copy.
-- `content.posts.enabled`: set it to `false` to skip `content/posts/` and stop generating post pages, archive, category, tag, public search index, post feeds, and Markdown mirrors. This is the switch for non-blog secondary development.
 - `defaultLocale` and `activeLocales`: localized routes, language links, and hreflang.
 - `nav.links` and `nav.utilityLinks`: main navigation, search/archive entries, and site-level links.
 - `footer`, `head`, `pwa`, and `icons`: footer content, head metadata, PWA output, and icon assets.
@@ -135,17 +134,13 @@ blog lists, feeds, sitemap, search indexes, and llms. Pages own the homepage,
 about page, archive page, category page, tag page, search page, and other normal
 pages.
 
-For a non-blog site, set this in `config.yml`:
-
-```yaml
-content:
-  posts:
-    enabled: false
-```
-
-When disabled, the builder ignores `content/posts/` even if the directory still
-exists, and it does not output post, archive, category, tag, search, feed, or
-`/md/<locale>/posts/` routes.
+Page routes are decided by `content/pages/*`. If `content/pages/archive`,
+`categories`, `tags`, or `search` is removed, the builder no longer invents
+those blog-style pages. `content/posts/*` only represents the post collection;
+when public posts exist, Pagekiln generates post detail pages, feeds, and
+Markdown mirrors. Search indexes are pulled by the
+`<!-- pagekiln:search-panel -->` slot, so no search index or post-search
+discovery is generated unless a page uses the search component.
 
 ### How To Write Your First Post
 
@@ -194,10 +189,10 @@ Default special pages use the same page system:
 
 ```text
 content/pages/home/index.<locale>.md        # /<locale>/
-content/pages/archive/index.<locale>.md     # /<locale>/archive/ when content.posts.enabled is true
-content/pages/categories/index.<locale>.md  # /<locale>/categories/ when content.posts.enabled is true
-content/pages/tags/index.<locale>.md        # /<locale>/tags/ when content.posts.enabled is true
-content/pages/search/index.<locale>.md      # /<locale>/search/ when content.posts.enabled is true
+content/pages/archive/index.<locale>.md     # /<locale>/archive/ when the file exists
+content/pages/categories/index.<locale>.md  # /<locale>/categories/ when the file exists
+content/pages/tags/index.<locale>.md        # /<locale>/tags/ when the file exists
+content/pages/search/index.<locale>.md      # /<locale>/search/ when the file exists
 ```
 
 Markdown under `content/pages` may contain HTML directly. You can write

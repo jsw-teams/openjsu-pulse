@@ -166,13 +166,17 @@ function clientConfig(site) {
   };
 }
 
-function postsEnabled(site) {
-  return site?.content?.posts?.enabled !== false;
+function hasPosts(site) {
+  return site?.hasPosts === true;
+}
+
+function searchIndexEnabled(site) {
+  return site?.hasSearchIndex === true;
 }
 
 function renderWebMcpBootstrap(site) {
   if (site.theme?.features?.webMcp === false) return "";
-  if (!postsEnabled(site)) {
+  if (!searchIndexEnabled(site)) {
     const config = {
       basePath,
       locales: siteLocales(site),
@@ -237,14 +241,8 @@ function renderNav(site, locale, current) {
     { key: "search", href: "/:locale/search/", icon: "⌕", label: t(locale, "search") }
   ];
   const navConfig = site.theme?.nav || {};
-  const disabledBlogKeys = postsEnabled(site) ? new Set() : new Set(["archive", "categories", "tags", "search", "feed"]);
-  const disabledBlogPath = postsEnabled(site) ? null : /^\/[^/]+\/(?:archive|categories|tags|search|feed\.xml|posts)(?:\/|$)/;
-  const enabledLinks = (links) => links.filter((link) => {
-    if (disabledBlogKeys.has(link.key)) return false;
-    return !(disabledBlogPath && disabledBlogPath.test(link.href));
-  });
-  const navLinks = enabledLinks(themedLinks(navConfig.links || fallbackNavLinks, locale, site));
-  const utilityLinks = enabledLinks(themedLinks(navConfig.utilityLinks || fallbackUtilityLinks, locale, site));
+  const navLinks = themedLinks(navConfig.links || fallbackNavLinks, locale, site);
+  const utilityLinks = themedLinks(navConfig.utilityLinks || fallbackUtilityLinks, locale, site);
 
   return `<header class="site-header">
     <a class="brand" href="${withBase(`/${locale}/`)}" data-locale-choice="${locale}">
@@ -278,7 +276,7 @@ function renderFooter(site, locale) {
   const links = configuredLinks.length
     ? configuredLinks
     : [
-      ...(postsEnabled(site) ? [{ href: `/${locale}/feed.xml`, label: t(locale, "feed") }] : []),
+      ...(hasPosts(site) ? [{ href: `/${locale}/feed.xml`, label: t(locale, "feed") }] : []),
       { href: `/${locale}/about/`, label: t(locale, "privacy") },
       { href: "/sitemap.xml", label: t(locale, "sitemap") }
     ];
@@ -288,7 +286,7 @@ function renderFooter(site, locale) {
       ${links.filter((link) => {
         if (link?.enabled === false) return false;
         const href = String(link.href || "").replaceAll(":locale", locale);
-        return postsEnabled(site) || !/^\/[^/]+\/(?:feed\.xml|archive|categories|tags|search|posts)(?:\/|$)/.test(href);
+        return hasPosts(site) || !/^\/[^/]+\/feed\.xml(?:\/|$)/.test(href);
       }).map((link) => `<a href="${withBase(String(link.href || "").replaceAll(":locale", locale))}">${escapeHtml(localConfigText(link.label, locale, site))}</a>`).join("")}
       ${site.theme?.consent?.enabled === false ? "" : `<button class="footer-link-button" type="button" data-consent-open>${escapeHtml(t(locale, "consentManage"))}</button>`}
     </nav>
@@ -372,7 +370,7 @@ export function renderLayout({
   <link rel="alternate icon" href="${withBase(icons.favicon)}" sizes="any">
   <link rel="apple-touch-icon" href="${withBase(icons.appleTouchIcon)}">
   <link rel="manifest" href="${withBase(icons.manifest)}">
-  ${postsEnabled(site) ? `<link rel="alternate" type="application/rss+xml" title="${escapeHtml(siteName)}" href="${withBase(`/${locale}/feed.xml`)}">` : ""}
+  ${hasPosts(site) ? `<link rel="alternate" type="application/rss+xml" title="${escapeHtml(siteName)}" href="${withBase(`/${locale}/feed.xml`)}">` : ""}
   <link rel="image_src" href="${escapeHtml(imageUrl)}">
   <meta itemprop="name" content="${escapeHtml(fullTitle)}">
   <meta itemprop="description" content="${escapeHtml(description)}">
@@ -924,7 +922,7 @@ export function renderAboutPage({ site, locale, page, translations }) {
 export function renderNotFoundPage({ site }) {
   const locale = siteDefaultLocale(site);
   const description = "页面不存在。頁面不存在。 This page was not found.";
-  const secondaryLinks = postsEnabled(site)
+  const secondaryLinks = hasPosts(site)
     ? {
       "zh-CN": '<a class="button-link button-link-secondary" href="/zh-CN/archive/">查看归档</a>',
       "zh-TW": '<a class="button-link button-link-secondary" href="/zh-TW/archive/">查看歸檔</a>',

@@ -115,13 +115,6 @@ function normalizeSiteConfig(config) {
   site.theme = typeof site.theme === "string" ? { name: site.theme } : site.theme;
   site.theme ??= {};
   site.theme.name = site.theme.name || "default";
-  site.content = mergePlainDefaults({ posts: { enabled: true } }, site.content || {});
-  if (site.content.posts === false) site.content.posts = { enabled: false };
-  else if (!site.content.posts || typeof site.content.posts !== "object" || Array.isArray(site.content.posts)) {
-    site.content.posts = { enabled: true };
-  } else {
-    site.content.posts.enabled = site.content.posts.enabled !== false;
-  }
   site.plugins = mergePlainDefaults(site.theme.plugins || {}, site.plugins || {});
   if (!site.plugins.comments && site.comments) site.plugins.comments = site.comments;
   normalizeCommentsPlugin(site);
@@ -473,8 +466,12 @@ export function termSlug(value) {
   return `term-${crypto.createHash("sha1").update(text).digest("hex").slice(0, 10)}`;
 }
 
-export function postsEnabled(site) {
-  return site?.content?.posts?.enabled !== false;
+export function pageUsesSlot(page, marker) {
+  return new RegExp(`<!--\\s*pagekiln:${marker}\\s*-->`, "i").test(page?.html || "");
+}
+
+export function pagesUseSlot(pages, marker) {
+  return Array.isArray(pages) && pages.some((page) => pageUsesSlot(page, marker));
 }
 
 function localeFromPostFilename(file) {
@@ -489,7 +486,6 @@ function pageUrl(slug, locale) {
 }
 
 export async function loadPosts(site = null) {
-  if (site && !postsEnabled(site)) return [];
   const locales = site?.locales ?? LOCALES;
   const files = await fg("content/posts/*/index.*.md", { cwd: rootDir, onlyFiles: true });
   const posts = [];
@@ -646,6 +642,8 @@ export async function loadBlogData() {
   const site = await readSiteConfig();
   const posts = await loadPosts(site);
   const pages = await loadPages(site);
+  site.hasPosts = posts.length > 0;
+  site.hasSearchIndex = pagesUseSlot(pages, "search-panel");
   return { site, posts, pages };
 }
 
@@ -657,7 +655,7 @@ export async function buildHtmlPages() {
   const routes = [];
   const add = (url, html) => routes.push({ url, html: rewriteRelativePaths(html, url) });
   const homePageSize = Math.max(1, Number(site.pagination?.homePageSize || 8));
-  const includePosts = postsEnabled(site);
+  const includePosts = posts.length > 0;
   const pagesByLocaleSlug = pageContentMap(pages);
   const specialPage = (locale, slug) => pagesByLocaleSlug.get(`${locale}:${slug}`) || null;
 
@@ -681,8 +679,10 @@ export async function buildHtmlPages() {
         pageUrl: homePageUrl
       }));
     }
-    if (includePosts) {
+    if (specialPage(locale, "archive")) {
       add(`/${locale}/archive/`, templates.renderArchivePage({ site, locale, pageContent: specialPage(locale, "archive"), groups: archiveGroups(posts, locale) }));
+    }
+    if (specialPage(locale, "categories")) {
       add(`/${locale}/categories/`, templates.renderTermIndexPage({
         site,
         locale,
@@ -693,6 +693,8 @@ export async function buildHtmlPages() {
         url: `/${locale}/categories/`,
         current: "categories"
       }));
+    }
+    if (specialPage(locale, "tags")) {
       add(`/${locale}/tags/`, templates.renderTermIndexPage({
         site,
         locale,
@@ -703,10 +705,12 @@ export async function buildHtmlPages() {
         url: `/${locale}/tags/`,
         current: "tags"
       }));
-      if (site.theme?.features?.search !== false) {
-        add(`/${locale}/search/`, templates.renderSearchPage({ site, locale, pageContent: specialPage(locale, "search") }));
-      }
+    }
+    if (specialPage(locale, "search")) {
+      add(`/${locale}/search/`, templates.renderSearchPage({ site, locale, pageContent: specialPage(locale, "search") }));
+    }
 
+    if (includePosts && specialPage(locale, "categories")) {
       for (const term of categoryMap.values()) {
         const title = `${t(locale, "postsInCategory")}: ${term.name}`;
         const description = locale === "zh-CN"
@@ -716,7 +720,8 @@ export async function buildHtmlPages() {
             : `Posts filed under ${term.name}.`;
         add(term.url, templates.renderTermPage({ site, locale, title, description, posts: term.posts, url: term.url, current: "categories", parentKey: "categories" }));
       }
-
+    }
+    if (includePosts && specialPage(locale, "tags")) {
       for (const term of tagMap.values()) {
         const title = `${t(locale, "postsWithTag")}: ${term.name}`;
         const description = locale === "zh-CN"
@@ -766,7 +771,7 @@ export async function buildHtmlPagesForUrls(targetUrls = []) {
     if (targets.has(url)) routes.push({ url, html: rewriteRelativePaths(html, url) });
   };
   const homePageSize = Math.max(1, Number(site.pagination?.homePageSize || 8));
-  const includePosts = postsEnabled(site);
+  const includePosts = posts.length > 0;
   const pagesByLocaleSlug = pageContentMap(pages);
   const specialPage = (locale, slug) => pagesByLocaleSlug.get(`${locale}:${slug}`) || null;
 
@@ -792,10 +797,10 @@ export async function buildHtmlPagesForUrls(targetUrls = []) {
       }
     }
 
-    if (includePosts && targets.has(`/${locale}/archive/`)) {
+    if (specialPage(locale, "archive") && targets.has(`/${locale}/archive/`)) {
       add(`/${locale}/archive/`, templates.renderArchivePage({ site, locale, pageContent: specialPage(locale, "archive"), groups: archiveGroups(posts, locale) }));
     }
-    if (includePosts && targets.has(`/${locale}/categories/`)) {
+    if (specialPage(locale, "categories") && targets.has(`/${locale}/categories/`)) {
       add(`/${locale}/categories/`, templates.renderTermIndexPage({
         site,
         locale,
@@ -807,7 +812,7 @@ export async function buildHtmlPagesForUrls(targetUrls = []) {
         current: "categories"
       }));
     }
-    if (includePosts && targets.has(`/${locale}/tags/`)) {
+    if (specialPage(locale, "tags") && targets.has(`/${locale}/tags/`)) {
       add(`/${locale}/tags/`, templates.renderTermIndexPage({
         site,
         locale,
@@ -819,7 +824,7 @@ export async function buildHtmlPagesForUrls(targetUrls = []) {
         current: "tags"
       }));
     }
-    if (includePosts && site.theme?.features?.search !== false && targets.has(`/${locale}/search/`)) {
+    if (specialPage(locale, "search") && targets.has(`/${locale}/search/`)) {
       add(`/${locale}/search/`, templates.renderSearchPage({ site, locale, pageContent: specialPage(locale, "search") }));
     }
   }
@@ -923,7 +928,7 @@ function discoveryResources(site) {
     { rel: "llms-full", url: "/llms-full.txt", type: "text/plain", title: "Full LLM context" },
     { rel: "mcp-server-card", url: "/.well-known/mcp/server-card.json", type: "application/json", title: "MCP server card" }
   ];
-  if (postsEnabled(site)) {
+  if (site.hasPosts) {
     resources.push({ rel: "alternate", url: "/feed.xml", type: "application/rss+xml", title: "RSS feed" });
   }
   return [
@@ -959,7 +964,7 @@ export function buildOpenApiJson(site) {
       }
     }
   };
-  if (postsEnabled(site) && site.theme?.features?.search !== false) {
+  if (site.hasSearchIndex && site.theme?.features?.search !== false) {
     paths["/assets/search-index.{locale}.json"] = {
       get: {
         operationId: "getSearchIndex",
@@ -1008,7 +1013,7 @@ export function buildOpenApiJson(site) {
     info: {
       title: site.discovery?.openapiTitle || `${siteTitle(site)} Public Resources`,
       version: String(site.discovery?.version || "1.0.0"),
-      description: site.discovery?.openapiDescription || (postsEnabled(site)
+      description: site.discovery?.openapiDescription || (site.hasSearchIndex
         ? `Public, read-only resources for discovering and searching ${siteTitle(site)} content.`
         : `Public, read-only resources for discovering ${siteTitle(site)} content.`)
     },
@@ -1069,7 +1074,7 @@ export function buildApiCatalog(site) {
 export function buildMcpServerCard(site) {
   const origin = siteOrigin(site);
   const tools = [
-    ...(postsEnabled(site) ? [{
+    ...(site.hasSearchIndex ? [{
       name: "search_public_posts",
       description: "Search public posts by keyword."
     }] : []),
@@ -1107,7 +1112,7 @@ export function buildHeaders(site) {
     .map((resource) => `  Link: <${resource.url}>; rel="${resource.rel}"; type="${resource.type}"`)
     .join("\n");
   const localeHeaders = site.locales.map((locale) => `/${locale}/\n${linkHeaders}`).join("\n\n");
-  const feedHeaders = postsEnabled(site) ? `
+  const feedHeaders = site.hasPosts ? `
 /feed.xml
   Content-Type: text/xml; charset=utf-8
   X-Content-Type-Options: nosniff
@@ -1174,7 +1179,7 @@ ${languageLines}
 
 ${discoveryLines}
 
-${postsEnabled(site) ? `## Latest Markdown Mirrors
+${posts.length ? `## Latest Markdown Mirrors
 
 ${articleLines}` : ""}
 `;

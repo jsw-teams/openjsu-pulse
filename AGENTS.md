@@ -12,10 +12,9 @@ builder only when the theme API cannot express the needed behavior.
 
 - `config.yml` is the site-level entry point. It selects a theme, declares site
   metadata, locales, navigation, content behavior, and optional plugins.
-- `content.posts.enabled: false` in `config.yml` disables the blog surface for
-  non-blog sites: the builder must not load `content/posts/` or generate post
-  pages, archives, categories, tags, public search indexes, post feeds, Markdown
-  mirrors, or post-search discovery tools.
+- Page routes are content-owned. The builder should not invent blog pages such
+  as archive, categories, tags, or search when `content/pages/*` does not define
+  them.
 - `themes/<name>/` is the theme boundary. A new project should usually start by
   copying `themes/default` and changing the copy.
 - `themes/default/theme.yml` is the active default theme configuration.
@@ -173,9 +172,10 @@ Special default pages are also content-owned:
 - `content/pages/tags/index.<locale>.md` -> `/<locale>/tags/`
 - `content/pages/search/index.<locale>.md` -> `/<locale>/search/`
 
-The archive, categories, tags, and search special pages are blog surfaces. When
-`content.posts.enabled` is `false`, do not generate those routes even if their
-Markdown files remain in `content/pages`.
+The archive, categories, tags, and search pages are examples, not mandatory
+routes. Generate them only when their Markdown files exist. Search indexes and
+post-search discovery are generated only when page content uses the
+`<!-- pagekiln:search-panel -->` slot.
 
 Use Pagekiln slots where the builder should inject dynamic output:
 
