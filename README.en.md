@@ -6,15 +6,16 @@
   <img src="content/assets/icon-192.png" alt="Pagekiln project icon" width="160">
 </p>
 
-Pagekiln is a Hexo-inspired static site and blog builder. Site settings live in
-`config.yml`, posts and pages live in `content/`, themes live in
-`themes/<name>/`, and generated output goes to `dist/`.
+Pagekiln is a Hexo-inspired static site and blog builder. The current stable
+npm version is `1.1.0`. Site settings live in `config.yml`, posts and pages
+live in `content/`, themes live in `themes/<name>/`, and generated output goes
+to `dist/`.
 
 The intent is simple: if you only want to publish content, edit `content/` like
 a normal Markdown site; if you need customization, move into config, themes, and
-builder extensions. The default starter stays neutral: it does not force blog
-archives, categories, tags, or search pages. Those surfaces are created by
-`content/pages` files and dynamic slots. The default theme still provides
+builder extensions. Since `1.1.0`, the default starter stays neutral: it does
+not force blog archives, categories, tags, or search pages. Those surfaces are
+created by `content/pages` files and dynamic slots. The default theme still provides
 reusable locales, posts, feeds, sitemap, robots, llms, agent discovery, consent
 preferences, and optional third-party script loading.
 
@@ -461,11 +462,15 @@ Build output directory: dist
 Node.js version: 22.12 or newer
 ```
 
-When `src/` builder behavior, default theme contracts, slot rules, or the npm
-package template changes, bump `package.json` and state the release scope. This
-`1.1.0` update covers content-driven page generation, optional `content/pages/`
-and `content/posts/`, post-driven feeds and Markdown mirrors, unified slot
-context, preview startup 404 fixes, and consent panel close-button placement.
+Stable releases should update three places together: `package.json`, the npm
+package, and GitHub Release notes. `1.1.0` has been published to npm. It covers
+content-driven page generation; fully optional `content/pages/` and
+`content/posts/` directories that still build successfully; post detail pages,
+feeds, and Markdown mirrors only when public posts exist; search indexes pulled
+by the `search-panel` slot; unified slot context checks; the `pagekiln s`
+startup 404 fix; and standard right-side placement for the consent panel close
+button. Before release, it passed `pnpm run build`, `pnpm run check`,
+`git diff --check`, and a preview root HTTP 200 check.
 
 Pagekiln is licensed under `AGPL-3.0-or-later`. Modified, redistributed,
 publicly deployed, or downstream versions based on Pagekiln should keep their

@@ -6,7 +6,8 @@ themes on top of Pagekiln with minimal project-specific knowledge.
 Pagekiln is a small static site builder inspired by Hexo's separation of site
 content, theme configuration, layouts, assets, and plugins. Treat it as a
 frontend framework for content sites: customize themes first, change the core
-builder only when the theme API cannot express the needed behavior.
+builder only when the theme API cannot express the needed behavior. The current
+stable package release is `pagekiln@1.1.0`.
 
 ## Fast Orientation
 
@@ -355,11 +356,14 @@ When changing `src/`, update README and AGENTS if the public contract changes.
 Extend `src/scripts/check-build.mjs` for new framework contracts so downstream
 themes do not silently regress.
 If builder behavior, default theme contracts, slot rules, or the npm package
-template changes, also evaluate whether `package.json` needs a version bump and
-document the release scope. The `1.1.0` release covers content-driven page
-generation, optional `content/pages/` and `content/posts/`, post-driven feeds
-and Markdown mirrors, unified slot context, preview startup 404 fixes, and
-consent panel close-button placement.
+template changes, update `package.json`, publish npm, and create GitHub Release
+notes with the same scope. The `1.1.0` stable release covers content-driven page
+generation; optional `content/pages/` and `content/posts/`; post detail pages,
+feeds, and Markdown mirrors only when public posts exist; `search-panel`-pulled
+search indexes; unified slot context checks; the preview startup 404 fix; and
+consent panel close-button placement. Keep release notes tied to verified
+checks, such as `pnpm run build`, `pnpm run check`, `git diff --check`, npm
+registry verification, and preview HTTP checks.
 
 ## Backend Boundary
 

@@ -6,9 +6,9 @@
   <img src="content/assets/icon-192.png" alt="Pagekiln project icon" width="160">
 </p>
 
-Pagekiln 是一个偏 Hexo 思路的静态网站/博客构建器。站点信息放在 `config.yml`，文章和页面放在 `content/`，主题放在 `themes/<name>/`，构建输出到 `dist/`。
+Pagekiln 是一个偏 Hexo 思路的静态网站/博客构建器。当前正式 npm 版本是 `1.1.0`。站点信息放在 `config.yml`，文章和页面放在 `content/`，主题放在 `themes/<name>/`，构建输出到 `dist/`。
 
-它的目标很直接：如果你只是写内容，就像普通 Markdown 站点一样改 `content/`；如果你要客制化站点，再进入主题、配置和构建器扩展。默认模板保持中性，不强制生成博客归档、分类、标签或搜索页；这些能力由 `content/pages` 文件和动态 slot 决定。默认主题仍提供多语言、文章、feed、sitemap、robots、llms、Agent discovery、Consent 偏好和可选第三方脚本加载等可复用能力。
+它的目标很直接：如果你只是写内容，就像普通 Markdown 站点一样改 `content/`；如果你要客制化站点，再进入主题、配置和构建器扩展。`1.1.0` 起默认模板保持中性，不强制生成博客归档、分类、标签或搜索页；这些能力由 `content/pages` 文件和动态 slot 决定。默认主题仍提供多语言、文章、feed、sitemap、robots、llms、Agent discovery、Consent 偏好和可选第三方脚本加载等可复用能力。
 
 ## 快速上手
 
@@ -372,7 +372,7 @@ Build output directory: dist
 Node.js version: 22.12 或更新
 ```
 
-当 `src/` 的构建器行为、默认主题契约、slot 规则或 npm 包模板发生变化时，应同步提升 `package.json` 版本并说明变更范围。本次 `1.1.0` 覆盖内容驱动页面生成、可缺失 `content/pages/` / `content/posts/`、按文章集合生成 feed/Markdown mirror、slot 上下文统一、预览服务启动期 404 修复，以及 consent 面板关闭按钮位置优化。
+正式版本发布应同步三处：`package.json` 版本、npm 包、GitHub Release 更新说明。`1.1.0` 已发布到 npm，更新范围包括：内容驱动页面生成；`content/pages/` 和 `content/posts/` 可整体缺失且构建成功；公开文章存在时才生成文章详情、feed 和 Markdown mirror；搜索索引由 `search-panel` slot 牵引；slot 上下文统一检查；`pagekiln s` 启动期 404 修复；consent 面板关闭按钮移到常规右侧位置。发布前已通过 `pnpm run build`、`pnpm run check`、`git diff --check` 和预览根路径 200 检查。
 
 Pagekiln 使用 `AGPL-3.0-or-later`。基于 Pagekiln 修改、分发、公开部署或二次开发的版本，应按 AGPL 要求继续开源对应源码。
 
