@@ -8,7 +8,7 @@
 
 Pagekiln 是一个偏 Hexo 思路的静态网站/博客构建器。站点信息放在 `config.yml`，文章和页面放在 `content/`，主题放在 `themes/<name>/`，构建输出到 `dist/`。
 
-它的目标很直接：如果你只是写博客，就像普通 Markdown 博客一样改内容；如果你要客制化站点，再进入主题、配置和构建器扩展。默认主题已经包含多语言、归档、分类、标签、搜索、feed、sitemap、robots、llms、Agent discovery、Consent 偏好和可选第三方脚本加载。
+它的目标很直接：如果你只是写内容，就像普通 Markdown 站点一样改 `content/`；如果你要客制化站点，再进入主题、配置和构建器扩展。默认模板保持中性，不强制生成博客归档、分类、标签或搜索页；这些能力由 `content/pages` 文件和动态 slot 决定。默认主题仍提供多语言、文章、feed、sitemap、robots、llms、Agent discovery、Consent 偏好和可选第三方脚本加载等可复用能力。
 
 ## 快速上手
 
@@ -45,7 +45,7 @@ pagekiln c
 
 - `pagekiln s` / `pagekiln server` 类似 `hexo server` / `hexo s`，用于本地实时预览。
 - `pagekiln g` / `pagekiln generate` 类似 `hexo generate` / `hexo g`，用于生成 `dist/`。
-- `pagekiln c` / `pagekiln check` 检查 `dist/`、主题资源、sitemap、feed、Agent discovery 和 WebMCP bootstrap。
+- `pagekiln c` / `pagekiln check` 检查 `dist/`、主题资源、sitemap、按内容生成的 feed/搜索索引、Agent discovery 和 WebMCP bootstrap。
 
 本地预览默认地址：
 
@@ -76,12 +76,12 @@ theme:
 
 适合放在 `config.yml` 的内容：
 
-- `siteName`、`description`、`author`：生成标题、SEO 摘要、JSON-LD、feed 和默认页面文案。
+- `siteName`、`description`、`author`：生成标题、SEO 摘要、JSON-LD、feed 标题和默认页面文案。
 - `defaultLocale`、`activeLocales`：决定多语言路由、语言切换和 hreflang。
 - `nav.links`、`nav.utilityLinks`：生成主导航、搜索入口、归档入口和站点级链接。
 - `footer`、`head`、`pwa`、`icons`：生成页脚、头部元信息、PWA 和图标资源。
 - `plugins`、`features`、`featureScripts`、`featureCategories`：控制搜索、评论、统计、广告、WebMCP 和 consent 加载策略。
-- `robots`、`llms`、`feed`、`discovery`：生成 `robots.txt`、`llms.txt`、`llms-full.txt`、`feed.xml`、`openapi.json`、`.well-known/api-catalog`、`.well-known/mcp/server-card.json` 和 `_headers`。
+- `robots`、`llms`、`feed`、`discovery`：生成 `robots.txt`、`llms.txt`、`llms-full.txt`、有公开文章时的 `feed.xml`、`openapi.json`、`.well-known/api-catalog`、`.well-known/mcp/server-card.json` 和 `_headers`。
 
 如果某个站务文件能从 `config.yml` 或根目录 `AGENTS.md` 推导出来，就不要维护另一份手写公开副本。需要改 robots、llms、OpenAPI、API catalog、MCP server card、`AGENTS.md` 或 `_headers` 时，优先改配置、根文档或补动态生成逻辑。
 
@@ -102,9 +102,9 @@ pagekiln g
 
 ## 开始写作
 
-写作阶段主要改 `content/posts/` 和 `content/pages/`。文章进入博客列表、feed、sitemap、搜索索引和 llms；页面用于首页、关于页、归档页、分类页、标签页、搜索页和其他普通页面。
+写作阶段主要改 `content/posts/` 和 `content/pages/`。文章进入文章详情页、feed、sitemap、llms 和 Markdown mirror；页面用于首页、关于页、归档页、分类页、标签页、搜索页和其他普通页面。
 
-页面路由由 `content/pages/*` 决定。删除 `content/pages/archive`、`categories`、`tags` 或 `search` 后，构建器不会再自动补这些博客型页面。`content/posts/*` 只代表文章集合；存在公开文章时会生成文章详情、feed 和 Markdown mirror。搜索索引由页面里的 `<!-- pagekiln:search-panel -->` slot 牵引，未使用搜索组件时不会生成搜索索引或 post search discovery。
+页面路由由 `content/pages/*` 决定。删除 `content/pages/archive`、`categories`、`tags` 或 `search` 后，构建器不会再自动补这些博客型页面。`content/posts/*` 只代表文章集合；存在公开文章时会生成文章详情、feed 和 Markdown mirror。搜索索引由页面里的 `<!-- pagekiln:search-panel -->` slot 牵引，未使用搜索组件时不会生成搜索索引、OpenAPI 搜索路径或 post search discovery。
 
 ### 如何开始写第一篇文章
 
@@ -213,14 +213,14 @@ dist/                   # 构建产物
 
 构建会生成：
 
-- 首页与分页
-- 文章页
-- 归档页
-- 分类页与分类详情页
-- 标签页与标签详情页
+- 首页；如果首页内容使用 `post-list` / `pagination` slot，则渲染文章列表和分页
+- 有公开文章时的文章页
+- `content/pages/archive` 存在时的归档页
+- `content/pages/categories` 存在时的分类页；同时有公开文章时生成分类详情页
+- `content/pages/tags` 存在时的标签页；同时有公开文章时生成标签详情页
 - 普通 pages 页
-- 搜索页与搜索索引
-- `feed.xml`
+- `content/pages/search` 存在时的搜索页；页面使用 `search-panel` slot 时生成搜索索引
+- 有公开文章时的 `feed.xml`
 - `sitemap.xml`
 - `robots.txt`
 - `llms.txt`、`llms-full.txt`
@@ -236,7 +236,7 @@ Pagekiln 以静态优先，但可以按前后端一体项目组织。需要 Clou
 
 后端边界建议：
 
-- `content/` 和 `themes/` 仍按静态前端源文件处理，`pagekiln g` 把 HTML、CSS、JS、图片、搜索索引、feed 和 discovery 文件输出到 `dist/`，以便获得高缓存命中率。
+- `content/` 和 `themes/` 仍按静态前端源文件处理，`pagekiln g` 把 HTML、CSS、JS、图片、按 slot 牵引生成的搜索索引、按文章集合生成的 feed 和 discovery 文件输出到 `dist/`，以便获得高缓存命中率。
 - `/backend` 是唯一应该接触 secret、数据库连接、私有 API token、签名密钥、管理权限和写入型业务逻辑的目录。
 - 前端文件像普通 Web 前端一样通过公开 endpoint 调用后端；endpoint 路径由项目开发者自行设计，不要求使用固定命名。
 - `config.yml` 只适合声明站点级公开调用契约，例如 base URL、endpoint key、method、consent 分类、是否需要 CAPTCHA、缓存意图、是否进入 OpenAPI/API catalog/MCP discovery。不要把真实密钥写入 `config.yml`。
@@ -303,7 +303,7 @@ slot 组件应自己输出完整、可访问、可运行的内部状态，不应
 开发 `src/` 时按这条数据流理解：
 
 1. `src/bin/pagekiln.mjs` 接收 CLI 命令，并把 `g/s/c` 分发到 `src/prebuild.mjs`、Astro build、`src/scripts/serve-public.mjs` 或 `src/scripts/check-build.mjs`。
-2. `src/lib/content.mjs` 读取 `config.yml`、主题配置和 `content/`，产出文章、页面、多语言、分类、标签、搜索、discovery 和站务数据。
+2. `src/lib/content.mjs` 读取 `config.yml`、主题配置和 `content/`，产出文章、页面、多语言、分类、标签、slot 牵引的搜索、discovery 和站务数据。
 3. `src/assets.mjs` 在 `pagekiln g` 阶段生成静态资产，包括从 `content/assets/icon-source.png` 与 `content/assets/og-default-source.png` 生成站点图标和 OG 输出。
 4. `src/templates.mjs` 与 `src/lib/theme-html.mjs` 把数据渲染成 HTML；主题模板能表达的页面结构优先放在 `themes/<name>/templates/`。
 5. `src/pages/` 只做 Astro 输出端点，把构建器数据发布成 HTML、XML、JSON、Markdown、OpenAPI、llms 和 well-known discovery 文件。
@@ -315,16 +315,16 @@ slot 组件应自己输出完整、可访问、可运行的内部状态，不应
 - `src/og-images.mjs` 负责把文章封面裁切成 1200x630 的分享图，支持本地与远程封面，使用 manifest 缓存，避免每次构建重复处理同一张图。
 - `src/i18n.mjs` 保存内置 locale、语言标签、日期格式化和默认 UI 字符串，并允许主题 `i18n.yml` 覆盖或补充文案。
 - `src/templates.mjs` 是内置 fallback 渲染层，负责 HTML shell、SEO meta、Open Graph、JSON-LD、导航、页脚、WebMCP bootstrap、文章卡片、分页、搜索面板、分类/标签列表和默认页面渲染。
-- `src/lib/content.mjs` 是构建器的数据层核心。它读取并合并 `config.yml` 与主题配置，规范化插件和 consent 设置，渲染 Markdown，复制内容图片，加载文章和 pages，生成多语言路由、分类、标签、搜索索引、feed、sitemap、headers、robots、llms、OpenAPI、API catalog 和 MCP server card 所需数据。
+- `src/lib/content.mjs` 是构建器的数据层核心。它读取并合并 `config.yml` 与主题配置，规范化插件和 consent 设置，渲染 Markdown，复制内容图片，加载文章和 pages，生成多语言路由、分类、标签、slot 牵引的搜索索引、feed、sitemap、headers、robots、llms、OpenAPI、API catalog 和 MCP server card 所需数据。
 - `src/lib/slots.mjs` 集中声明 `<!-- pagekiln:xxx -->` slot registry、上下文依赖校验、搜索面板和归档列表等构建器组件。
 - `src/lib/theme-html.mjs` 是 HTML 主题适配层。它读取 `themes/<name>/templates/*.html`，执行 `{{ }}` / `{{{ }}}` 简单模板替换，并通过 `src/lib/slots.mjs` 替换文章列表、分页、归档、terms、搜索面板和语言切换等 slot。
 - `src/scripts/check-build.mjs` 和 `src/scripts/serve-public.mjs` 是 `pagekiln c`、`pagekiln s` 调用的内部命令；`src/scripts/generate-neutral-assets.mjs` 是框架开发时可用的站务资产裁切辅助脚本。
 - `src/pages/[...route].astro` 是 Astro catch-all 页面出口，接收 `buildHtmlPages()` 生成的静态 HTML 路由。
 - `src/pages/404.astro` 输出 404 页面。
-- `src/pages/feed.xml.js` 与 `src/pages/[locale]/feed.xml.js` 分别输出全站 feed 和语言级 feed。
+- `src/pages/feed.xml.js` 与 `src/pages/[locale]/feed.xml.js` 在有公开文章时分别输出全站 feed 和语言级 feed。
 - `src/pages/robots.txt.js`、`src/pages/llms.txt.js`、`src/pages/llms-full.txt.js`、`src/pages/openapi.json.js`、`src/pages/.well-known/api-catalog.js`、`src/pages/.well-known/mcp/server-card.json.js` 输出站务与 agent discovery 文件。
-- `src/pages/assets/[file].json.js` 输出搜索索引等 JSON 资产。
-- `src/pages/md/[locale]/posts/[slug].md.js` 输出公开文章的 Markdown API，方便 agent 或外部工具读取原文。
+- `src/pages/assets/[file].json.js` 在页面使用 `search-panel` slot 时输出搜索索引等 JSON 资产。
+- `src/pages/md/[locale]/posts/[slug].md.js` 在有公开文章时输出 Markdown mirror，方便 agent 或外部工具读取原文。
 
 修改建议：
 

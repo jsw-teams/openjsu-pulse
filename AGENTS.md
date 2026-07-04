@@ -15,6 +15,10 @@ builder only when the theme API cannot express the needed behavior.
 - Page routes are content-owned. The builder should not invent blog pages such
   as archive, categories, tags, or search when `content/pages/*` does not define
   them.
+- Public posts generate post detail pages, feeds, and Markdown mirrors. Search
+  indexes, OpenAPI search paths, MCP post search, and WebMCP post search are
+  generated only when page content uses the `<!-- pagekiln:search-panel -->`
+  slot.
 - `themes/<name>/` is the theme boundary. A new project should usually start by
   copying `themes/default` and changing the copy.
 - `themes/default/theme.yml` is the active default theme configuration.
@@ -173,9 +177,10 @@ Special default pages are also content-owned:
 - `content/pages/search/index.<locale>.md` -> `/<locale>/search/`
 
 The archive, categories, tags, and search pages are examples, not mandatory
-routes. Generate them only when their Markdown files exist. Search indexes and
-post-search discovery are generated only when page content uses the
-`<!-- pagekiln:search-panel -->` slot.
+routes. Generate them only when their Markdown files exist. Term detail pages
+are generated only when the corresponding term index page exists and public
+posts provide category or tag data. Search indexes and post-search discovery are
+generated only when page content uses the `<!-- pagekiln:search-panel -->` slot.
 
 Use Pagekiln slots where the builder should inject dynamic output:
 
@@ -302,7 +307,8 @@ Use this flow:
 
 1. `src/bin/pagekiln.mjs` dispatches CLI commands.
 2. `src/lib/content.mjs` reads and normalizes config, theme config, Markdown
-   content, pages, terms, search data, discovery data, and site operations data.
+   content, pages, terms, slot-pulled search data, discovery data, and site
+   operations data.
 3. `src/assets.mjs` prepares static assets during `pagekiln g`, including icons
    and OG output generated from `content/assets/*-source.png`.
 4. `src/templates.mjs` and `src/lib/theme-html.mjs` render built-in fallback
@@ -324,8 +330,9 @@ runtime logic in `content/`, `themes/`, or builder `src/`.
 
 When adding backend support:
 
-- Keep the frontend static by default so HTML, CSS, JS, images, search indexes,
-  feeds, and discovery files can be cached effectively.
+- Keep the frontend static by default so HTML, CSS, JS, images, slot-pulled
+  search indexes, post-driven feeds, and discovery files can be cached
+  effectively.
 - Treat `/backend` as the only directory that may access secrets, databases,
   private API tokens, signing keys, privileged permissions, and write-side
   business logic.

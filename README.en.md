@@ -10,11 +10,13 @@ Pagekiln is a Hexo-inspired static site and blog builder. Site settings live in
 `config.yml`, posts and pages live in `content/`, themes live in
 `themes/<name>/`, and generated output goes to `dist/`.
 
-The intent is simple: if you only want to blog, edit content like a normal
-Markdown site; if you need customization, move into config, themes, and builder
-extensions. The default theme already includes locales, archives, categories,
-tags, search, feeds, sitemap, robots, llms, agent discovery, consent preferences,
-and optional third-party script loading.
+The intent is simple: if you only want to publish content, edit `content/` like
+a normal Markdown site; if you need customization, move into config, themes, and
+builder extensions. The default starter stays neutral: it does not force blog
+archives, categories, tags, or search pages. Those surfaces are created by
+`content/pages` files and dynamic slots. The default theme still provides
+reusable locales, posts, feeds, sitemap, robots, llms, agent discovery, consent
+preferences, and optional third-party script loading.
 
 ## Quick Start
 
@@ -58,7 +60,7 @@ pagekiln c
 
 - `pagekiln s` / `pagekiln server` maps to `hexo server` / `hexo s` and starts local live preview.
 - `pagekiln g` / `pagekiln generate` maps to `hexo generate` / `hexo g` and writes `dist/`.
-- `pagekiln c` / `pagekiln check` verifies `dist/`, theme assets, sitemap, feed, agent discovery, and WebMCP bootstrap.
+- `pagekiln c` / `pagekiln check` verifies `dist/`, theme assets, sitemap, content-driven feeds/search indexes, agent discovery, and WebMCP bootstrap.
 
 Local preview:
 
@@ -96,12 +98,12 @@ theme:
 
 Good `config.yml` responsibilities:
 
-- `siteName`, `description`, and `author`: titles, SEO summaries, JSON-LD, feeds, and default page copy.
+- `siteName`, `description`, and `author`: titles, SEO summaries, JSON-LD, feed titles, and default page copy.
 - `defaultLocale` and `activeLocales`: localized routes, language links, and hreflang.
 - `nav.links` and `nav.utilityLinks`: main navigation, search/archive entries, and site-level links.
 - `footer`, `head`, `pwa`, and `icons`: footer content, head metadata, PWA output, and icon assets.
 - `plugins`, `features`, `featureScripts`, and `featureCategories`: search, comments, analytics, ads, WebMCP, and consent-aware loading.
-- `robots`, `llms`, `feed`, and `discovery`: `robots.txt`, `llms.txt`, `llms-full.txt`, `feed.xml`, `openapi.json`, `.well-known/api-catalog`, `.well-known/mcp/server-card.json`, and `_headers`.
+- `robots`, `llms`, `feed`, and `discovery`: `robots.txt`, `llms.txt`, `llms-full.txt`, `feed.xml` when public posts exist, `openapi.json`, `.well-known/api-catalog`, `.well-known/mcp/server-card.json`, and `_headers`.
 
 If a site-operations file can be derived from `config.yml` or root `AGENTS.md`,
 do not maintain a second handwritten public copy. For robots, llms, OpenAPI, API
@@ -130,17 +132,17 @@ match the project customization. Derived files may still live in
 ## Start Writing
 
 Writing primarily happens in `content/posts/` and `content/pages/`. Posts enter
-blog lists, feeds, sitemap, search indexes, and llms. Pages own the homepage,
-about page, archive page, category page, tag page, search page, and other normal
-pages.
+post detail pages, feeds, sitemap, llms, and Markdown mirrors. Pages own the
+homepage, about page, archive page, category page, tag page, search page, and
+other normal pages.
 
 Page routes are decided by `content/pages/*`. If `content/pages/archive`,
 `categories`, `tags`, or `search` is removed, the builder no longer invents
 those blog-style pages. `content/posts/*` only represents the post collection;
 when public posts exist, Pagekiln generates post detail pages, feeds, and
 Markdown mirrors. Search indexes are pulled by the
-`<!-- pagekiln:search-panel -->` slot, so no search index or post-search
-discovery is generated unless a page uses the search component.
+`<!-- pagekiln:search-panel -->` slot, so no search index, OpenAPI search path,
+or post-search discovery is generated unless a page uses the search component.
 
 ### How To Write Your First Post
 
@@ -262,14 +264,14 @@ dist/                   # Generated output
 
 The build generates:
 
-- Home and paginated indexes
-- Posts
-- Archive
-- Categories and category detail pages
-- Tags and tag detail pages
+- Homepage; if homepage content uses `post-list` / `pagination` slots, it renders post lists and pagination
+- Post pages when public posts exist
+- Archive page when `content/pages/archive` exists
+- Categories page when `content/pages/categories` exists; category detail pages when public posts also exist
+- Tags page when `content/pages/tags` exists; tag detail pages when public posts also exist
 - Normal pages
-- Search page and search indexes
-- `feed.xml`
+- Search page when `content/pages/search` exists; search indexes when a page uses the `search-panel` slot
+- `feed.xml` when public posts exist
 - `sitemap.xml`
 - `robots.txt`
 - `llms.txt` and `llms-full.txt`
@@ -291,7 +293,7 @@ builder `src/`.
 
 Backend boundary guidance:
 
-- Keep `content/` and `themes/` as static frontend sources. `pagekiln g` writes HTML, CSS, JS, images, search indexes, feeds, and discovery files to `dist/` so they can keep high CDN cache hit rates.
+- Keep `content/` and `themes/` as static frontend sources. `pagekiln g` writes HTML, CSS, JS, images, slot-pulled search indexes, post-driven feeds, and discovery files to `dist/` so they can keep high CDN cache hit rates.
 - `/backend` is the only place that should touch secrets, database connections, private API tokens, signing keys, privileged permissions, and write-side business logic.
 - Frontend files should call backend services through public endpoints like a normal web frontend. Endpoint paths are project decisions; Pagekiln should not require fixed URL naming.
 - `config.yml` should describe only the site-level public calling contract, such as base URL, endpoint keys, methods, consent category, CAPTCHA requirement, cache intent, and whether an endpoint appears in OpenAPI/API catalog/MCP discovery. Never put real secrets in `config.yml`.
@@ -372,7 +374,7 @@ development, maintaining a fork, or adding reusable build-time capabilities.
 Use this data flow when developing `src/`:
 
 1. `src/bin/pagekiln.mjs` receives CLI commands and dispatches `g/s/c` to `src/prebuild.mjs`, Astro build, `src/scripts/serve-public.mjs`, or `src/scripts/check-build.mjs`.
-2. `src/lib/content.mjs` reads `config.yml`, theme config, and `content/`, then prepares posts, pages, locales, terms, search, discovery, and site-operations data.
+2. `src/lib/content.mjs` reads `config.yml`, theme config, and `content/`, then prepares posts, pages, locales, terms, slot-pulled search, discovery, and site-operations data.
 3. `src/assets.mjs` runs during `pagekiln g` and prepares static assets, including site icons and OG output generated from `content/assets/icon-source.png` and `content/assets/og-default-source.png`.
 4. `src/templates.mjs` and `src/lib/theme-html.mjs` render data into HTML. Page structure that a theme can express should stay in `themes/<name>/templates/`.
 5. `src/pages/` contains Astro endpoints that publish builder data as HTML, XML, JSON, Markdown, OpenAPI, llms, and well-known discovery files.
@@ -384,16 +386,16 @@ Use this data flow when developing `src/`:
 - `src/og-images.mjs` crops post covers into 1200x630 share images, supports local and remote covers, and uses a manifest cache so unchanged images are not regenerated every build.
 - `src/i18n.mjs` stores built-in locales, language labels, date formatting, and default UI strings. Theme `i18n.yml` can override or extend these strings.
 - `src/templates.mjs` is the built-in fallback renderer for the HTML shell, SEO meta, Open Graph, JSON-LD, navigation, footer, WebMCP bootstrap, post cards, pagination, search panel, term lists, and default page rendering.
-- `src/lib/content.mjs` is the builder data core. It reads and merges `config.yml` with theme config, normalizes plugin and consent settings, renders Markdown, copies content images, loads posts and pages, and prepares data for localized routes, categories, tags, search indexes, feeds, sitemap, headers, robots, llms, OpenAPI, API catalog, and MCP server card.
+- `src/lib/content.mjs` is the builder data core. It reads and merges `config.yml` with theme config, normalizes plugin and consent settings, renders Markdown, copies content images, loads posts and pages, and prepares data for localized routes, categories, tags, slot-pulled search indexes, feeds, sitemap, headers, robots, llms, OpenAPI, API catalog, and MCP server card.
 - `src/lib/slots.mjs` centralizes the `<!-- pagekiln:xxx -->` slot registry, context checks, search panel, archive list, and other builder-owned slot components.
 - `src/lib/theme-html.mjs` is the HTML theme adapter. It reads `themes/<name>/templates/*.html`, applies simple `{{ }}` / `{{{ }}}` replacements, and uses `src/lib/slots.mjs` to replace builder-owned slots such as post lists, pagination, archive lists, terms, search panel, and language links.
 - `src/scripts/check-build.mjs` and `src/scripts/serve-public.mjs` are internal commands called by `pagekiln c` and `pagekiln s`; `src/scripts/generate-neutral-assets.mjs` is a site-operations crop helper for framework development.
 - `src/pages/[...route].astro` is the Astro catch-all page output for static HTML routes returned by `buildHtmlPages()`.
 - `src/pages/404.astro` outputs the 404 page.
-- `src/pages/feed.xml.js` and `src/pages/[locale]/feed.xml.js` output the global feed and locale feeds.
+- `src/pages/feed.xml.js` and `src/pages/[locale]/feed.xml.js` output the global feed and locale feeds when public posts exist.
 - `src/pages/robots.txt.js`, `src/pages/llms.txt.js`, `src/pages/llms-full.txt.js`, `src/pages/openapi.json.js`, `src/pages/.well-known/api-catalog.js`, and `src/pages/.well-known/mcp/server-card.json.js` output site-operations and agent discovery files.
-- `src/pages/assets/[file].json.js` outputs JSON assets such as search indexes.
-- `src/pages/md/[locale]/posts/[slug].md.js` exposes public posts as a Markdown API for agents and external tools.
+- `src/pages/assets/[file].json.js` outputs JSON assets such as search indexes when a page uses the `search-panel` slot.
+- `src/pages/md/[locale]/posts/[slug].md.js` exposes Markdown mirrors when public posts exist, for agents and external tools.
 
 Guidance:
 
