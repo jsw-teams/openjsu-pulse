@@ -3,11 +3,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "astro/config";
 import sitemap from "@astrojs/sitemap";
-import { buildHeaders, buildTermMap, groupByLocale, loadBlogData } from "./src/lib/content.mjs";
+import { buildHeaders, buildTermMap, groupByLocale, loadBlogData, postsEnabled } from "./src/lib/content.mjs";
 
 const packageRoot = path.dirname(fileURLToPath(import.meta.url));
 const siteRoot = process.env.PAGEKILN_SITE_ROOT || process.cwd();
 const { site, posts, pages } = await loadBlogData();
+const includePosts = postsEnabled(site);
 const sitemapOptions = site.sitemap || {};
 const sitemapMeta = new Map();
 const excludedPaths = new Set([
@@ -55,14 +56,16 @@ for (const locale of site.locales) {
       priority: page === 1 ? 0.9 : 0.5
     });
   }
-  setMeta(`/${locale}/archive/`, { lastmod: siteUpdated, changefreq: "weekly", priority: 0.5 });
-  setMeta(`/${locale}/categories/`, { lastmod: siteUpdated, changefreq: "weekly", priority: 0.4 });
-  setMeta(`/${locale}/tags/`, { lastmod: siteUpdated, changefreq: "weekly", priority: 0.4 });
-  for (const term of buildTermMap(posts, locale, "categories").values()) {
-    setMeta(term.url, { lastmod: siteUpdated, changefreq: "weekly", priority: 0.3 });
-  }
-  for (const term of buildTermMap(posts, locale, "tags").values()) {
-    setMeta(term.url, { lastmod: siteUpdated, changefreq: "weekly", priority: 0.3 });
+  if (includePosts) {
+    setMeta(`/${locale}/archive/`, { lastmod: siteUpdated, changefreq: "weekly", priority: 0.5 });
+    setMeta(`/${locale}/categories/`, { lastmod: siteUpdated, changefreq: "weekly", priority: 0.4 });
+    setMeta(`/${locale}/tags/`, { lastmod: siteUpdated, changefreq: "weekly", priority: 0.4 });
+    for (const term of buildTermMap(posts, locale, "categories").values()) {
+      setMeta(term.url, { lastmod: siteUpdated, changefreq: "weekly", priority: 0.3 });
+    }
+    for (const term of buildTermMap(posts, locale, "tags").values()) {
+      setMeta(term.url, { lastmod: siteUpdated, changefreq: "weekly", priority: 0.3 });
+    }
   }
 }
 
@@ -116,6 +119,7 @@ export default defineConfig({
           await Promise.all([
             fs.rm(path.join(outputDir, "sitemap-index.xml"), { force: true }),
             fs.rm(source, { force: true }),
+            ...(includePosts ? [] : [fs.rm(path.join(outputDir, "feed.xml"), { force: true })]),
             fs.writeFile(path.join(outputDir, "_headers"), buildHeaders(site))
           ]);
         }

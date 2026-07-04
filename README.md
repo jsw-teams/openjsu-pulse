@@ -77,6 +77,7 @@ theme:
 适合放在 `config.yml` 的内容：
 
 - `siteName`、`description`、`author`：生成标题、SEO 摘要、JSON-LD、feed 和默认页面文案。
+- `content.posts.enabled`：设为 `false` 时不加载 `content/posts/`，也不生成文章页、归档、分类、标签、公开搜索索引、文章 feed 或 Markdown 镜像，适合把 Pagekiln 二次开发成非博客站点。
 - `defaultLocale`、`activeLocales`：决定多语言路由、语言切换和 hreflang。
 - `nav.links`、`nav.utilityLinks`：生成主导航、搜索入口、归档入口和站点级链接。
 - `footer`、`head`、`pwa`、`icons`：生成页脚、头部元信息、PWA 和图标资源。
@@ -103,6 +104,16 @@ pagekiln g
 ## 开始写作
 
 写作阶段主要改 `content/posts/` 和 `content/pages/`。文章进入博客列表、feed、sitemap、搜索索引和 llms；页面用于首页、关于页、归档页、分类页、标签页、搜索页和其他普通页面。
+
+如果站点不是博客，可在 `config.yml` 设置：
+
+```yaml
+content:
+  posts:
+    enabled: false
+```
+
+关闭后，仓库里即使还保留 `content/posts/` 或博客型特殊页内容，构建器也不会输出文章、归档、分类、标签、搜索、feed 或 `/md/<locale>/posts/` 路由。
 
 ### 如何开始写第一篇文章
 
@@ -150,10 +161,10 @@ content/pages/<slug>/index.<locale>.md
 
 ```text
 content/pages/home/index.<locale>.md        # /<locale>/
-content/pages/archive/index.<locale>.md     # /<locale>/archive/
-content/pages/categories/index.<locale>.md  # /<locale>/categories/
-content/pages/tags/index.<locale>.md        # /<locale>/tags/
-content/pages/search/index.<locale>.md      # /<locale>/search/
+content/pages/archive/index.<locale>.md     # content.posts.enabled 为 true 时输出 /<locale>/archive/
+content/pages/categories/index.<locale>.md  # content.posts.enabled 为 true 时输出 /<locale>/categories/
+content/pages/tags/index.<locale>.md        # content.posts.enabled 为 true 时输出 /<locale>/tags/
+content/pages/search/index.<locale>.md      # content.posts.enabled 为 true 时输出 /<locale>/search/
 ```
 
 `content/pages` 里的 Markdown 可以直接写 HTML。你可以在页面里写 `<header>`、`<section>`、`<img>`、少量页面脚本，也可以把动态组件放到想出现的位置：

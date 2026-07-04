@@ -166,8 +166,22 @@ function clientConfig(site) {
   };
 }
 
+function postsEnabled(site) {
+  return site?.content?.posts?.enabled !== false;
+}
+
 function renderWebMcpBootstrap(site) {
   if (site.theme?.features?.webMcp === false) return "";
+  if (!postsEnabled(site)) {
+    const config = {
+      basePath,
+      locales: siteLocales(site),
+      defaultLocale: siteDefaultLocale(site),
+      name: site.client?.mcpName || new URL(site.siteUrl).hostname.replace(/\W+/g, "-"),
+      description: site.client?.mcpDescription || "Public site discovery tools."
+    };
+    return `<script>(()=>{const c=${escapeJson(config)};const b=String(c.basePath||"").replace(/\\/$/,"");const u=p=>new URL((b&&p.startsWith("/")&&!p.startsWith(b+"/")?b:"")+p,location.origin).href;function listDiscoveryResources(){return{resources:[{rel:"api-catalog",url:u("/.well-known/api-catalog"),type:"application/linkset+json"},{rel:"service-desc",url:u("/openapi.json"),type:"application/vnd.oai.openapi+json;version=3.1"},{rel:"service-doc",url:u("/AGENTS.md"),type:"text/markdown"},{rel:"describedby",url:u("/llms.txt"),type:"text/plain"},{rel:"mcp-server-card",url:u("/.well-known/mcp/server-card.json"),type:"application/json"}]};}const tools=[{name:"list_discovery_resources",description:"List machine-readable discovery resources exposed by this site.",inputSchema:{type:"object",properties:{},additionalProperties:false},execute:listDiscoveryResources}];const ac=typeof AbortController==="function"?new AbortController:null;try{if(document.modelContext&&typeof document.modelContext.registerTool==="function"){tools.forEach(t=>{try{document.modelContext.registerTool(t,ac?{signal:ac.signal}:undefined)}catch(e){document.modelContext.registerTool(t)}});window.PagekilnWebMcpReady=true}}catch(e){window.PagekilnWebMcpReady=false}try{if(navigator.modelContext&&typeof navigator.modelContext.provideContext==="function"){navigator.modelContext.provideContext({name:c.name,description:c.description,tools});window.PagekilnWebMcpReady=true}}catch(e){window.PagekilnWebMcpReady=false}window.PagekilnWebMcpAbortController=ac;})();</script>`;
+  }
   const config = {
     basePath,
     locales: siteLocales(site),
@@ -223,8 +237,14 @@ function renderNav(site, locale, current) {
     { key: "search", href: "/:locale/search/", icon: "⌕", label: t(locale, "search") }
   ];
   const navConfig = site.theme?.nav || {};
-  const navLinks = themedLinks(navConfig.links || fallbackNavLinks, locale, site);
-  const utilityLinks = themedLinks(navConfig.utilityLinks || fallbackUtilityLinks, locale, site);
+  const disabledBlogKeys = postsEnabled(site) ? new Set() : new Set(["archive", "categories", "tags", "search", "feed"]);
+  const disabledBlogPath = postsEnabled(site) ? null : /^\/[^/]+\/(?:archive|categories|tags|search|feed\.xml|posts)(?:\/|$)/;
+  const enabledLinks = (links) => links.filter((link) => {
+    if (disabledBlogKeys.has(link.key)) return false;
+    return !(disabledBlogPath && disabledBlogPath.test(link.href));
+  });
+  const navLinks = enabledLinks(themedLinks(navConfig.links || fallbackNavLinks, locale, site));
+  const utilityLinks = enabledLinks(themedLinks(navConfig.utilityLinks || fallbackUtilityLinks, locale, site));
 
   return `<header class="site-header">
     <a class="brand" href="${withBase(`/${locale}/`)}" data-locale-choice="${locale}">
@@ -258,14 +278,18 @@ function renderFooter(site, locale) {
   const links = configuredLinks.length
     ? configuredLinks
     : [
-      { href: `/${locale}/feed.xml`, label: t(locale, "feed") },
+      ...(postsEnabled(site) ? [{ href: `/${locale}/feed.xml`, label: t(locale, "feed") }] : []),
       { href: `/${locale}/about/`, label: t(locale, "privacy") },
       { href: "/sitemap.xml", label: t(locale, "sitemap") }
     ];
   return `<footer class="site-footer">
     ${copyrightEnabled && copyrightText ? `<p class="footer-brand">${escapeHtml(copyrightText)}</p>` : ""}
     <nav class="footer-links" aria-label="${escapeHtml(t(locale, "sitemap"))}">
-      ${links.filter((link) => link?.enabled !== false).map((link) => `<a href="${withBase(String(link.href || "").replaceAll(":locale", locale))}">${escapeHtml(localConfigText(link.label, locale, site))}</a>`).join("")}
+      ${links.filter((link) => {
+        if (link?.enabled === false) return false;
+        const href = String(link.href || "").replaceAll(":locale", locale);
+        return postsEnabled(site) || !/^\/[^/]+\/(?:feed\.xml|archive|categories|tags|search|posts)(?:\/|$)/.test(href);
+      }).map((link) => `<a href="${withBase(String(link.href || "").replaceAll(":locale", locale))}">${escapeHtml(localConfigText(link.label, locale, site))}</a>`).join("")}
       ${site.theme?.consent?.enabled === false ? "" : `<button class="footer-link-button" type="button" data-consent-open>${escapeHtml(t(locale, "consentManage"))}</button>`}
     </nav>
   </footer>`;
@@ -348,7 +372,7 @@ export function renderLayout({
   <link rel="alternate icon" href="${withBase(icons.favicon)}" sizes="any">
   <link rel="apple-touch-icon" href="${withBase(icons.appleTouchIcon)}">
   <link rel="manifest" href="${withBase(icons.manifest)}">
-  <link rel="alternate" type="application/rss+xml" title="${escapeHtml(siteName)}" href="${withBase(`/${locale}/feed.xml`)}">
+  ${postsEnabled(site) ? `<link rel="alternate" type="application/rss+xml" title="${escapeHtml(siteName)}" href="${withBase(`/${locale}/feed.xml`)}">` : ""}
   <link rel="image_src" href="${escapeHtml(imageUrl)}">
   <meta itemprop="name" content="${escapeHtml(fullTitle)}">
   <meta itemprop="description" content="${escapeHtml(description)}">
@@ -900,6 +924,17 @@ export function renderAboutPage({ site, locale, page, translations }) {
 export function renderNotFoundPage({ site }) {
   const locale = siteDefaultLocale(site);
   const description = "页面不存在。頁面不存在。 This page was not found.";
+  const secondaryLinks = postsEnabled(site)
+    ? {
+      "zh-CN": '<a class="button-link button-link-secondary" href="/zh-CN/archive/">查看归档</a>',
+      "zh-TW": '<a class="button-link button-link-secondary" href="/zh-TW/archive/">查看歸檔</a>',
+      en: '<a class="button-link button-link-secondary" href="/en/archive/">View archive</a>'
+    }
+    : {
+      "zh-CN": '<a class="button-link button-link-secondary" href="/sitemap.xml">站点地图</a>',
+      "zh-TW": '<a class="button-link button-link-secondary" href="/sitemap.xml">網站地圖</a>',
+      en: '<a class="button-link button-link-secondary" href="/sitemap.xml">Sitemap</a>'
+    };
   const main = `<main id="main" class="page-main not-found-main">
     <section class="not-found-panel" data-i18n-panel="zh-CN" aria-labelledby="not-found-zh">
       <div>
@@ -907,7 +942,7 @@ export function renderNotFoundPage({ site }) {
         <p class="lead">这个页面可能已经移动，或从未存在。</p>
         <div class="hero-links">
           <a class="button-link" href="/zh-CN/">返回首页</a>
-          <a class="button-link button-link-secondary" href="/zh-CN/archive/">查看归档</a>
+          ${secondaryLinks["zh-CN"]}
           <a href="/zh-TW/" data-locale-choice="zh-TW">繁體中文</a>
           <a href="/en/" data-locale-choice="en">English</a>
         </div>
@@ -919,7 +954,7 @@ export function renderNotFoundPage({ site }) {
         <p class="lead">這個頁面可能已經移動，或從未存在。</p>
         <div class="hero-links">
           <a class="button-link" href="/zh-TW/">返回首頁</a>
-          <a class="button-link button-link-secondary" href="/zh-TW/archive/">查看歸檔</a>
+          ${secondaryLinks["zh-TW"]}
           <a href="/zh-CN/" data-locale-choice="zh-CN">简体中文</a>
           <a href="/en/" data-locale-choice="en">English</a>
         </div>
@@ -931,7 +966,7 @@ export function renderNotFoundPage({ site }) {
         <p class="lead">This page may have moved, or it may never have existed.</p>
         <div class="hero-links">
           <a class="button-link" href="/en/">Back home</a>
-          <a class="button-link button-link-secondary" href="/en/archive/">View archive</a>
+          ${secondaryLinks.en}
           <a href="/zh-CN/" data-locale-choice="zh-CN">简体中文</a>
           <a href="/zh-TW/" data-locale-choice="zh-TW">繁體中文</a>
         </div>

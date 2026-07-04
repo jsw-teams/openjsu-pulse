@@ -8,6 +8,9 @@ description:
   en: A neutral Pagekiln starter site.
 author:
   en: Site Owner
+content:
+  posts:
+    enabled: false
 theme:
   name: default
 

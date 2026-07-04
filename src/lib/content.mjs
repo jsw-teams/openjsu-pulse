@@ -115,6 +115,13 @@ function normalizeSiteConfig(config) {
   site.theme = typeof site.theme === "string" ? { name: site.theme } : site.theme;
   site.theme ??= {};
   site.theme.name = site.theme.name || "default";
+  site.content = mergePlainDefaults({ posts: { enabled: true } }, site.content || {});
+  if (site.content.posts === false) site.content.posts = { enabled: false };
+  else if (!site.content.posts || typeof site.content.posts !== "object" || Array.isArray(site.content.posts)) {
+    site.content.posts = { enabled: true };
+  } else {
+    site.content.posts.enabled = site.content.posts.enabled !== false;
+  }
   site.plugins = mergePlainDefaults(site.theme.plugins || {}, site.plugins || {});
   if (!site.plugins.comments && site.comments) site.plugins.comments = site.comments;
   normalizeCommentsPlugin(site);
@@ -466,6 +473,10 @@ export function termSlug(value) {
   return `term-${crypto.createHash("sha1").update(text).digest("hex").slice(0, 10)}`;
 }
 
+export function postsEnabled(site) {
+  return site?.content?.posts?.enabled !== false;
+}
+
 function localeFromPostFilename(file) {
   const match = path.basename(file).match(/^index\.(.+)\.md$/);
   return match?.[1] ?? "";
@@ -478,6 +489,7 @@ function pageUrl(slug, locale) {
 }
 
 export async function loadPosts(site = null) {
+  if (site && !postsEnabled(site)) return [];
   const locales = site?.locales ?? LOCALES;
   const files = await fg("content/posts/*/index.*.md", { cwd: rootDir, onlyFiles: true });
   const posts = [];
@@ -645,6 +657,7 @@ export async function buildHtmlPages() {
   const routes = [];
   const add = (url, html) => routes.push({ url, html: rewriteRelativePaths(html, url) });
   const homePageSize = Math.max(1, Number(site.pagination?.homePageSize || 8));
+  const includePosts = postsEnabled(site);
   const pagesByLocaleSlug = pageContentMap(pages);
   const specialPage = (locale, slug) => pagesByLocaleSlug.get(`${locale}:${slug}`) || null;
 
@@ -668,47 +681,51 @@ export async function buildHtmlPages() {
         pageUrl: homePageUrl
       }));
     }
-    add(`/${locale}/archive/`, templates.renderArchivePage({ site, locale, pageContent: specialPage(locale, "archive"), groups: archiveGroups(posts, locale) }));
-    add(`/${locale}/categories/`, templates.renderTermIndexPage({
-      site,
-      locale,
-      pageContent: specialPage(locale, "categories"),
-      titleKey: "allCategories",
-      descriptionKey: "categoriesDescription",
-      terms: termList(categoryMap),
-      url: `/${locale}/categories/`,
-      current: "categories"
-    }));
-    add(`/${locale}/tags/`, templates.renderTermIndexPage({
-      site,
-      locale,
-      pageContent: specialPage(locale, "tags"),
-      titleKey: "allTags",
-      descriptionKey: "tagsDescription",
-      terms: termList(tagMap),
-      url: `/${locale}/tags/`,
-      current: "tags"
-    }));
-    add(`/${locale}/search/`, templates.renderSearchPage({ site, locale, pageContent: specialPage(locale, "search") }));
+    if (includePosts) {
+      add(`/${locale}/archive/`, templates.renderArchivePage({ site, locale, pageContent: specialPage(locale, "archive"), groups: archiveGroups(posts, locale) }));
+      add(`/${locale}/categories/`, templates.renderTermIndexPage({
+        site,
+        locale,
+        pageContent: specialPage(locale, "categories"),
+        titleKey: "allCategories",
+        descriptionKey: "categoriesDescription",
+        terms: termList(categoryMap),
+        url: `/${locale}/categories/`,
+        current: "categories"
+      }));
+      add(`/${locale}/tags/`, templates.renderTermIndexPage({
+        site,
+        locale,
+        pageContent: specialPage(locale, "tags"),
+        titleKey: "allTags",
+        descriptionKey: "tagsDescription",
+        terms: termList(tagMap),
+        url: `/${locale}/tags/`,
+        current: "tags"
+      }));
+      if (site.theme?.features?.search !== false) {
+        add(`/${locale}/search/`, templates.renderSearchPage({ site, locale, pageContent: specialPage(locale, "search") }));
+      }
 
-    for (const term of categoryMap.values()) {
-      const title = `${t(locale, "postsInCategory")}: ${term.name}`;
-      const description = locale === "zh-CN"
-        ? `查看「${term.name}」分类下的文章。`
-        : locale === "zh-TW"
-          ? `查看「${term.name}」分類下的文章。`
-          : `Posts filed under ${term.name}.`;
-      add(term.url, templates.renderTermPage({ site, locale, title, description, posts: term.posts, url: term.url, current: "categories", parentKey: "categories" }));
-    }
+      for (const term of categoryMap.values()) {
+        const title = `${t(locale, "postsInCategory")}: ${term.name}`;
+        const description = locale === "zh-CN"
+          ? `查看「${term.name}」分类下的文章。`
+          : locale === "zh-TW"
+            ? `查看「${term.name}」分類下的文章。`
+            : `Posts filed under ${term.name}.`;
+        add(term.url, templates.renderTermPage({ site, locale, title, description, posts: term.posts, url: term.url, current: "categories", parentKey: "categories" }));
+      }
 
-    for (const term of tagMap.values()) {
-      const title = `${t(locale, "postsWithTag")}: ${term.name}`;
-      const description = locale === "zh-CN"
-        ? `查看带有「${term.name}」标签的文章。`
-        : locale === "zh-TW"
-          ? `查看帶有「${term.name}」標籤的文章。`
-          : `Posts tagged ${term.name}.`;
-      add(term.url, templates.renderTermPage({ site, locale, title, description, posts: term.posts, url: term.url, current: "tags", parentKey: "tags" }));
+      for (const term of tagMap.values()) {
+        const title = `${t(locale, "postsWithTag")}: ${term.name}`;
+        const description = locale === "zh-CN"
+          ? `查看带有「${term.name}」标签的文章。`
+          : locale === "zh-TW"
+            ? `查看帶有「${term.name}」標籤的文章。`
+            : `Posts tagged ${term.name}.`;
+        add(term.url, templates.renderTermPage({ site, locale, title, description, posts: term.posts, url: term.url, current: "tags", parentKey: "tags" }));
+      }
     }
   }
 
@@ -749,6 +766,7 @@ export async function buildHtmlPagesForUrls(targetUrls = []) {
     if (targets.has(url)) routes.push({ url, html: rewriteRelativePaths(html, url) });
   };
   const homePageSize = Math.max(1, Number(site.pagination?.homePageSize || 8));
+  const includePosts = postsEnabled(site);
   const pagesByLocaleSlug = pageContentMap(pages);
   const specialPage = (locale, slug) => pagesByLocaleSlug.get(`${locale}:${slug}`) || null;
 
@@ -774,10 +792,10 @@ export async function buildHtmlPagesForUrls(targetUrls = []) {
       }
     }
 
-    if (targets.has(`/${locale}/archive/`)) {
+    if (includePosts && targets.has(`/${locale}/archive/`)) {
       add(`/${locale}/archive/`, templates.renderArchivePage({ site, locale, pageContent: specialPage(locale, "archive"), groups: archiveGroups(posts, locale) }));
     }
-    if (targets.has(`/${locale}/categories/`)) {
+    if (includePosts && targets.has(`/${locale}/categories/`)) {
       add(`/${locale}/categories/`, templates.renderTermIndexPage({
         site,
         locale,
@@ -789,7 +807,7 @@ export async function buildHtmlPagesForUrls(targetUrls = []) {
         current: "categories"
       }));
     }
-    if (targets.has(`/${locale}/tags/`)) {
+    if (includePosts && targets.has(`/${locale}/tags/`)) {
       add(`/${locale}/tags/`, templates.renderTermIndexPage({
         site,
         locale,
@@ -801,7 +819,7 @@ export async function buildHtmlPagesForUrls(targetUrls = []) {
         current: "tags"
       }));
     }
-    if (targets.has(`/${locale}/search/`)) {
+    if (includePosts && site.theme?.features?.search !== false && targets.has(`/${locale}/search/`)) {
       add(`/${locale}/search/`, templates.renderSearchPage({ site, locale, pageContent: specialPage(locale, "search") }));
     }
   }
@@ -897,86 +915,41 @@ function siteDescription(site) {
 }
 
 function discoveryResources(site) {
-  return [
+  const resources = [
     { rel: "api-catalog", url: "/.well-known/api-catalog", type: "application/linkset+json", title: "API catalog" },
     { rel: "service-desc", url: "/openapi.json", type: "application/vnd.oai.openapi+json;version=3.1", title: "OpenAPI description" },
     { rel: "service-doc", url: "/AGENTS.md", type: "text/markdown", title: "Agent guide" },
     { rel: "describedby", url: "/llms.txt", type: "text/plain", title: "LLM summary" },
     { rel: "llms-full", url: "/llms-full.txt", type: "text/plain", title: "Full LLM context" },
-    { rel: "mcp-server-card", url: "/.well-known/mcp/server-card.json", type: "application/json", title: "MCP server card" },
+    { rel: "mcp-server-card", url: "/.well-known/mcp/server-card.json", type: "application/json", title: "MCP server card" }
+  ];
+  if (postsEnabled(site)) {
+    resources.push({ rel: "alternate", url: "/feed.xml", type: "application/rss+xml", title: "RSS feed" });
+  }
+  return [
+    ...resources,
     ...(Array.isArray(site.discovery?.resources) ? site.discovery.resources : [])
   ];
 }
 
 export function buildOpenApiJson(site) {
-  return {
-    openapi: "3.1.0",
-    info: {
-      title: site.discovery?.openapiTitle || `${siteTitle(site)} Public Resources`,
-      version: String(site.discovery?.version || "1.0.0"),
-      description: site.discovery?.openapiDescription || `Public, read-only resources for discovering and searching ${siteTitle(site)} content.`
-    },
-    servers: [{ url: siteOrigin(site) }],
-    paths: {
-      "/assets/search-index.{locale}.json": {
-        get: {
-          operationId: "getSearchIndex",
-          summary: "Get a locale-specific public post search index.",
-          parameters: [
-            {
-              name: "locale",
-              in: "path",
-              required: true,
-              schema: {
-                type: "string",
-                enum: site.locales
-              }
-            }
-          ],
-          responses: {
-            200: {
-              description: "Search index entries.",
-              content: {
-                "application/json": {
-                  schema: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        title: { type: "string" },
-                        description: { type: "string" },
-                        url: { type: "string" },
-                        date: { type: "string" },
-                        updated: { type: "string" },
-                        category: { type: "string" },
-                        tags: { type: "array", items: { type: "string" } },
-                        text: { type: "string" }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "/.well-known/status.json": {
-        get: {
-          operationId: "getStatus",
-          summary: "Get static publication status for the public site.",
-          responses: {
-            200: {
-              description: "Status response.",
-              content: {
-                "application/json": {
-                  schema: {
-                    type: "object",
-                    properties: {
-                      status: { type: "string" },
-                      service: { type: "string" },
-                      site: { type: "string" },
-                      public: { type: "boolean" }
-                    }
+  const paths = {
+    "/.well-known/status.json": {
+      get: {
+        operationId: "getStatus",
+        summary: "Get static publication status for the public site.",
+        responses: {
+          200: {
+            description: "Status response.",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    status: { type: "string" },
+                    service: { type: "string" },
+                    site: { type: "string" },
+                    public: { type: "boolean" }
                   }
                 }
               }
@@ -985,6 +958,62 @@ export function buildOpenApiJson(site) {
         }
       }
     }
+  };
+  if (postsEnabled(site) && site.theme?.features?.search !== false) {
+    paths["/assets/search-index.{locale}.json"] = {
+      get: {
+        operationId: "getSearchIndex",
+        summary: "Get a locale-specific public post search index.",
+        parameters: [
+          {
+            name: "locale",
+            in: "path",
+            required: true,
+            schema: {
+              type: "string",
+              enum: site.locales
+            }
+          }
+        ],
+        responses: {
+          200: {
+            description: "Search index entries.",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      title: { type: "string" },
+                      description: { type: "string" },
+                      url: { type: "string" },
+                      date: { type: "string" },
+                      updated: { type: "string" },
+                      category: { type: "string" },
+                      tags: { type: "array", items: { type: "string" } },
+                      text: { type: "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    };
+  }
+  return {
+    openapi: "3.1.0",
+    info: {
+      title: site.discovery?.openapiTitle || `${siteTitle(site)} Public Resources`,
+      version: String(site.discovery?.version || "1.0.0"),
+      description: site.discovery?.openapiDescription || (postsEnabled(site)
+        ? `Public, read-only resources for discovering and searching ${siteTitle(site)} content.`
+        : `Public, read-only resources for discovering ${siteTitle(site)} content.`)
+    },
+    servers: [{ url: siteOrigin(site) }],
+    paths
   };
 }
 
@@ -1039,6 +1068,16 @@ export function buildApiCatalog(site) {
 
 export function buildMcpServerCard(site) {
   const origin = siteOrigin(site);
+  const tools = [
+    ...(postsEnabled(site) ? [{
+      name: "search_public_posts",
+      description: "Search public posts by keyword."
+    }] : []),
+    {
+      name: "list_discovery_resources",
+      description: "List machine-readable discovery resources published by the site."
+    }
+  ];
   return {
     schemaVersion: "0.1",
     serverInfo: {
@@ -1052,16 +1091,7 @@ export function buildMcpServerCard(site) {
       }
     ],
     capabilities: {
-      tools: [
-        {
-          name: "search_public_posts",
-          description: "Search public posts by keyword."
-        },
-        {
-          name: "list_discovery_resources",
-          description: "List machine-readable discovery resources published by the site."
-        }
-      ],
+      tools,
       resources: discoveryResources(site).map((resource) => absoluteUrl(site, resource.url))
     },
     auth: {
@@ -1077,6 +1107,15 @@ export function buildHeaders(site) {
     .map((resource) => `  Link: <${resource.url}>; rel="${resource.rel}"; type="${resource.type}"`)
     .join("\n");
   const localeHeaders = site.locales.map((locale) => `/${locale}/\n${linkHeaders}`).join("\n\n");
+  const feedHeaders = postsEnabled(site) ? `
+/feed.xml
+  Content-Type: text/xml; charset=utf-8
+  X-Content-Type-Options: nosniff
+  Cache-Control: no-cache
+
+/md/*
+  Content-Type: text/markdown; charset=utf-8
+` : "";
   return `/
 ${linkHeaders}
 
@@ -1102,14 +1141,7 @@ ${localeHeaders}
   X-Content-Type-Options: nosniff
   Cache-Control: public, max-age=0, must-revalidate
 
-/feed.xml
-  Content-Type: text/xml; charset=utf-8
-  X-Content-Type-Options: nosniff
-  Cache-Control: no-cache
-
-/md/*
-  Content-Type: text/markdown; charset=utf-8
-`;
+${feedHeaders}`;
 }
 
 export function buildLlmsTxt(site, posts) {
@@ -1120,10 +1152,7 @@ export function buildLlmsTxt(site, posts) {
     .map((locale) => `- [${localeLabel(locale)}](${absoluteUrl(site, `/${locale}/`)})`)
     .join("\n");
   const discoveryLines = discoveryResources(site)
-    .concat([
-      { title: "Sitemap", url: "/sitemap.xml" },
-      { title: "RSS feed", url: "/feed.xml" }
-    ])
+    .concat([{ title: "Sitemap", url: "/sitemap.xml" }])
     .map((resource) => `- [${resource.title || resource.rel}](${absoluteUrl(site, resource.url)})`)
     .join("\n");
   const articleLines = latest
@@ -1145,9 +1174,9 @@ ${languageLines}
 
 ${discoveryLines}
 
-## Latest Markdown Mirrors
+${postsEnabled(site) ? `## Latest Markdown Mirrors
 
-${articleLines}
+${articleLines}` : ""}
 `;
 }
 
