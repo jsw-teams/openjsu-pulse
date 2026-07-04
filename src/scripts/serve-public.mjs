@@ -76,6 +76,10 @@ async function findFile(url) {
     } catch {}
   }
 
+  return null;
+}
+
+async function findNotFoundFile() {
   const notFound = path.join(outputDir, "404.html");
   return (await stat(notFound).then((info) => info.isFile()).catch(() => false)) ? notFound : null;
 }
@@ -383,7 +387,8 @@ function createPreviewServer() {
       return;
     }
 
-    const file = await findFile(url);
+    let file = await findFile(url);
+    let fallbackNotFound = false;
     if (!file) {
       if (status.state === "building" || status.state === "starting") {
         sendPreviewMessage(response, 202, "正在生成页面", "这个路径还没有生成完成。构建成功后预览会自动刷新。");
@@ -393,13 +398,17 @@ function createPreviewServer() {
         sendPreviewMessage(response, 500, "构建失败", "请查看页面底部的错误提示；预览服务会保持运行，修复后会继续尝试构建。");
         return;
       }
-      response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
-      response.end("Not found");
-      return;
+      file = await findNotFoundFile();
+      fallbackNotFound = true;
+      if (!file) {
+        response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+        response.end("Not found");
+        return;
+      }
     }
 
     const ext = path.extname(file);
-    const statusCode = file.endsWith("404.html") ? 404 : 200;
+    const statusCode = fallbackNotFound || file.endsWith("404.html") ? 404 : 200;
     if (ext === ".html") {
       await sendHtml(file, response, statusCode);
       return;

@@ -91,6 +91,9 @@ const dictionaries = {
     mediaRegionMessage: "由于区域限制，中国大陆访问暂不提供视频播放，还请谅解。你仍可以阅读正文内容。",
     skip: "跳到主内容",
     siteIntro: "记录技术实践、网络服务、写作与观察。",
+    emptySiteTitle: "站点已就绪",
+    emptySiteLead: "还没有自定义页面或公开文章。添加 content/pages/home/index.zh-CN.md 来定制首页，或在 content/pages/ 下创建你的第一个页面。",
+    emptySiteAction: "开始添加页面内容",
     feed: "订阅"
   },
   "zh-TW": {
@@ -150,6 +153,9 @@ const dictionaries = {
     mediaRegionMessage: "由於區域限制，中國大陸訪問暫不提供影片播放，還請諒解。你仍可以閱讀正文內容。",
     skip: "跳到主內容",
     siteIntro: "記錄技術實踐、網路服務、寫作與觀察。",
+    emptySiteTitle: "站點已就緒",
+    emptySiteLead: "還沒有自訂頁面或公開文章。新增 content/pages/home/index.zh-TW.md 來自訂首頁，或在 content/pages/ 下建立你的第一個頁面。",
+    emptySiteAction: "開始新增頁面內容",
     feed: "訂閱"
   },
   en: {
@@ -209,6 +215,9 @@ const dictionaries = {
     mediaRegionMessage: "Due to regional restrictions, video playback is not available for Mainland China access. Thank you for understanding. The article text remains available.",
     skip: "Skip to main content",
     siteIntro: "Notes on technical practice, web services, writing, and observation.",
+    emptySiteTitle: "Site ready",
+    emptySiteLead: "No custom pages or public posts exist yet. Add content/pages/home/index.en.md to customize this homepage, or create your first page under content/pages/.",
+    emptySiteAction: "Start adding page content",
     feed: "Feed"
   }
 };

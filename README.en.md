@@ -131,16 +131,19 @@ match the project customization. Derived files may still live in
 
 ## Start Writing
 
-Writing primarily happens in `content/posts/` and `content/pages/`. Posts enter
-post detail pages, feeds, sitemap, llms, and Markdown mirrors. Pages own the
-homepage, about page, archive page, category page, tag page, search page, and
-other normal pages.
+Writing primarily happens in `content/pages/`; add `content/posts/` only when
+the site needs a post collection. The whole `content/pages/` or `content/posts/`
+directory may be absent without affecting the build. With no custom pages,
+Pagekiln generates a neutral root entry, locale homepage fallback, 404, and
+site-discovery files instead of inventing a set of blog default pages. When
+public posts exist, they enter post detail pages, feeds, sitemap, llms, and
+Markdown mirrors. Pages own the homepage, about page, archive page, category
+page, tag page, search page, and other normal pages.
 
 Page routes are decided by `content/pages/*`. If `content/pages/archive`,
 `categories`, `tags`, or `search` is removed, the builder no longer invents
-those blog-style pages. `content/posts/*` only represents the post collection;
-when public posts exist, Pagekiln generates post detail pages, feeds, and
-Markdown mirrors. Search indexes are pulled by the
+those blog-style pages. Missing `content/pages/` means no custom pages, not a
+build error; missing `content/posts/` means no public posts. Search indexes are pulled by the
 `<!-- pagekiln:search-panel -->` slot, so no search index, OpenAPI search path,
 or post-search discovery is generated unless a page uses the search component.
 
@@ -215,17 +218,23 @@ For example, the homepage can write its own introduction in
 where the post list belongs. An archive page can write its own heading and then
 place `<!-- pagekiln:archive-list -->`.
 
-Slot syntax is recognized globally, but some slots require page context:
+Slot syntax is recognized globally, but context has two levels:
 
-- `post-list` and `pagination` require homepage list context.
-- `archive-list` requires archive page context.
-- `terms` requires category or tag index context.
-- `search-panel` only requires the current locale and can be used on any page.
-- `languages` requires translations for the current page or article.
+- Base context: `search-panel` only needs the current `locale` and can be used on any page.
+- Homepage list context: `post-list` needs `posts`; `pagination` needs `page`, `totalPages`, and `pageUrl`.
+- Archive page context: `archive-list` needs `groups` and should only be used on archive pages such as `content/pages/archive`.
+- Term index context: `terms` needs `terms` and should only be used on category or tag index pages.
+- Translation context: `languages` needs `translations` for a page or article with localized counterparts.
 
 If a context-dependent slot is placed on a page without the required data,
 `pagekiln c` reports the unresolved slot instead of silently dropping the
 component.
+
+Keep one data input and one output path when developing slots: page renderers
+pass only raw data they own to `replaceSlots()`, such as `posts`, `groups`,
+`terms`, `translations`, and pagination state; slot HTML is rendered only by
+`slotRegistry` in `src/lib/slots.mjs`. Do not pass pre-rendered HTML or renderer
+functions back into slot context.
 
 Treat slots as complete components. Do not duplicate what a slot already
 renders. Avoid this:
@@ -254,6 +263,7 @@ config.yml              # Site-level config
 content/posts/          # Post Markdown
 content/pages/          # Page Markdown/HTML
 content/assets/         # Site operations icons, OG images, and derived assets
+backend/                # Optional backend/cloud-function source, outside static frontend sources
 src/bin/pagekiln.mjs    # CLI entry point
 src/*.mjs               # Builder-side Node ESM modules
 src/scripts/*.mjs       # Internal builder helper commands
@@ -262,16 +272,14 @@ themes/default/         # Default theme
 dist/                   # Generated output
 ```
 
-The build generates:
+The build generates outputs from content triggers:
 
-- Homepage; if homepage content uses `post-list` / `pagination` slots, it renders post lists and pagination
-- Post pages when public posts exist
-- Archive page when `content/pages/archive` exists
-- Categories page when `content/pages/categories` exists; category detail pages when public posts also exist
-- Tags page when `content/pages/tags` exists; tag detail pages when public posts also exist
-- Normal pages
-- Search page when `content/pages/search` exists; search indexes when a page uses the `search-panel` slot
-- `feed.xml` when public posts exist
+- Root entry, locale homepage fallback, and 404; the build should still succeed when `content/pages/` is absent
+- Normal pages that exist under `content/pages/*`; `archive`, `categories`, `tags`, and `search` are optional pages, not builder-invented routes
+- Post detail pages, `feed.xml`, locale feeds, and Markdown mirrors when public posts exist
+- Post lists and pagination when homepage content uses `post-list` / `pagination` slots
+- Term detail pages when `content/pages/categories` or `content/pages/tags` exists and public posts provide term data
+- Search indexes, OpenAPI search paths, and post search discovery when a page uses the `search-panel` slot
 - `sitemap.xml`
 - `robots.txt`
 - `llms.txt` and `llms-full.txt`
@@ -286,15 +294,16 @@ Claude, and other coding agents. `pagekiln g` copies it to `dist/AGENTS.md` as
 the deployed site-level agent guide.
 
 Pagekiln is static-first, but it can be organized as a frontend + backend
-project. When a site needs Cloudflare Functions, Workers, a Node service, a
-traditional server, or another backend runtime, put that code under `/backend`
-as an independent boundary instead of mixing it into `content/`, `themes/`, or
-builder `src/`.
+project. When a site needs Cloudflare Pages Functions, Cloudflare Workers, a
+Node service, a traditional server, or another backend runtime, the source code
+must live under `/backend` as an independent boundary instead of being mixed
+into `content/`, `themes/`, or builder `src/`.
 
 Backend boundary guidance:
 
 - Keep `content/` and `themes/` as static frontend sources. `pagekiln g` writes HTML, CSS, JS, images, slot-pulled search indexes, post-driven feeds, and discovery files to `dist/` so they can keep high CDN cache hit rates.
-- `/backend` is the only place that should touch secrets, database connections, private API tokens, signing keys, privileged permissions, and write-side business logic.
+- `/backend` is the only place that should touch secrets, database connections, private API tokens, signing keys, privileged permissions, and write-side business logic. Cloudflare Pages Functions, Workers, queue consumers, webhooks, form handlers, login, payments, comment writes, and admin endpoints should follow this boundary.
+- `/backend` is the single source of truth for backend source. If the target platform needs functions inside the deployment output, a build script or deployment adapter may compile, copy, or map `/backend` into the appropriate runtime directory under `dist/`; do not hand-author or maintain backend files inside `dist/`.
 - Frontend files should call backend services through public endpoints like a normal web frontend. Endpoint paths are project decisions; Pagekiln should not require fixed URL naming.
 - `config.yml` should describe only the site-level public calling contract, such as base URL, endpoint keys, methods, consent category, CAPTCHA requirement, cache intent, and whether an endpoint appears in OpenAPI/API catalog/MCP discovery. Never put real secrets in `config.yml`.
 - Browser-side identifiers that third-party frontend services require publicly, such as a Cloudflare Web Analytics token, Google Ads client id, or Giscus repo id, should live in the corresponding theme plugin config, for example `themes/<name>/theme.yml` under `plugins.analytics` or `plugins.advertising`. Fill them only when the matching plugin has been developed and enabled. They are not backend secrets, but reusable default templates should still avoid real production values.
@@ -302,14 +311,14 @@ Backend boundary guidance:
 
 ### How To Develop Themes
 
-Recommended order:
+Secondary development should not follow a fixed sequence. Identify the kind of
+site first, then choose the smallest suitable boundary:
 
-1. Read `config.yml` and model site name, locales, navigation, footer, plugins, consent, robots, llms, and discovery as structured config.
-2. Edit `content/pages` for page copy, static HTML structure, and dynamic slot placement.
-3. Copy `themes/default` to `themes/<your-theme>` and update `theme.name`.
-4. Edit `themes/<name>/theme.yml` for theme resources, page styles, feature scripts, consent categories, and plugin defaults.
-5. Edit `themes/<name>/templates/`, `style.css`, `styles/`, and `scripts/`.
-6. Edit `src/` only when the theme API cannot express the behavior.
+- Content sites, documentation, and blogs: start with `config.yml`, `content/pages`, `content/posts`, and slot placement; do not copy a theme when the default theme already expresses the site.
+- Brand sites, product pages, portfolios, and campaign pages: usually copy `themes/default` to `themes/<your-theme>`, update `theme.name`, then edit templates, CSS, page styles, and small browser scripts.
+- Tools, directories, case-study libraries, and product collections: use `content/pages` for editable page structure, then connect dynamic regions through theme templates and slots; enter `src/` only when a reusable data model or page type is missing.
+- Sites with forms, login, comment writes, payments, webhooks, or admin actions: keep the static frontend in `config.yml`, `content/`, and `themes/`; put all runtime backend and cloud-function source under `/backend`.
+- Pagekiln framework capabilities, reusable slots, site-operations outputs, asset generation, and checks: edit `src/`, then update README, AGENTS, and the check script.
 
 Theme layout:
 
@@ -347,19 +356,21 @@ Add a new `<!-- pagekiln:xxx -->` slot only when users should control placement
 from Markdown/HTML while the builder owns generated output.
 
 Post lists, pagination, archives, term collections, language links, related
-posts, and search panels fit slots. Fixed copy, static links, and one-off HTML
-should stay directly in `content/pages`.
+posts, and search panels fit slots. Fixed copy, static links, static layout, and
+one-off structures that Markdown/HTML can already express should stay directly
+in `content/pages`.
 
 Workflow:
 
 1. Use a lowercase slot name such as `<!-- pagekiln:relatedposts -->`; use the matching camelCase key in code, such as `relatedPosts`. Do not keep compatibility aliases for old names.
-2. Declare component HTML, required context, and missing-context behavior in `src/lib/slots.mjs`.
-3. Pass only the page data that each renderer owns, such as posts, pagination, groups, terms, or translations.
-4. Keep `{{{content}}}` in templates so Markdown and slot output flow into the theme.
-5. Put component strings in `themes/default/i18n.yml` and sync defaults in `src/i18n.mjs`.
-6. Attach CSS and JS through `theme.yml` using `pageStyles`, `pageScripts`, `featureScripts`, or `featureStyles`.
-7. Update README and `AGENTS.md`.
-8. Run `pagekiln g` and `pagekiln c`; make sure new context-dependent slots are caught when unresolved.
+2. Declare the marker, context type, required fields, component HTML, and missing-context behavior in `src/lib/slots.mjs`.
+3. Pass only raw page data that each renderer owns, such as `posts`, `page`, `totalPages`, `pageUrl`, `groups`, `terms`, or `translations`.
+4. Do not pass pre-rendered HTML or renderer functions into slot context; the data input is the page renderer and the output path is `slotRegistry.render()`.
+5. Keep `{{{content}}}` in templates so Markdown and slot output flow into the theme.
+6. Put component strings in `themes/default/i18n.yml` and sync defaults in `src/i18n.mjs`.
+7. Attach CSS and JS through `theme.yml` using `pageStyles`, `pageScripts`, `featureScripts`, or `featureStyles`.
+8. Update README and `AGENTS.md`.
+9. Run `pagekiln g` and `pagekiln c`; make sure new context-dependent slots are caught when unresolved.
 
 A slot should own its accessible markup, loading state, empty state, error
 state, and runtime behavior. It should not require users to add "results will
@@ -392,7 +403,7 @@ Use this data flow when developing `src/`:
 - `src/scripts/check-build.mjs` and `src/scripts/serve-public.mjs` are internal commands called by `pagekiln c` and `pagekiln s`; `src/scripts/generate-neutral-assets.mjs` is a site-operations crop helper for framework development.
 - `src/pages/[...route].astro` is the Astro catch-all page output for static HTML routes returned by `buildHtmlPages()`.
 - `src/pages/404.astro` outputs the 404 page.
-- `src/pages/feed.xml.js` and `src/pages/[locale]/feed.xml.js` output the global feed and locale feeds when public posts exist.
+- `src/pages/[feed].xml.js` and `src/pages/[locale]/feed.xml.js` output the global feed and locale feeds when public posts exist.
 - `src/pages/robots.txt.js`, `src/pages/llms.txt.js`, `src/pages/llms-full.txt.js`, `src/pages/openapi.json.js`, `src/pages/.well-known/api-catalog.js`, and `src/pages/.well-known/mcp/server-card.json.js` output site-operations and agent discovery files.
 - `src/pages/assets/[file].json.js` outputs JSON assets such as search indexes when a page uses the `search-panel` slot.
 - `src/pages/md/[locale]/posts/[slug].md.js` exposes Markdown mirrors when public posts exist, for agents and external tools.
@@ -420,6 +431,13 @@ For secondary development:
 Please read AGENTS.md and config.yml first. Treat config.yml as the structured source for site name, locales, navigation, plugins, consent, footer, robots, llms, OpenAPI, API catalog, MCP server card, headers, and other site operations. Prefer config.yml, content/pages, and theme-level changes before editing src/.
 ```
 
+For sites with Cloudflare Pages Functions, Workers, form handlers, login,
+webhooks, or another runtime backend:
+
+```text
+Please read AGENTS.md, README.md, and config.yml first. Keep the static frontend in config.yml, content/, and themes/. All cloud-function and runtime backend source must live under /backend. A build script may generate platform deployment output from /backend into dist/, but do not hand-author dist/.
+```
+
 If [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) or
 [anthropics/skills](https://github.com/anthropics/skills/) is installed, name
 the relevant skill in the prompt. They are collaboration constraints, not runtime
@@ -442,6 +460,12 @@ Build command: npm install && pagekiln g
 Build output directory: dist
 Node.js version: 22.12 or newer
 ```
+
+When `src/` builder behavior, default theme contracts, slot rules, or the npm
+package template changes, bump `package.json` and state the release scope. This
+`1.1.0` update covers content-driven page generation, optional `content/pages/`
+and `content/posts/`, post-driven feeds and Markdown mirrors, unified slot
+context, preview startup 404 fixes, and consent panel close-button placement.
 
 Pagekiln is licensed under `AGPL-3.0-or-later`. Modified, redistributed,
 publicly deployed, or downstream versions based on Pagekiln should keep their

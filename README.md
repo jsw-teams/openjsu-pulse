@@ -102,9 +102,9 @@ pagekiln g
 
 ## 开始写作
 
-写作阶段主要改 `content/posts/` 和 `content/pages/`。文章进入文章详情页、feed、sitemap、llms 和 Markdown mirror；页面用于首页、关于页、归档页、分类页、标签页、搜索页和其他普通页面。
+写作阶段主要改 `content/pages/`；需要文章集合时再添加 `content/posts/`。`content/pages/` 和 `content/posts/` 整个目录不存在也不应影响构建。没有自定义页面时，Pagekiln 会生成中性的根入口、语言首页 fallback、404 和站务发现文件，而不是生成一组博客默认页。公开文章存在时，文章进入文章详情页、feed、sitemap、llms 和 Markdown mirror；页面用于首页、关于页、归档页、分类页、标签页、搜索页和其他普通页面。
 
-页面路由由 `content/pages/*` 决定。删除 `content/pages/archive`、`categories`、`tags` 或 `search` 后，构建器不会再自动补这些博客型页面。`content/posts/*` 只代表文章集合；存在公开文章时会生成文章详情、feed 和 Markdown mirror。搜索索引由页面里的 `<!-- pagekiln:search-panel -->` slot 牵引，未使用搜索组件时不会生成搜索索引、OpenAPI 搜索路径或 post search discovery。
+页面路由由 `content/pages/*` 决定。删除 `content/pages/archive`、`categories`、`tags` 或 `search` 后，构建器不会再自动补这些博客型页面。`content/pages/` 缺失等同于没有自定义页面，不是构建错误；`content/posts/` 缺失等同于没有公开文章。搜索索引由页面里的 `<!-- pagekiln:search-panel -->` slot 牵引，未使用搜索组件时不会生成搜索索引、OpenAPI 搜索路径或 post search discovery。
 
 ### 如何开始写第一篇文章
 
@@ -171,15 +171,17 @@ content/pages/search/index.<locale>.md      # 文件存在时输出 /<locale>/se
 
 例如首页可以在 `content/pages/home/index.zh-CN.md` 里写页面介绍，然后把 `<!-- pagekiln:post-list -->` 放在文章列表位置。归档页可以写自己的标题和说明，再放 `<!-- pagekiln:archive-list -->`。
 
-Slot 语法是全局识别的，但部分 slot 需要页面上下文：
+Slot 语法是全局识别的，但上下文分两类：
 
-- `post-list`、`pagination`：需要首页列表上下文。
-- `archive-list`：需要归档页上下文。
-- `terms`：需要分类页或标签页上下文。
-- `search-panel`：只需要当前 locale，可放在任意页面。
-- `languages`：需要当前页面或文章有翻译入口。
+- 基础上下文：`search-panel` 只需要当前 `locale`，可放在任意页面。
+- 首页列表上下文：`post-list` 需要 `posts`；`pagination` 需要 `page`、`totalPages`、`pageUrl`。
+- 归档页上下文：`archive-list` 需要 `groups`，只应放在 `content/pages/archive` 这类归档页。
+- Term 索引上下文：`terms` 需要 `terms`，只应放在分类页或标签页。
+- 翻译入口上下文：`languages` 需要 `translations`，用于有多语言对应关系的页面或文章。
 
 如果把上下文依赖 slot 放到没有对应数据的页面，`pagekiln c` 会报告未解析 slot，避免构建结果静默缺组件。
+
+开发 slot 时保持一个数据入口和一个输出口：页面 renderer 只把自己拥有的原始数据传给 `replaceSlots()`，例如 `posts`、`groups`、`terms`、`translations` 和分页状态；slot 的 HTML 只由 `src/lib/slots.mjs` 的 `slotRegistry` 渲染。不要把预渲染 HTML 或 renderer 函数再塞回 slot 上下文。
 
 把 slot 当成完整组件，不要在下面补重复说明。反例：
 
@@ -203,6 +205,7 @@ config.yml              # 站点级配置
 content/posts/          # 文章 Markdown
 content/pages/          # 普通页面 Markdown/HTML
 content/assets/         # 站务图标、OG 图和派生站点资产
+backend/                # 可选后端/云函数源代码，不直接混入静态前端源
 src/bin/pagekiln.mjs    # CLI 入口
 src/*.mjs               # 构建器 Node ESM 模块
 src/scripts/*.mjs       # 构建器内部辅助命令
@@ -211,16 +214,14 @@ themes/default/         # 默认主题
 dist/                   # 构建产物
 ```
 
-构建会生成：
+构建会按内容来源生成：
 
-- 首页；如果首页内容使用 `post-list` / `pagination` slot，则渲染文章列表和分页
-- 有公开文章时的文章页
-- `content/pages/archive` 存在时的归档页
-- `content/pages/categories` 存在时的分类页；同时有公开文章时生成分类详情页
-- `content/pages/tags` 存在时的标签页；同时有公开文章时生成标签详情页
-- 普通 pages 页
-- `content/pages/search` 存在时的搜索页；页面使用 `search-panel` slot 时生成搜索索引
-- 有公开文章时的 `feed.xml`
+- 根入口、语言首页 fallback 和 404；即使 `content/pages/` 不存在也应构建成功
+- `content/pages/*` 中存在的普通页面；`archive`、`categories`、`tags`、`search` 只是可选页面，不会被构建器自动发明
+- 公开文章存在时的文章详情页、`feed.xml`、语言级 feed 和 Markdown mirror
+- 首页内容使用 `post-list` / `pagination` slot 时的文章列表和分页
+- `content/pages/categories` 或 `content/pages/tags` 存在，且公开文章提供 term 数据时的 term 详情页
+- 页面使用 `search-panel` slot 时的搜索索引、OpenAPI 搜索路径和 post search discovery
 - `sitemap.xml`
 - `robots.txt`
 - `llms.txt`、`llms-full.txt`
@@ -232,12 +233,13 @@ dist/                   # 构建产物
 
 不要手改 `dist/`。根目录 `AGENTS.md` 是给 Codex、Claude 或其他代码代理看的项目说明，`pagekiln g` 会把它复制到 `dist/AGENTS.md` 作为部署后的站点级 agent guide。
 
-Pagekiln 以静态优先，但可以按前后端一体项目组织。需要 Cloudflare Functions、Workers、Node 服务、传统服务器或其他运行时后端时，建议统一放在 `/backend`，让后端成为独立边界，而不是混进 `content/`、`themes/` 或构建器 `src/`。
+Pagekiln 以静态优先，但可以按前后端一体项目组织。需要 Cloudflare Pages Functions、Cloudflare Workers、Node 服务、传统服务器或其他运行时后端时，源代码必须统一放在 `/backend`，让后端成为独立边界，而不是混进 `content/`、`themes/` 或构建器 `src/`。
 
 后端边界建议：
 
 - `content/` 和 `themes/` 仍按静态前端源文件处理，`pagekiln g` 把 HTML、CSS、JS、图片、按 slot 牵引生成的搜索索引、按文章集合生成的 feed 和 discovery 文件输出到 `dist/`，以便获得高缓存命中率。
-- `/backend` 是唯一应该接触 secret、数据库连接、私有 API token、签名密钥、管理权限和写入型业务逻辑的目录。
+- `/backend` 是唯一应该接触 secret、数据库连接、私有 API token、签名密钥、管理权限和写入型业务逻辑的目录。Cloudflare Pages Functions、Workers、队列消费者、webhook、表单处理、登录、支付、评论写入和管理接口都按这个边界组织。
+- `/backend` 是后端源代码的唯一真相。如果目标平台要求函数位于部署输出里，应由构建脚本或部署适配器从 `/backend` 编译、复制或映射到 `dist/` 中对应的运行时目录；不要手写或维护 `dist/` 里的后端文件。
 - 前端文件像普通 Web 前端一样通过公开 endpoint 调用后端；endpoint 路径由项目开发者自行设计，不要求使用固定命名。
 - `config.yml` 只适合声明站点级公开调用契约，例如 base URL、endpoint key、method、consent 分类、是否需要 CAPTCHA、缓存意图、是否进入 OpenAPI/API catalog/MCP discovery。不要把真实密钥写入 `config.yml`。
 - Cloudflare Web Analytics token、Google Ads client id、Giscus repo id 这类浏览器端第三方服务要求公开暴露的客户端标识，应放在对应主题插件配置中，例如 `themes/<name>/theme.yml` 的 `plugins.analytics` 或 `plugins.advertising`。只有在已经开发并启用对应插件时才填写；它们不是后端 secret，但仍应避免把真实生产值写入可复用的默认模板。
@@ -245,14 +247,13 @@ Pagekiln 以静态优先，但可以按前后端一体项目组织。需要 Clou
 
 ### 如何开发主题
 
-推荐顺序：
+二次开发不要套固定步骤。先判断正在做的网站类型，再选择最小合适边界：
 
-1. 先读 `config.yml`，把站点名、语言、导航、页脚、插件、consent、robots、llms 和 discovery 信息整理成结构化配置。
-2. 在 `content/pages` 里调整页面文案、静态 HTML 结构和动态 slot 位置。
-3. 复制 `themes/default` 到 `themes/<your-theme>`，把 `config.yml` 里的 `theme.name` 改成新主题名。
-4. 改 `themes/<name>/theme.yml` 管理主题资源、页面样式、功能脚本、consent 分类和插件默认值。
-5. 改 `themes/<name>/templates/`、`style.css`、`styles/` 和 `scripts/`。
-6. 只有主题 API 表达不了时，才改 `src/`。
+- 内容站、文档站、博客：优先整理 `config.yml`、`content/pages`、`content/posts` 和 slot 位置；默认主题能表达时不需要复制主题。
+- 官网、产品页、作品集、活动页：通常复制 `themes/default` 到 `themes/<your-theme>`，更新 `theme.name`，再改模板、CSS、页面样式和少量浏览器脚本。
+- 工具型页面、目录站、案例库、产品集合：优先用 `content/pages` 定义可编辑页面结构，用主题模板和 slot 接入动态区域；只有通用数据模型或页面类型无法表达时才进 `src/`。
+- 带表单、登录、评论写入、支付、webhook 或管理操作的网站：静态前端仍放 `config.yml`、`content/`、`themes/`；所有运行时后端和云函数源代码放 `/backend`。
+- Pagekiln 框架能力、通用 slot、站务输出、资产生成、检查规则：才修改 `src/`，并同步 README、AGENTS 和检查脚本。
 
 主题目录：
 
@@ -281,18 +282,19 @@ CSS 放置建议：
 
 当页面需要“用户能在 Markdown/HTML 里决定位置，但内容由构建器生成”的区域时，才新增 `<!-- pagekiln:xxx -->`。
 
-文章列表、分页、归档列表、标签集合、语言切换、相关文章、搜索面板适合做 slot；固定文案、静态链接或一次性 HTML 直接写在 `content/pages` 里。
+文章列表、分页、归档列表、标签集合、语言切换、相关文章、搜索面板适合做 slot；固定文案、静态链接、静态布局和 Markdown/HTML 已经能表示的一次性结构，直接写在 `content/pages` 里，不要新增 slot。
 
 开发流程：
 
 1. 使用小写连续命名：`<!-- pagekiln:relatedposts -->`，代码里对应 `relatedPosts`。不要为旧名称保留兼容别名。
-2. 在 `src/lib/slots.mjs` 的 `slotRegistry` 中声明组件 HTML、所需上下文和缺失上下文行为。
-3. 在相关页面渲染函数中只传页面拥有的上下文数据，例如 posts、pagination、groups、terms 或 translations。
-4. 模板中保留 `{{{content}}}`，让 Markdown 和 slot 输出进入主题模板。
-5. 组件文案放进 `themes/default/i18n.yml`，并同步 `src/i18n.mjs` 默认值。
-6. 样式和脚本通过 `theme.yml` 的 `pageStyles`、`pageScripts`、`featureScripts` 或 `featureStyles` 挂载。
-7. 更新 README 和 `AGENTS.md` 的 slot 列表。
-8. 运行 `pagekiln g` 和 `pagekiln c`。新增上下文依赖 slot 时，确保检查脚本能发现未解析 slot。
+2. 在 `src/lib/slots.mjs` 的 `slotRegistry` 中声明 marker、上下文类型、所需字段、组件 HTML 和缺失上下文行为。
+3. 在相关页面渲染函数中只传页面拥有的原始上下文数据，例如 `posts`、`page`、`totalPages`、`pageUrl`、`groups`、`terms` 或 `translations`。
+4. 不要向 slot 上下文传预渲染 HTML，也不要传 renderer 函数；数据来源入口是页面 renderer，输出口是 `slotRegistry.render()`。
+5. 模板中保留 `{{{content}}}`，让 Markdown 和 slot 输出进入主题模板。
+6. 组件文案放进 `themes/default/i18n.yml`，并同步 `src/i18n.mjs` 默认值。
+7. 样式和脚本通过 `theme.yml` 的 `pageStyles`、`pageScripts`、`featureScripts` 或 `featureStyles` 挂载。
+8. 更新 README 和 `AGENTS.md` 的 slot 列表。
+9. 运行 `pagekiln g` 和 `pagekiln c`。新增上下文依赖 slot 时，确保检查脚本能发现未解析 slot。
 
 slot 组件应自己输出完整、可访问、可运行的内部状态，不应要求用户在 slot 后面补“这里会显示结果”之类说明。
 
@@ -321,7 +323,7 @@ slot 组件应自己输出完整、可访问、可运行的内部状态，不应
 - `src/scripts/check-build.mjs` 和 `src/scripts/serve-public.mjs` 是 `pagekiln c`、`pagekiln s` 调用的内部命令；`src/scripts/generate-neutral-assets.mjs` 是框架开发时可用的站务资产裁切辅助脚本。
 - `src/pages/[...route].astro` 是 Astro catch-all 页面出口，接收 `buildHtmlPages()` 生成的静态 HTML 路由。
 - `src/pages/404.astro` 输出 404 页面。
-- `src/pages/feed.xml.js` 与 `src/pages/[locale]/feed.xml.js` 在有公开文章时分别输出全站 feed 和语言级 feed。
+- `src/pages/[feed].xml.js` 与 `src/pages/[locale]/feed.xml.js` 在有公开文章时分别输出全站 feed 和语言级 feed。
 - `src/pages/robots.txt.js`、`src/pages/llms.txt.js`、`src/pages/llms-full.txt.js`、`src/pages/openapi.json.js`、`src/pages/.well-known/api-catalog.js`、`src/pages/.well-known/mcp/server-card.json.js` 输出站务与 agent discovery 文件。
 - `src/pages/assets/[file].json.js` 在页面使用 `search-panel` slot 时输出搜索索引等 JSON 资产。
 - `src/pages/md/[locale]/posts/[slug].md.js` 在有公开文章时输出 Markdown mirror，方便 agent 或外部工具读取原文。
@@ -348,6 +350,12 @@ slot 组件应自己输出完整、可访问、可运行的内部状态，不应
 请先阅读 AGENTS.md 和 config.yml。把 config.yml 当作站点名、多语言、导航、插件、consent、页脚、robots、llms、OpenAPI、API catalog、MCP server card、headers 和其他站务配置的结构化来源。优先修改 config.yml、content/pages 和主题目录；只有主题 API 无法表达需求时才修改 src/。
 ```
 
+如果网站包含 Cloudflare Pages Functions、Workers、表单处理、登录、webhook 或其他运行时后端，可以这样提示：
+
+```text
+请先阅读 AGENTS.md、README.md 和 config.yml。静态前端仍按 Pagekiln 规则放在 config.yml、content/ 和 themes/；所有云函数和运行时后端源代码必须放在 /backend。需要部署平台产物时，可以由构建脚本从 /backend 生成到 dist/，但不要手写 dist/。
+```
+
 如果已安装 [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) 或 [anthropics/skills](https://github.com/anthropics/skills/)，可以在提示里点名使用对应 skill。它们不是运行依赖，只是协作约束。
 
 多语言页面同步时，以 `zh-CN` 为内容和结构源，除非某个语言版本明确需要差异化。
@@ -363,6 +371,8 @@ Build command: npm install && pagekiln g
 Build output directory: dist
 Node.js version: 22.12 或更新
 ```
+
+当 `src/` 的构建器行为、默认主题契约、slot 规则或 npm 包模板发生变化时，应同步提升 `package.json` 版本并说明变更范围。本次 `1.1.0` 覆盖内容驱动页面生成、可缺失 `content/pages/` / `content/posts/`、按文章集合生成 feed/Markdown mirror、slot 上下文统一、预览服务启动期 404 修复，以及 consent 面板关闭按钮位置优化。
 
 Pagekiln 使用 `AGPL-3.0-or-later`。基于 Pagekiln 修改、分发、公开部署或二次开发的版本，应按 AGPL 要求继续开源对应源码。
 

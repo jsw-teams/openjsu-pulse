@@ -1,5 +1,13 @@
 import { formatDate, htmlLang, localeLabel, LOCALES, t } from "./i18n.mjs";
-import { renderArchiveList, renderSearchPanel, replaceSlots } from "./lib/slots.mjs";
+import {
+  renderArchiveList,
+  renderLanguageAvailability,
+  renderPagination,
+  renderPostList,
+  renderSearchPanel,
+  renderTermLinks,
+  replaceSlots
+} from "./lib/slots.mjs";
 
 export const basePath = "";
 
@@ -408,28 +416,6 @@ export function renderLayout({
 </html>`;
 }
 
-export function renderLanguageAvailability(locale, translations) {
-  if (!translations.length) return "";
-  const links = translations.map((entry) => {
-    const current = entry.locale === locale ? ' aria-current="page"' : "";
-    return `<a href="${entry.url}" data-locale-choice="${entry.locale}"${current}>${escapeHtml(localeLabel(entry.locale))}</a>`;
-  }).join(" <span aria-hidden=\"true\">|</span> ");
-  return `<nav class="article-languages" aria-label="${escapeHtml(t(locale, "availableLanguages"))}">
-    <span>${escapeHtml(t(locale, "availableLanguages"))}:</span>
-    ${links}
-  </nav>`;
-}
-
-export function renderPostCard(post, locale) {
-  const tags = post.tags.map((tag) => `<a href="${post.tagUrls[tag]}">${escapeHtml(tag)}</a>`).join("");
-  return `<article class="post-card">
-    <h3><a href="${post.url}">${escapeHtml(post.title)}</a></h3>
-    <p class="post-card-meta">${escapeHtml(formatDate(post.date, locale))} · <a href="${post.categoryUrl}">${escapeHtml(post.category)}</a></p>
-    <p>${escapeHtml(post.description)}</p>
-    <div class="tag-row">${tags}</div>
-  </article>`;
-}
-
 function renderMediaPlayer(post, locale) {
   const media = post.media;
   if (!media || !media.video) return "";
@@ -541,38 +527,13 @@ function renderCommentSection(site, post, locale) {
   </section>`;
 }
 
-export function renderTermLinks(terms, emptyText) {
-  if (!terms.length) return `<p class="empty">${escapeHtml(emptyText)}</p>`;
-  return `<ul class="term-grid">
-    ${terms.map((term) => `<li><a href="${term.url}"><span>${escapeHtml(term.name)}</span><strong>${term.count}</strong></a></li>`).join("")}
-  </ul>`;
-}
-
-export function renderPostList(posts, locale) {
-  if (!posts.length) return `<p class="empty">${escapeHtml(t(locale, "noPosts"))}</p>`;
-  return `<div class="post-list">${posts.map((post) => renderPostCard(post, locale)).join("")}</div>`;
-}
-
-export function renderPagination({ locale, page, totalPages, pageUrl }) {
-  if (totalPages <= 1) return "";
-  const previous = page > 1 ? pageUrl(page - 1) : "";
-  const next = page < totalPages ? pageUrl(page + 1) : "";
-  const label = locale === "en" ? `Page ${page} of ${totalPages}` : `第 ${page} / ${totalPages} 页`;
-  const previousLabel = locale === "en" ? "Newer posts" : "较新文章";
-  const nextLabel = locale === "en" ? "Older posts" : "较旧文章";
-  return `<nav class="pagination" aria-label="${escapeHtml(label)}">
-    ${previous ? `<a class="button-link button-link-secondary" href="${withBase(previous)}">${escapeHtml(previousLabel)}</a>` : `<span></span>`}
-    <span>${escapeHtml(label)}</span>
-    ${next ? `<a class="button-link button-link-secondary" href="${withBase(next)}">${escapeHtml(nextLabel)}</a>` : `<span></span>`}
-  </nav>`;
-}
-
 export function renderHomePage({ site, locale, pageContent = null, posts, page = 1, totalPages = 1, pageUrl = (number) => number === 1 ? `/${locale}/` : `/${locale}/${"older/".repeat(number - 1)}` }) {
   const locales = siteLocales(site);
   const siteName = localText(site.siteName, locale, site);
   const title = pageContent?.title || siteName;
   const description = pageContent?.description || localText(site.description, locale, site);
-  const fallbackContent = `<section class="home-hero" aria-labelledby="home-title">
+  const hasPostList = Array.isArray(posts) && posts.length > 0;
+  const fallbackContent = hasPostList ? `<section class="home-hero" aria-labelledby="home-title">
       <div>
         <h1 id="home-title">${escapeHtml(title)}</h1>
         <p class="lead">${escapeHtml(pageContent?.description || t(locale, "siteIntro"))}</p>
@@ -584,6 +545,18 @@ export function renderHomePage({ site, locale, pageContent = null, posts, page =
       </div>
       ${renderPostList(posts, locale)}
       ${renderPagination({ locale, page, totalPages, pageUrl })}
+    </section>` : `<section class="home-hero" aria-labelledby="home-title">
+      <div>
+        <h1 id="home-title">${escapeHtml(title)}</h1>
+        <p class="lead">${escapeHtml(description || t(locale, "siteIntro"))}</p>
+      </div>
+    </section>
+    <section class="home-section" aria-labelledby="empty-site-title">
+      <div class="section-heading">
+        <h2 id="empty-site-title">${escapeHtml(t(locale, "emptySiteTitle"))}</h2>
+      </div>
+      <p class="lead">${escapeHtml(t(locale, "emptySiteLead"))}</p>
+      <p><strong>${escapeHtml(t(locale, "emptySiteAction"))}</strong></p>
     </section>`;
   const content = pageContent?.html ? replaceSlots(pageContent.html, {
     site,
@@ -591,11 +564,7 @@ export function renderHomePage({ site, locale, pageContent = null, posts, page =
     posts,
     page,
     totalPages,
-    pageUrl,
-    renderLanguageAvailability,
-    renderPagination,
-    renderPostList,
-    renderTermLinks
+    pageUrl
   }) : fallbackContent;
   const main = `<main id="main" class="page-main home-main">
     ${content}
@@ -701,9 +670,7 @@ export function renderPostPage({ site, locale, post, translations, previousPost,
           site,
           locale,
           post,
-          translations,
-          languageBlock,
-          renderLanguageAvailability
+          translations
         })}
       </div>
       ${renderCommentSection(site, post, locale)}
@@ -753,12 +720,7 @@ export function renderTermIndexPage({ site, locale, pageContent = null, titleKey
   const content = pageContent?.html ? replaceSlots(pageContent.html, {
     site,
     locale,
-    terms,
-    termsHtml,
-    renderLanguageAvailability,
-    renderPagination,
-    renderPostList,
-    renderTermLinks
+    terms
   }) : fallbackContent;
   const main = `<main id="main" class="page-main list-main">
     ${content}
@@ -792,11 +754,7 @@ export function renderSearchPage({ site, locale, pageContent = null }) {
     ${searchPanel}`;
   const content = pageContent?.html ? replaceSlots(pageContent.html, {
     site,
-    locale,
-    renderLanguageAvailability,
-    renderPagination,
-    renderPostList,
-    renderTermLinks
+    locale
   }) : fallbackContent;
   const main = `<main id="main" class="page-main list-main">
     ${content}
@@ -856,12 +814,7 @@ export function renderArchivePage({ site, locale, pageContent = null, groups }) 
   const content = pageContent?.html ? replaceSlots(pageContent.html, {
     site,
     locale,
-    groups,
-    archiveList,
-    renderLanguageAvailability,
-    renderPagination,
-    renderPostList,
-    renderTermLinks
+    groups
   }) : fallbackContent;
   const main = `<main id="main" class="page-main list-main">
     ${content}
@@ -889,12 +842,7 @@ export function renderAboutPage({ site, locale, page, translations }) {
     site,
     locale,
     page,
-    translations,
-    languageBlock,
-    renderLanguageAvailability,
-    renderPagination,
-    renderPostList,
-    renderTermLinks
+    translations
   });
   const main = `<main id="main" class="page-main article-main page-content-main">
     ${content}

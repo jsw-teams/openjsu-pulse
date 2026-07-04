@@ -33,8 +33,9 @@
   grid-template-columns: minmax(12rem, .85fr) minmax(18rem, 1.4fr) minmax(18rem, 1.25fr);
   margin: 0 auto;
   max-width: 1080px;
-  padding: .85rem 1rem;
+  padding: .85rem 3.8rem .85rem 1rem;
   pointer-events: auto;
+  position: relative;
   width: min(100%, 1080px);
 }
 
@@ -59,7 +60,9 @@
   font-size: 1.2rem;
   height: 2rem;
   line-height: 1;
-  margin-left: auto;
+  position: absolute;
+  right: .9rem;
+  top: .75rem;
   width: 2rem;
 }
 
@@ -134,7 +137,7 @@ body.consent-pending {
   }
 
   .consent-panel {
-    padding: .75rem;
+    padding: .75rem 3.4rem .75rem .75rem;
   }
 
   .consent-actions .button-link {

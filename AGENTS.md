@@ -19,11 +19,21 @@ builder only when the theme API cannot express the needed behavior.
   indexes, OpenAPI search paths, MCP post search, and WebMCP post search are
   generated only when page content uses the `<!-- pagekiln:search-panel -->`
   slot.
+- `content/posts/` is optional. Removing the whole directory must not break
+  generation; it should only remove post detail pages, feeds, and Markdown
+  mirrors.
+- `content/pages/` is optional. Removing the whole directory must not break
+  generation; the builder should render a neutral root entry, locale homepage
+  fallback, 404, and site-discovery outputs instead of blog-specific defaults.
 - `themes/<name>/` is the theme boundary. A new project should usually start by
   copying `themes/default` and changing the copy.
 - `themes/default/theme.yml` is the active default theme configuration.
 - `themes/default/theme.example.yml` is the copyable reference for theme users.
 - The repository root is the neutral default project copied by `pagekiln init`; keep it free of production domains, author identity, analytics tokens, Cloudflare settings, and deployment secrets.
+- `/backend` is the only source directory for runtime backend code, including
+  Cloudflare Pages Functions, Workers, webhooks, form handlers, login, payments,
+  comment writes, queues, and admin operations. Static frontend sources stay in
+  `config.yml`, `content/`, and `themes/`.
 - `themes/default/templates/` contains HTML template fragments for page types.
 - `themes/default/style.css` is the theme baseline stylesheet.
 - `themes/default/styles/` contains page or feature styles loaded by theme
@@ -109,29 +119,35 @@ Do not add extra top-level README sections for deployment, license, plugins, or
 agent collaboration. Fold those details into the relevant primary section unless
 the user asks for a new documentation structure.
 
-## Theme-First Workflow
+## Type-Driven Secondary Development
 
-1. Read `config.yml` and identify which site-level content can be generated from
-   structured config.
-2. Copy `themes/default` to `themes/<your-theme>`.
-3. Rename `<your-theme>` to a project-appropriate theme name, not a leftover
-   generic or source-project name.
-4. Set `theme.name: <your-theme>` in `config.yml`.
-5. Move migrated site metadata, locales, navigation, footer, plugin choices, and
-   consent behavior into `config.yml` / `theme.yml`.
-6. Change global visual language in `themes/<your-theme>/style.css`.
-7. Change page-specific layout and polish in `themes/<your-theme>/styles/`.
-8. Change HTML structure in `themes/<your-theme>/templates/`.
-9. Add site identity assets such as icons and default OG artwork under
-   `content/assets/`. If a custom theme needs its own interface images, it may
-   create `themes/<your-theme>/source-assets/`; the default theme does not
-   require this directory.
-10. Add optional behavior under `themes/<your-theme>/scripts/`, then expose it
-   from `theme.yml` through `featureScripts` and `featureCategories`.
-11. Run `pagekiln g` and `pagekiln c`.
+Do not force every site through a fixed theme-first sequence. Read `config.yml`,
+identify the site type and runtime needs, then choose the smallest boundary that
+can express the request cleanly.
 
-If a requested customization can be done by changing theme config, templates,
-CSS, or theme scripts, do that instead of editing `src/`.
+- Content sites, documentation, and blogs: prefer `config.yml`,
+  `content/pages`, `content/posts`, and slot placement. Do not copy a theme when
+  the default theme already expresses the site.
+- Brand sites, product pages, portfolios, and campaign pages: usually copy
+  `themes/default` to `themes/<your-theme>`, rename the theme to a
+  project-appropriate name, set `theme.name`, then edit theme config,
+  templates, CSS, page styles, scripts, and site identity assets.
+- Tools, directories, case-study libraries, and product collections: use
+  `content/pages` for user-editable page structure, theme templates for layout,
+  and slots for generated or interactive regions. Enter `src/` only when a
+  reusable data model, page type, or builder-owned component is missing.
+- Sites with forms, login, comments writes, payments, webhooks, queues, admin
+  operations, or cloud functions: keep the static frontend in `config.yml`,
+  `content/`, and `themes/`; put every runtime backend source file under
+  `/backend`.
+- Pagekiln framework work: edit `src/` only for reusable page types,
+  site-operations outputs, slots, config merging, asset generation, build output
+  behavior, or checks that protect downstream themes.
+
+If a requested customization can be done by changing config, Markdown/HTML
+pages, theme config, templates, CSS, or theme scripts, use those surfaces before
+builder code. If it is runtime backend behavior, use `/backend` before inventing
+frontend or builder workarounds.
 
 When changing the default project created for new users, edit the neutral root `config.yml`, `content/`, `themes/`, and framework generators under `src/` when needed. Do not sync real production domains, author identity, analytics tokens, Cloudflare settings, or deployment secrets into the public Pagekiln repository.
 
@@ -181,6 +197,11 @@ routes. Generate them only when their Markdown files exist. Term detail pages
 are generated only when the corresponding term index page exists and public
 posts provide category or tag data. Search indexes and post-search discovery are
 generated only when page content uses the `<!-- pagekiln:search-panel -->` slot.
+The entire `content/posts/` directory may be absent; treat that as an empty post
+collection, not as an error.
+The entire `content/pages/` directory may also be absent; treat that as an empty
+custom page collection and show a neutral empty-site fallback for locale
+homepages.
 
 Use Pagekiln slots where the builder should inject dynamic output:
 
@@ -193,17 +214,29 @@ Use Pagekiln slots where the builder should inject dynamic output:
 <!-- pagekiln:languages -->
 ```
 
-Slot syntax is recognized globally, but some slots require page context:
+Slot syntax is recognized globally, but context has two levels:
 
-- `post-list` and `pagination` require homepage list context.
-- `archive-list` requires archive page context.
-- `terms` requires category or tag index context.
-- `search-panel` only requires the current locale and can be used on any page.
-- `languages` requires translations for the current page or article.
+- Base context: `search-panel` only needs the current `locale` and can be used
+  on any page.
+- Homepage list context: `post-list` needs `posts`; `pagination` needs `page`,
+  `totalPages`, and `pageUrl`.
+- Archive page context: `archive-list` needs `groups` and should only be used on
+  archive pages such as `content/pages/archive`.
+- Term index context: `terms` needs `terms` and should only be used on category
+  or tag index pages.
+- Translation context: `languages` needs `translations` for a page or article
+  with localized counterparts.
 
 If a context-dependent slot is placed on a page without the required data,
 `pagekiln c` should report the unresolved slot instead of letting the component
 silently disappear.
+
+Keep slot data flow single-source and single-output. Page renderers pass only
+raw data they own into `replaceSlots()` or `renderSlotTemplate()`, such as
+`posts`, `page`, `totalPages`, `pageUrl`, `groups`, `terms`, and
+`translations`. Slot HTML is rendered only by `slotRegistry` in
+`src/lib/slots.mjs`. Do not pass pre-rendered HTML or renderer functions through
+slot context.
 
 Treat slots as real components, not as comments that need explanatory text below
 them. For example, do not add a paragraph such as "Enter a query to start searching." after
@@ -215,12 +248,12 @@ When developing a new slot, add it only for generated or interactive UI whose
 placement should remain user-editable in Markdown/HTML. Use one lowercase marker
 in page content, such as `<!-- pagekiln:relatedposts -->`, and camelCase in renderer
 code, such as `relatedPosts`. Do not keep compatibility aliases for old marker
-names. Declare component HTML, required context, and
+names. Declare marker, context type, required fields, component HTML, and
 missing-context behavior in `src/lib/slots.mjs`; page renderers should only pass
-the context data they own. Put UI strings in `themes/default/i18n.yml` and
-`src/i18n.mjs`, attach CSS/JS through `theme.yml`, and update README plus both
-AGENTS documents. Do not add a slot for static copy that can live directly in
-`content/pages`.
+raw context data they own. Do not add a slot for static copy, static links,
+static layout, or one-off structures that Markdown/HTML can express directly in
+`content/pages`. Put UI strings in `themes/default/i18n.yml` and `src/i18n.mjs`,
+attach CSS/JS through `theme.yml`, and update README plus AGENTS.
 
 When the user edits zh-CN content first, use it as the source of truth for
 structure and meaning. Sync zh-TW and en pages to the same structure unless the
@@ -321,21 +354,35 @@ Use this flow:
 When changing `src/`, update README and AGENTS if the public contract changes.
 Extend `src/scripts/check-build.mjs` for new framework contracts so downstream
 themes do not silently regress.
+If builder behavior, default theme contracts, slot rules, or the npm package
+template changes, also evaluate whether `package.json` needs a version bump and
+document the release scope. The `1.1.0` release covers content-driven page
+generation, optional `content/pages/` and `content/posts/`, post-driven feeds
+and Markdown mirrors, unified slot context, preview startup 404 fixes, and
+consent panel close-button placement.
 
 ## Backend Boundary
 
 Pagekiln may be used as a static-first frontend + backend project, but backend
-runtime code belongs under `/backend`. Do not place backend secrets or business
-runtime logic in `content/`, `themes/`, or builder `src/`.
+runtime source code belongs under `/backend`. Do not place backend secrets,
+cloud functions, or business runtime logic in `content/`, `themes/`, generated
+`dist/`, or builder `src/`.
 
 When adding backend support:
 
 - Keep the frontend static by default so HTML, CSS, JS, images, slot-pulled
   search indexes, post-driven feeds, and discovery files can be cached
   effectively.
-- Treat `/backend` as the only directory that may access secrets, databases,
-  private API tokens, signing keys, privileged permissions, and write-side
-  business logic.
+- Treat `/backend` as the only source directory that may access secrets,
+  databases, private API tokens, signing keys, privileged permissions, and
+  write-side business logic.
+- Put Cloudflare Pages Functions, Cloudflare Workers, queue consumers, webhooks,
+  form handlers, login, payments, comment writes, admin operations, and other
+  runtime backend code under `/backend`.
+- If a deployment target needs functions inside its output bundle, add a build
+  or deploy adapter that compiles, copies, or maps `/backend` into the
+  appropriate generated location under `dist/`. Never maintain those generated
+  runtime files by hand.
 - Let project developers choose endpoint paths. Do not require fixed API path
   names in Pagekiln conventions.
 - Put only public backend calling contracts in `config.yml`: base URL, endpoint
@@ -416,6 +463,9 @@ contracts, extend the check script so future themes do not silently regress.
 ## What Not To Do
 
 - Do not edit generated files in `dist/`.
+- Do not author Cloudflare Pages Functions, Workers, webhooks, form handlers, or
+  other runtime backend source directly in `dist/`, `content/`, `themes/`, or
+  builder `src/`; put them under `/backend`.
 - Do not put theme assets in `src/`.
 - Do not make optional third-party scripts unconditional.
 - Do not reintroduce a `public/` build output directory unless the deployment
@@ -430,18 +480,23 @@ contracts, extend the check script so future themes do not silently regress.
 
 ## Recommended Agent Routine
 
-When asked to build a custom site or theme with pagekiln:
+When asked to build or customize a Pagekiln site:
 
-1. Read `config.yml`, `themes/default/theme.yml`, and the relevant template.
-2. Extract site-level secondary-development facts from `config.yml`: names,
-   locales, navigation, footer, plugin toggles, consent categories, robots/LLM
-   policy, and discovery needs.
-3. Decide whether the request belongs in `config.yml`, `content/pages`, theme
-   config, templates, CSS, scripts, content, or builder core.
-4. Prefer config, Markdown/HTML page edits, and theme-level changes before
-   builder code.
-5. Run `pagekiln g` and `pagekiln c`.
-6. Summarize changed files and explain whether the change is structured site
-   config, user-editable page
-   content, reusable theme work,
-   or framework work.
+1. Read `config.yml`, then read the relevant content, theme config, template, or
+   backend files implied by the request.
+2. Identify the site type and runtime shape: content/blog/docs, brand/product,
+   portfolio/campaign, tool/directory/collection, static frontend with backend,
+   or Pagekiln framework work.
+3. Extract structured site facts from `config.yml`: names, locales, navigation,
+   footer, plugin toggles, consent categories, robots/LLM policy, discovery
+   needs, public backend calling contracts, and cache intent.
+4. Decide the right boundary: `config.yml`, `content/pages`, `content/posts`,
+   `content/assets`, theme config, templates, CSS, scripts, `/backend`, or
+   builder `src/`.
+5. Prefer the smallest boundary that fits the site type. Use `/backend` for
+   runtime functions and privileged logic; use `src/` only for reusable builder
+   behavior.
+6. Run `pagekiln g` and `pagekiln c`.
+7. Summarize changed files and explain whether the change is structured site
+   config, user-editable content, reusable theme work, backend runtime work, or
+   framework work.

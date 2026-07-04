@@ -1,6 +1,12 @@
 import rss from "@astrojs/rss";
 import { absoluteUrl, loadBlogData } from "../lib/content.mjs";
 
+export async function getStaticPaths() {
+  const { posts } = await loadBlogData();
+  if (!posts.length) return [];
+  return [{ params: { feed: "feed" } }];
+}
+
 export async function GET(context) {
   const { site, posts } = await loadBlogData();
   if (!posts.length) return new Response("Not found\n", { status: 404 });

@@ -1,17 +1,21 @@
 import path from "node:path";
 import fsSync from "node:fs";
 import { t } from "../i18n.mjs";
-import { renderArchiveList, renderSearchPanel, replaceSlots, slotTemplateData } from "./slots.mjs";
+import {
+  renderArchiveList,
+  renderPagination,
+  renderPostList,
+  renderSearchPanel,
+  renderTermLinks,
+  replaceSlots,
+  slotTemplateData
+} from "./slots.mjs";
 import {
   baseJsonLd,
   breadcrumbJsonLd,
   escapeHtml,
   localText,
-  renderLanguageAvailability,
   renderLayout,
-  renderPagination,
-  renderPostList,
-  renderTermLinks,
   siteDefaultLocale,
   siteLocales
 } from "../templates.mjs";
@@ -51,7 +55,8 @@ export function loadHtmlThemeTemplates(site, themeDir, templateDir) {
       const siteName = localText(site.siteName, locale, site);
       const title = pageContent?.title || siteName;
       const description = pageContent?.description || localText(site.description, locale, site);
-      const fallbackContent = `<section class="home-hero" aria-labelledby="home-title">
+      const hasPostList = Array.isArray(posts) && posts.length > 0;
+      const fallbackContent = hasPostList ? `<section class="home-hero" aria-labelledby="home-title">
         <div>
           <h1 id="home-title">${escapeHtml(title)}</h1>
           <p class="lead">${escapeHtml(pageContent?.description || t(locale, "siteIntro"))}</p>
@@ -63,6 +68,18 @@ export function loadHtmlThemeTemplates(site, themeDir, templateDir) {
         </div>
         ${renderPostList(posts, locale)}
         ${renderPagination({ locale, page, totalPages, pageUrl })}
+      </section>` : `<section class="home-hero" aria-labelledby="home-title">
+        <div>
+          <h1 id="home-title">${escapeHtml(title)}</h1>
+          <p class="lead">${escapeHtml(description || t(locale, "siteIntro"))}</p>
+        </div>
+      </section>
+      <section class="home-section" aria-labelledby="empty-site-title">
+        <div class="section-heading">
+          <h2 id="empty-site-title">${escapeHtml(t(locale, "emptySiteTitle"))}</h2>
+        </div>
+        <p class="lead">${escapeHtml(t(locale, "emptySiteLead"))}</p>
+        <p><strong>${escapeHtml(t(locale, "emptySiteAction"))}</strong></p>
       </section>`;
       const slotContext = {
         site,
@@ -70,11 +87,7 @@ export function loadHtmlThemeTemplates(site, themeDir, templateDir) {
         posts,
         page,
         totalPages,
-        pageUrl,
-        renderLanguageAvailability,
-        renderPagination,
-        renderPostList,
-        renderTermLinks
+        pageUrl
       };
       const main = renderSlotTemplate(files.home, {
         siteName,
@@ -82,9 +95,7 @@ export function loadHtmlThemeTemplates(site, themeDir, templateDir) {
         description: pageContent?.description || t(locale, "siteIntro"),
         intro: pageContent?.description || t(locale, "siteIntro"),
         content: pageContent?.html ? replaceSlots(pageContent.html, slotContext) : fallbackContent,
-        latestPosts: t(locale, "latestPosts"),
-        postList: renderPostList(posts, locale),
-        pagination: renderPagination({ locale, page, totalPages, pageUrl })
+        latestPosts: t(locale, "latestPosts")
       }, slotContext);
       return renderLayout({
         site,
@@ -115,18 +126,12 @@ export function loadHtmlThemeTemplates(site, themeDir, templateDir) {
       const slotContext = {
         site,
         locale,
-        groups,
-        archiveList,
-        renderLanguageAvailability,
-        renderPagination,
-        renderPostList,
-        renderTermLinks
+        groups
       };
       const main = renderSlotTemplate(files.archive, {
         title,
         description,
-        content: pageContent?.html ? replaceSlots(pageContent.html, slotContext) : fallbackContent,
-        archiveList
+        content: pageContent?.html ? replaceSlots(pageContent.html, slotContext) : fallbackContent
       }, slotContext);
       return renderLayout({
         site,
@@ -161,18 +166,12 @@ export function loadHtmlThemeTemplates(site, themeDir, templateDir) {
       const slotContext = {
         site,
         locale,
-        terms,
-        termsHtml,
-        renderLanguageAvailability,
-        renderPagination,
-        renderPostList,
-        renderTermLinks
+        terms
       };
       const main = renderSlotTemplate(files.termsIndex, {
         title,
         description,
-        content: pageContent?.html ? replaceSlots(pageContent.html, slotContext) : fallbackContent,
-        terms: termsHtml
+        content: pageContent?.html ? replaceSlots(pageContent.html, slotContext) : fallbackContent
       }, slotContext);
       return renderLayout({
         site,
@@ -206,11 +205,7 @@ export function loadHtmlThemeTemplates(site, themeDir, templateDir) {
       ${panel}`;
       const slotContext = {
         site,
-        locale,
-        renderLanguageAvailability,
-        renderPagination,
-        renderPostList,
-        renderTermLinks
+        locale
       };
       const main = renderSlotTemplate(files.search, {
         title,
@@ -249,16 +244,11 @@ export function loadHtmlThemeTemplates(site, themeDir, templateDir) {
       const slotContext = {
         site,
         locale,
-        posts,
-        renderLanguageAvailability,
-        renderPagination,
-        renderPostList,
-        renderTermLinks
+        posts
       };
       const main = renderSlotTemplate(files.termsPage, {
         title,
-        description,
-        postList: renderPostList(posts, locale)
+        description
       }, slotContext);
       return renderLayout({
         site,
@@ -281,22 +271,15 @@ export function loadHtmlThemeTemplates(site, themeDir, templateDir) {
 
     renderAboutPage({ site, locale, page, translations }) {
       if (!files.page) return null;
-      const languageBlock = renderLanguageAvailability(locale, translations);
       const slotContext = {
         site,
         locale,
         page,
-        translations,
-        languageBlock,
-        renderLanguageAvailability,
-        renderPagination,
-        renderPostList,
-        renderTermLinks
+        translations
       };
       const main = renderSlotTemplate(files.page, {
         title: page.title,
         description: page.description,
-        languages: languageBlock,
         content: replaceSlots(page.html, slotContext)
       }, slotContext);
       const alternates = translations
