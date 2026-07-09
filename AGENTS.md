@@ -182,8 +182,13 @@ layout into `src/templates.mjs`.
 
 `content/pages/<slug>/index.<locale>.md` is a first-class customization surface.
 Page Markdown may contain static HTML directly, not only prose Markdown. Use this
-for low-cost user-editable page structure: headings, sections, small static
-layout wrappers, images, and the position of Pagekiln dynamic components.
+for low-cost user-editable page structure: common Markdown headings (`#`, `##`,
+`###`), paragraphs, lists, blockquotes, tables, links, images, inline `code`,
+fenced code blocks, semantic sections, small static layout wrappers, and the
+position of Pagekiln dynamic components. Prefer Markdown and semantic HTML that
+theme CSS can target through `h1`, `h2`, `h3`, `p`, `ul`, `ol`, `blockquote`,
+`table`, `code`, `pre`, and stable containers. Do not add class-heavy one-off
+markup just to style ordinary page copy.
 
 Special default pages are also content-owned:
 
@@ -274,6 +279,12 @@ user explicitly wants a locale-specific variation.
   loading.
 - Do not put production CSS in Markdown/HTML. Page Markdown controls structure
   and dynamic slot placement; theme CSS controls visual language.
+- Write CSS against semantic Markdown output and a few stable reusable
+  containers before adding new classes. Use selectors such as `main h1`,
+  `.page-content h2`, `pre code`, and `blockquote` for ordinary content; reserve
+  classes for reusable layouts, components, feature shells, and slot containers.
+  Avoid class-heavy one-off content styling such as
+  `class="title title-large title-primary"` for normal page copy.
 - Use stable layout constraints such as `max-width`, grid tracks, aspect ratios,
   and predictable spacing so content cannot overlap on mobile or desktop.
 - Prefer CSS custom properties for colors, spacing, borders, and typography that
@@ -300,6 +311,10 @@ user explicitly wants a locale-specific variation.
   must not load.
 - Optional scripts should be mapped in `theme.yml` and gated by consent
   categories.
+- Keep source CSS/JS readable and maintainable. Deployment or package output may
+  be minified to one line to reduce transfer size, but minification should be
+  produced by the builder, a theme build script, or a deploy adapter. Do not hand
+  edit generated `dist/` files.
 - Plugins are optional and project-specific. A simple site may need none; a
   larger site may enable search, comments, analytics, ads, commerce, maps, or
   custom integrations.

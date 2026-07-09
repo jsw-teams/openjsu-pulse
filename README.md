@@ -158,7 +158,7 @@ content/pages/tags/index.<locale>.md        # 文件存在时输出 /<locale>/ta
 content/pages/search/index.<locale>.md      # 文件存在时输出 /<locale>/search/
 ```
 
-`content/pages` 里的 Markdown 可以直接写 HTML。你可以在页面里写 `<header>`、`<section>`、`<img>`、少量页面脚本，也可以把动态组件放到想出现的位置：
+`content/pages` 里的 Markdown 可以直接写 HTML。优先用常见 Markdown 语法表达内容结构，例如 `#`、`##`、`###` 标题、段落、列表、引用、表格、链接、图片、行内 `code` 和代码块；需要更明确结构时再写 `<header>`、`<section>`、`figure` 等语义 HTML。不要为了调样式给每段内容堆多个一次性 class。主题 CSS 应先覆盖 `h1`、`h2`、`h3`、`p`、`ul`、`ol`、`blockquote`、`table`、`code`、`pre` 等稳定元素，再给真正复用的布局、组件或 slot 容器加 class。动态组件可以放到想出现的位置：
 
 ```html
 <!-- pagekiln:post-list -->
@@ -275,6 +275,8 @@ CSS 放置建议：
 - 只有当某个页面样式明显较多、复用度低，或只服务少数页面的复杂布局、动画、组件状态时，才拆到 `themes/<name>/styles/*.css`，再通过 `theme.yml` 的 `pageStyles` 按页面加载。
 - consent、search、comments、ads、gallery、docs toc 等功能边界清楚的组件样式，可以独立成 feature/page style，方便按功能或页面加载。
 - 不要把正式 CSS 写进 Markdown/HTML。`content/pages` 负责内容结构和动态 slot 位置，主题 CSS 负责视觉系统。
+- 写 CSS 时优先面向 Markdown 生成的语义元素和少量稳定容器，例如 `main h1`、`.page-content h2`、`pre code`、`blockquote`。不要把页面内容拆成大量 `class="title title-large title-primary"` 这类只服务单页文案的样式。
+- CSS/JS 源文件应保持可读、可维护；发布或部署输出可以压缩成一行以减少传输体积。不要手改 `dist/`，需要压缩时由构建器、主题构建脚本或部署适配器生成。
 
 插件是可选能力。简单站点可以完全不用插件；复杂站点可以按需启用搜索、评论、统计、RUM、广告、地图、表单、商务或自定义脚本。默认主题只有 `scripts/consent.js` 无条件加载。未保存隐私偏好前，评论、统计、广告和营销脚本不会加载；用户保存选择后，构建器按 `necessary`、`preferences`、`analytics`、`marketing` 等分类加载对应功能。
 

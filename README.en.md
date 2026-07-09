@@ -201,8 +201,14 @@ content/pages/tags/index.<locale>.md        # /<locale>/tags/ when the file exis
 content/pages/search/index.<locale>.md      # /<locale>/search/ when the file exists
 ```
 
-Markdown under `content/pages` may contain HTML directly. You can write
-`<header>`, `<section>`, `<img>`, small page scripts, and place dynamic
+Markdown under `content/pages` may contain HTML directly. Prefer common
+Markdown structure first: `#`, `##`, and `###` headings, paragraphs, lists,
+blockquotes, tables, links, images, inline `code`, and fenced code blocks. Use
+semantic HTML such as `<header>`, `<section>`, and `figure` when the page needs
+clearer structure. Do not add multiple one-off classes to ordinary content just
+to style copy. Theme CSS should first cover stable elements such as `h1`, `h2`,
+`h3`, `p`, `ul`, `ol`, `blockquote`, `table`, `code`, and `pre`, then use
+classes for reusable layouts, components, or slot containers. Place dynamic
 components exactly where they should render:
 
 ```html
@@ -343,6 +349,8 @@ CSS placement guidance:
 - Split CSS into `themes/<name>/styles/*.css` and load it through `theme.yml` `pageStyles` only when the page CSS is substantial, low-reuse, or dedicated to complex layouts, animation, or component states for a small set of pages.
 - Keep clearly bounded feature styles, such as consent, search, comments, ads, gallery, or docs toc styles, separate when that helps feature/page loading.
 - Do not put production CSS in Markdown/HTML. `content/pages` owns content structure and dynamic slot placement; theme CSS owns the visual system.
+- Write CSS against semantic Markdown output and a few stable containers first, such as `main h1`, `.page-content h2`, `pre code`, and `blockquote`. Avoid class-heavy one-off content styling such as `class="title title-large title-primary"` for normal page copy.
+- Keep CSS/JS source files readable and maintainable; deployment or package output may be minified to one line to reduce transfer size. Do not edit `dist/` by hand; minification should come from the builder, a theme build script, or a deploy adapter.
 
 Plugins are optional. A simple site may use none; a larger site may enable
 search, comments, analytics, RUM, ads, maps, forms, commerce, or custom scripts.
