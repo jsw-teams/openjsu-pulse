@@ -1,10 +1,13 @@
 Pagekiln
 
-Copyright (c) JSW Teams.
+Copyright (c) 2026 JSW Teams.
 
 Repository: https://github.com/jsw-teams/pagekiln
 
-Pagekiln is licensed under the GNU Affero General Public License v3.0 or later.
-Modified, redistributed, publicly deployed, or downstream projects based on
-Pagekiln must preserve this NOTICE file or an equivalent visible attribution
-that credits "Pagekiln by JSW Teams" and links to the original repository.
+Pagekiln is licensed under the MIT License. Commercial use, private
+modification, redistribution, and closed-source deployment are permitted.
+Copies or substantial portions of the software must retain the copyright and
+MIT permission notice.
+
+Please credit "Pagekiln by JSW Teams" and link to the original repository when
+the project is identified in user-facing materials.

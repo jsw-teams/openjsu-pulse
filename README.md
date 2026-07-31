@@ -376,6 +376,6 @@ Node.js version: 22.12 或更新
 
 正式版本发布应同步三处：`package.json` 版本、npm 包、GitHub Release 更新说明。`1.1.0` 已发布到 npm，更新范围包括：内容驱动页面生成；`content/pages/` 和 `content/posts/` 可整体缺失且构建成功；公开文章存在时才生成文章详情、feed 和 Markdown mirror；搜索索引由 `search-panel` slot 牵引；slot 上下文统一检查；`pagekiln s` 启动期 404 修复；consent 面板关闭按钮移到常规右侧位置。发布前已通过 `pnpm run build`、`pnpm run check`、`git diff --check` 和预览根路径 200 检查。
 
-Pagekiln 使用 `AGPL-3.0-or-later`。基于 Pagekiln 修改、分发、公开部署或二次开发的版本，应按 AGPL 要求继续开源对应源码。
+Pagekiln 使用 [MIT 许可证](./LICENSE)，允许商业使用、私有修改、再分发与闭源部署。复制或分发软件及其主要部分时，须保留版权声明与 MIT 许可声明。
 
-请保留原作者标注：`Pagekiln by JSW Teams`，并保留或等效展示仓库中的 `NOTICE` 信息与原始仓库链接。
+请保留出处标注：`Pagekiln by JSW Teams`，并附上原始仓库链接。

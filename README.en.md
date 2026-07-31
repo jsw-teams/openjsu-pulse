@@ -480,10 +480,10 @@ startup 404 fix; and standard right-side placement for the consent panel close
 button. Before release, it passed `pnpm run build`, `pnpm run check`,
 `git diff --check`, and a preview root HTTP 200 check.
 
-Pagekiln is licensed under `AGPL-3.0-or-later`. Modified, redistributed,
-publicly deployed, or downstream versions based on Pagekiln should keep their
-corresponding source code open under the AGPL.
+Pagekiln is licensed under the [MIT License](./LICENSE). Commercial use,
+private modification, redistribution, and closed-source deployment are
+permitted. Copies or substantial portions of the software must retain the
+copyright and MIT permission notice.
 
-Please preserve the original author attribution: `Pagekiln by JSW Teams`, and
-keep or equivalently display the `NOTICE` information and original repository
-link.
+Please preserve the source attribution: `Pagekiln by JSW Teams`, with a link
+to the original repository.

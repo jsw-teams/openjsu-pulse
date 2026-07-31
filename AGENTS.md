@@ -63,12 +63,12 @@ stable package release is `pagekiln@1.1.0`.
 
 ## License And Attribution
 
-Pagekiln is licensed under `AGPL-3.0-or-later`. Modified, redistributed,
-publicly deployed, or downstream versions should keep their corresponding source
-code open under the AGPL.
+Pagekiln is licensed under the MIT License. Commercial use, private
+modification, redistribution, and closed-source deployment are permitted.
+Copies or substantial portions of the software must retain the copyright and
+MIT permission notice.
 
-Preserve the original author attribution: `Pagekiln by JSW Teams`. Keep the
-root `NOTICE` file, or provide equivalent visible attribution with a link to the
+Preserve the source attribution: `Pagekiln by JSW Teams`, with a link to the
 original repository.
 
 ## Config As Secondary-Development Source

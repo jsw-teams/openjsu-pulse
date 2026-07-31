@@ -2,7 +2,7 @@
   "name": "pagekiln",
   "version": "1.1.0",
   "description": "Content-driven static site builder with optional posts, dynamic slots, site operations assets, and agent discovery.",
-  "license": "AGPL-3.0-or-later",
+  "license": "MIT",
   "type": "module",
   "packageManager": "pnpm@10.18.0",
   "bin": {
