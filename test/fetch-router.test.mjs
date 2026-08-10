@@ -24,3 +24,19 @@ test('shared site handler runs dynamic routes and delegates static assets', asyn
   assert.equal(await (await handler(new Request('https://example.test/'), {}, {})).text(), 'asset');
   assert.deepEqual(fetched, ['/index.html']);
 });
+
+test('site handler falls back to the archive dist asset prefix', async () => {
+  const requested = [];
+  const handler = createSiteFetchHandler({ defaultLocale: 'en' });
+  const response = await handler(new Request('https://example.test/'), {
+    ASSETS: {
+      fetch(request) {
+        const pathname = new URL(request.url).pathname;
+        requested.push(pathname);
+        return pathname === '/dist/index.html' ? new Response('asset') : new Response('missing', { status: 404 });
+      }
+    }
+  }, {});
+  assert.equal(await response.text(), 'asset');
+  assert.deepEqual(requested, ['/index.html', '/', '/dist/index.html']);
+});

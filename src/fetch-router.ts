@@ -85,6 +85,22 @@ function assetRequest(request: Request, defaultLocale: string): Request {
   return new Request(url, request);
 }
 
+function assetRequests(request: Request, defaultLocale: string): Request[] {
+  const standard = assetRequest(request, defaultLocale);
+  const original = new Request(request);
+  const archivedUrl = new URL(standard.url);
+  if (!archivedUrl.pathname.startsWith('/dist/')) archivedUrl.pathname = `/dist${archivedUrl.pathname}`;
+  const archived = new Request(archivedUrl, request);
+  const candidates = [standard, original, archived];
+  const seen = new Set<string>();
+  return candidates.filter(candidate => {
+    const key = candidate.url;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 export function createSiteFetchHandler<Environment = Record<string, unknown>, ExecutionContext = unknown>(
   options: SiteFetchOptions<Environment, ExecutionContext> = {}
 ) {
@@ -95,7 +111,14 @@ export function createSiteFetchHandler<Environment = Record<string, unknown>, Ex
     const explicitAssets = options.assets;
     if (explicitAssets) return explicitAssets(assetRequest(request, defaultLocale), env);
     const binding = (env as Record<string, unknown> | undefined)?.ASSETS as AssetBinding | undefined;
-    if (binding && typeof binding.fetch === 'function') return binding.fetch(assetRequest(request, defaultLocale));
+    if (binding && typeof binding.fetch === 'function') {
+      let response = new Response('Not found', { status: 404 });
+      for (const candidate of assetRequests(request, defaultLocale)) {
+        response = await binding.fetch(candidate);
+        if (response.status !== 404) return response;
+      }
+      return response;
+    }
     return new Response('Not found', { status: 404, headers: { 'content-type': 'text/plain; charset=utf-8' } });
   };
 }
