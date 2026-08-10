@@ -184,6 +184,7 @@ deployment:
     identityFile: null
   openaiSites:
     metadata: .openai/hosting.json
+    staticDirectory: static
   backend: true
   dynamicRoutes:
     - /api/health

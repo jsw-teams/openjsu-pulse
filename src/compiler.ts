@@ -31,7 +31,7 @@ type CachedDocument = { hash: string; outputs: string[]; dependencies?: string[]
 type CachedImage = { hash: string; output: string };
 type CacheManifest = { version: 2; rendererVersion?: string; configHash?: string; themeHash?: string; assetHash?: string; contentRoots?: Record<string, number>; routeCount?: number; documents: Record<string, CachedDocument>; images?: Record<string, CachedImage>; outputs: string[]; outputHashes?: Record<string, string> };
 export type BuildProfile = { discover: number; load: number; validate: number; parse: number; route: number; render: number; assets: number; write: number; total: number; documents: number; changedOutputs: number; imagesProcessed: number; imageCacheHits: number };
-const RENDERER_VERSION = '2.4.14';
+const RENDERER_VERSION = '2.4.15';
 const MAX_MARKDOWN_CACHE = 32;
 const MAX_SOURCE_PARSE_CACHE = 64;
 const LOAD_CONCURRENCY = 32;
@@ -1149,6 +1149,23 @@ async function writeDeployments(ctx: BuildContext) {
   await writeIfChanged(ctx, 'server/index.js', `import { createSiteFetchHandler } from './_pagekiln/fetch-router.js';\n${sitesBackendImport}const fetchHandler = createSiteFetchHandler({ router, defaultLocale: '${locale}' });\nexport { fetchHandler };\nexport default { fetch: fetchHandler };\n`);
 }
 
+async function writeSiteStaticDirectory(ctx: BuildContext) {
+  const deployment = ctx.config.deployment && typeof ctx.config.deployment === 'object' ? ctx.config.deployment : {};
+  const sites = deployment.openaiSites && typeof deployment.openaiSites === 'object' ? deployment.openaiSites : {};
+  const staticDirectory = String(sites.staticDirectory || '').replace(/^\/+|\/+$/g, '');
+  if (!staticDirectory || staticDirectory === 'dist') return;
+  const ignored = new Set(['.assetsignore', '_worker.js', 'cloudflare-worker.mjs', 'vps-server.mjs', 'wrangler.toml']);
+  const outputs = [...ctx.outputs];
+  for (const output of outputs) {
+    if (!output || output.startsWith(`${staticDirectory}/`) || output.startsWith('server/') || output.startsWith('_pagekiln/') || output.startsWith('.pagekiln/') || ignored.has(output)) continue;
+    try {
+      await writeIfChanged(ctx, `${staticDirectory}/${output}`, await fs.readFile(path.join(ctx.out, output)));
+    } catch (error: any) {
+      if (error.code !== 'ENOENT') throw error;
+    }
+  }
+}
+
 export async function createContext(root = process.cwd()): Promise<BuildContext> {
   const discoverStart = performance.now();
   let cache = await readJson<CacheManifest>(path.join(root, '.pagekiln', 'manifest.json'), { version: 2, documents: {}, outputs: [] });
@@ -1448,7 +1465,7 @@ export async function build(ctx: BuildContext): Promise<BuildContext> {
     if (feedCollectionName && ctx.docs.some(doc => doc.collection === feedCollectionName && doc.locale === locale)) await writeIfChanged(ctx, `${locale}/feed.xml`, feedXml(ctx, locale, feedCollectionName));
   }
   await writeLlms(ctx, siteUrl);
-  await writeIfChanged(ctx, '.pagekiln/catalog.json', JSON.stringify(catalog(ctx), null, 2)); await writeDeployments(ctx); await copyThemeAndAssets(ctx); ctx.profile.assets = duration(assetStart);
+  await writeIfChanged(ctx, '.pagekiln/catalog.json', JSON.stringify(catalog(ctx), null, 2)); await writeDeployments(ctx); await copyThemeAndAssets(ctx); await writeSiteStaticDirectory(ctx); ctx.profile.assets = duration(assetStart);
   const previousOutputs = new Set(ctx.cache.outputs || []); const writeStart = performance.now();
   for (const old of previousOutputs) if (!ctx.outputs.has(old)) { const target = path.join(ctx.out, old); try { await fs.rm(target); } catch (error: any) { if (error.code !== 'ENOENT') throw error; } }
   ctx.profile.write = duration(writeStart);

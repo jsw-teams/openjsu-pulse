@@ -313,6 +313,18 @@ test('deployment output uses one Web Fetch handler and keeps static Pages mode w
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 
+test('Sites deployment mirrors public output into its configured static directory', async () => {
+  const root = await fixture();
+  try {
+    const configFile = path.join(root, 'config.yml');
+    await writeFile(configFile, `${await readFile(configFile, 'utf8')}\ndeployment:\n  openaiSites:\n    staticDirectory: static\n`);
+    await build(await createContext(root));
+    assert.match(await readFile(path.join(root, 'dist/static/index.html'), 'utf8'), /Choose a site language/);
+    assert.match(await readFile(path.join(root, 'dist/static/en/index.html'), 'utf8'), /Hello/);
+    await assert.rejects(stat(path.join(root, 'dist/static/server/index.js')));
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
 test('cached source index discovers a newly added locale inside an existing content id', async () => {
   const root = await fixture();
   try {
