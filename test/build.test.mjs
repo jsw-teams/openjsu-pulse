@@ -304,8 +304,10 @@ test('deployment output uses one Web Fetch handler and keeps static Pages mode w
     await build(await createContext(root));
     const worker = await readFile(path.join(root, 'dist/cloudflare-worker.mjs'), 'utf8');
     const vps = await readFile(path.join(root, 'dist/vps-server.mjs'), 'utf8');
+    const sitesServer = await readFile(path.join(root, 'dist/server/index.js'), 'utf8');
     assert.match(worker, /createSiteFetchHandler/);
     assert.match(vps, /Deno\.serve/);
+    assert.match(sitesServer, /\.\.\/_pagekiln\/fetch-router\.js/);
     assert.doesNotMatch(vps, /node:fs|createReadStream/);
     await assert.rejects(stat(path.join(root, 'dist/_worker.js')));
   } finally { await rm(root, { recursive: true, force: true }); }

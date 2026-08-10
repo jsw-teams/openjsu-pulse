@@ -31,7 +31,7 @@ type CachedDocument = { hash: string; outputs: string[]; dependencies?: string[]
 type CachedImage = { hash: string; output: string };
 type CacheManifest = { version: 2; rendererVersion?: string; configHash?: string; themeHash?: string; assetHash?: string; contentRoots?: Record<string, number>; routeCount?: number; documents: Record<string, CachedDocument>; images?: Record<string, CachedImage>; outputs: string[]; outputHashes?: Record<string, string> };
 export type BuildProfile = { discover: number; load: number; validate: number; parse: number; route: number; render: number; assets: number; write: number; total: number; documents: number; changedOutputs: number; imagesProcessed: number; imageCacheHits: number };
-const RENDERER_VERSION = '2.4.11';
+const RENDERER_VERSION = '2.4.12';
 const MAX_MARKDOWN_CACHE = 32;
 const MAX_SOURCE_PARSE_CACHE = 64;
 const LOAD_CONCURRENCY = 32;
@@ -1142,6 +1142,8 @@ async function writeDeployments(ctx: BuildContext) {
   await writeIfChanged(ctx, 'wrangler.toml', `${accountId}name = "${workerName}"\nmain = "cloudflare-worker.mjs"\ncompatibility_date = "${compatibilityDate}"\n\n[assets]\ndirectory = "./"\nbinding = "ASSETS"\nrun_worker_first = ${workerFirst}\nhtml_handling = "auto-trailing-slash"\nnot_found_handling = "404-page"\n`);
   const denoBackendImport = backendEnabled ? `import { router } from './_pagekiln/backend/handler.js';\n` : 'const router = undefined;\n';
   await writeIfChanged(ctx, 'vps-server.mjs', `import { createSiteFetchHandler } from './_pagekiln/fetch-router.js';\n${denoBackendImport}const runtimeEnv = new Proxy({}, { get: (_target, key) => Deno.env.get(String(key)) });\nconst fetchHandler = createSiteFetchHandler({ router });\nconst port = Number(Deno.env.get('PORT') || '8787');\nconst hostname = Deno.env.get('HOST') || '127.0.0.1';\nDeno.serve({ port, hostname }, (request, info) => fetchHandler(request, runtimeEnv, info));\nexport { fetchHandler };\n`);
+  const sitesBackendImport = backendEnabled ? `import { router } from '../_pagekiln/backend/handler.js';\n` : 'const router = undefined;\n';
+  await writeIfChanged(ctx, 'server/index.js', `import { createSiteFetchHandler } from '../_pagekiln/fetch-router.js';\n${sitesBackendImport}const fetchHandler = createSiteFetchHandler({ router, defaultLocale: '${locale}' });\nexport { fetchHandler };\nexport default { fetch: fetchHandler };\n`);
 }
 
 export async function createContext(root = process.cwd()): Promise<BuildContext> {
