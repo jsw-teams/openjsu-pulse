@@ -1146,7 +1146,10 @@ async function writeDeployments(ctx: BuildContext) {
   const denoBackendImport = backendEnabled ? `import { router } from './_pagekiln/backend/handler.js';\n` : 'const router = undefined;\n';
   await writeIfChanged(ctx, 'vps-server.mjs', `import { createSiteFetchHandler } from './_pagekiln/fetch-router.js';\n${denoBackendImport}const runtimeEnv = new Proxy({}, { get: (_target, key) => Deno.env.get(String(key)) });\nconst fetchHandler = createSiteFetchHandler({ router });\nconst port = Number(Deno.env.get('PORT') || '8787');\nconst hostname = Deno.env.get('HOST') || '127.0.0.1';\nDeno.serve({ port, hostname }, (request, info) => fetchHandler(request, runtimeEnv, info));\nexport { fetchHandler };\n`);
   const sitesBackendImport = backendEnabled ? `import { router } from './_pagekiln/backend/handler.js';\n` : 'const router = undefined;\n';
-  await writeIfChanged(ctx, 'server/index.js', `import { createSiteFetchHandler } from './_pagekiln/fetch-router.js';\n${sitesBackendImport}const fetchHandler = createSiteFetchHandler({ router, defaultLocale: '${locale}' });\nexport { fetchHandler };\nexport default { fetch: fetchHandler };\n`);
+  const sites = deployment.openaiSites && typeof deployment.openaiSites === 'object' ? deployment.openaiSites : {};
+  const staticDirectory = String(sites.staticDirectory || '').replace(/^\/+|\/+$/g, '');
+  const staticOption = staticDirectory && staticDirectory !== 'dist' ? `, staticDirectory: ${JSON.stringify(staticDirectory)}` : '';
+  await writeIfChanged(ctx, 'server/index.js', `import { createSiteFetchHandler } from './_pagekiln/fetch-router.js';\n${sitesBackendImport}const fetchHandler = createSiteFetchHandler({ router, defaultLocale: '${locale}'${staticOption} });\nexport { fetchHandler };\nexport default { fetch: fetchHandler };\n`);
 }
 
 async function writeSiteStaticDirectory(ctx: BuildContext) {

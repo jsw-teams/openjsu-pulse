@@ -40,3 +40,19 @@ test('site handler falls back to the archive dist asset prefix', async () => {
   assert.equal(await response.text(), 'asset');
   assert.deepEqual(requested, ['/index.html', '/', '/dist/index.html']);
 });
+
+test('site handler checks the configured static asset directory', async () => {
+  const requested = [];
+  const handler = createSiteFetchHandler({ defaultLocale: 'en', staticDirectory: 'static' });
+  const response = await handler(new Request('https://example.test/'), {
+    ASSETS: {
+      fetch(request) {
+        const pathname = new URL(request.url).pathname;
+        requested.push(pathname);
+        return pathname === '/static/index.html' ? new Response('asset') : new Response('missing', { status: 404 });
+      }
+    }
+  }, {});
+  assert.equal(await response.text(), 'asset');
+  assert.deepEqual(requested, ['/index.html', '/', '/static/index.html']);
+});

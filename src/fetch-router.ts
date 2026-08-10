@@ -75,6 +75,7 @@ type AssetBinding = { fetch(request: Request): Response | Promise<Response> };
 export type SiteFetchOptions<Environment = Record<string, unknown>, ExecutionContext = unknown> = {
   router?: Router<Environment, ExecutionContext>;
   defaultLocale?: string;
+  staticDirectory?: string;
   assets?: (request: Request, env: Environment) => Response | Promise<Response>;
 };
 
@@ -85,13 +86,19 @@ function assetRequest(request: Request, defaultLocale: string): Request {
   return new Request(url, request);
 }
 
-function assetRequests(request: Request, defaultLocale: string): Request[] {
+function assetRequests(request: Request, defaultLocale: string, staticDirectory = ''): Request[] {
   const standard = assetRequest(request, defaultLocale);
   const original = new Request(request);
+  const candidates = [standard, original];
+  const normalizedStaticDirectory = String(staticDirectory).replace(/^\/+|\/+$/g, '');
+  if (normalizedStaticDirectory && !standard.url.includes(`/${normalizedStaticDirectory}/`)) {
+    const staticUrl = new URL(standard.url);
+    staticUrl.pathname = `/${normalizedStaticDirectory}${staticUrl.pathname}`;
+    candidates.push(new Request(staticUrl, request));
+  }
   const archivedUrl = new URL(standard.url);
   if (!archivedUrl.pathname.startsWith('/dist/')) archivedUrl.pathname = `/dist${archivedUrl.pathname}`;
-  const archived = new Request(archivedUrl, request);
-  const candidates = [standard, original, archived];
+  candidates.push(new Request(archivedUrl, request));
   const seen = new Set<string>();
   return candidates.filter(candidate => {
     const key = candidate.url;
@@ -113,7 +120,7 @@ export function createSiteFetchHandler<Environment = Record<string, unknown>, Ex
     const binding = (env as Record<string, unknown> | undefined)?.ASSETS as AssetBinding | undefined;
     if (binding && typeof binding.fetch === 'function') {
       let response = new Response('Not found', { status: 404 });
-      for (const candidate of assetRequests(request, defaultLocale)) {
+      for (const candidate of assetRequests(request, defaultLocale, options.staticDirectory)) {
         response = await binding.fetch(candidate);
         if (response.status !== 404) return response;
       }
