@@ -50,7 +50,7 @@ Declare Block attributes in the schema first. Renderers use `context.escapeHtml`
 1. Add a Pattern or Block in `theme.ts` and declare its context.
 2. Register its name, scalar attributes, schema example, and resource dependencies in `theme.yml`.
 3. Complete desktop, narrow-screen, and focus states in `style.css` or theme resources; keep the default visual system free of unnecessary motion.
-4. Run `npm run catalog` so people and Agents can find the capability.
+4. Run `npm run catalog`, then use `pagekiln inspect block:<id>` or `pattern:<id>` to verify the local capability.
 5. Build a real Markdown example with `pagekiln check` and `pagekiln g --profile`.
 
 Reuse an existing Block when it expresses the content. Page archives, product notes, language switching, excerpts, covers, the Feed, sitemap, and local search are core capabilities; a project does not need to copy another page engine for them.

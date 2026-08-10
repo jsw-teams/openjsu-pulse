@@ -1,0 +1,11 @@
+name: default
+module: theme.js
+style: style.css
+patterns:
+  - landing
+  - document
+  - blog
+blocks:
+  - hero
+  - feature-grid
+  - post-list

@@ -38,7 +38,7 @@ test('site handler falls back to the archive dist asset prefix', async () => {
     }
   }, {});
   assert.equal(await response.text(), 'asset');
-  assert.deepEqual(requested, ['/index.html', '/', '/dist/index.html']);
+  assert.deepEqual(requested, ['/', '/index.html', '/dist/index.html']);
 });
 
 test('site handler checks the configured static asset directory', async () => {
@@ -54,5 +54,30 @@ test('site handler checks the configured static asset directory', async () => {
     }
   }, {});
   assert.equal(await response.text(), 'asset');
-  assert.deepEqual(requested, ['/index.html', '/', '/static/index.html']);
+  assert.deepEqual(requested, ['/', '/index.html', '/static/index.html']);
+});
+
+test('site handler skips a Pages self-redirect and continues to an asset candidate', async () => {
+  const requested = [];
+  const handler = createSiteFetchHandler({ defaultLocale: 'en' });
+  const response = await handler(new Request('https://example.test/'), {
+    ASSETS: {
+      fetch(request) {
+        const pathname = new URL(request.url).pathname;
+        requested.push(pathname);
+        if (pathname === '/') return new Response(null, { status: 308, headers: { location: '/' } });
+        return pathname === '/index.html' ? new Response('asset') : new Response('missing', { status: 404 });
+      }
+    }
+  }, {});
+  assert.equal(await response.text(), 'asset');
+  assert.deepEqual(requested, ['/', '/index.html']);
+});
+
+test('site handler never returns a same-path asset redirect when no candidate exists', async () => {
+  const handler = createSiteFetchHandler({ defaultLocale: 'en' });
+  const response = await handler(new Request('https://example.test/missing/'), {
+    ASSETS: { fetch: () => new Response(null, { status: 308, headers: { location: '/missing/' } }) }
+  }, {});
+  assert.equal(response.status, 404);
 });

@@ -1,0 +1,22 @@
+siteUrl: https://example.com
+defaultLocale: en
+activeLocales:
+  - en
+siteName:
+  en: New Pagekiln Site
+description:
+  en: A neutral Pagekiln starter.
+theme:
+  name: default
+  nav:
+    links: []
+content:
+  collections:
+    pages:
+      pattern: document
+      route: /:locale/:id/
+    posts:
+      pattern: blog
+      route: /:locale/posts/:id/
+deployment:
+  targets: []

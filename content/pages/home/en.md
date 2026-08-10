@@ -44,7 +44,7 @@ Start a new page section in `themes/<name>/`. Collections, routes, localization,
 | Record a product decision or update | `content/posts/<id>/<locale>.md` | Note, archive, Feed, and search |
 | Change structure or visual language | `themes/default/theme.ts`, `theme.yml`, `style.css` | Theme-owned Patterns, Blocks, and styles |
 | Change site metadata or capability switches | `config.yml` | Site metadata, locales, routes, and feature settings |
-| Help an Agent locate a capability | `.pagekiln/catalog.json`, `AGENTS.md` | Structured capability and file navigation |
+| Help an Agent locate a capability | `pagekiln catalog`, `pagekiln inspect block:<id>` | Source-backed capability and file navigation |
 
 ## What is already part of the project
 

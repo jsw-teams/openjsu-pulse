@@ -99,7 +99,9 @@ activeLocales: [zh-sg, zh-tw, en]
 - `feed.xml`：产品笔记订阅清单，限制条数并按日期排序。
 - `sitemap.xml`：站点地图，列出页面和翻译关系。
 - `llms.txt`：给 Agent 先读的站点入口；`llms-full.txt` 是分片的页面摘要与全文入口。
-- `.pagekiln/catalog.json`：能力目录，列出当前主题的 Pattern、Block、schema、插件资源和依赖。
+- `pagekiln catalog`：基于源码的当前主题能力目录，列出 Pattern、Block、schema、插件和依赖，不需要完整构建。
+- `pagekiln inspect block:<id>` / `pattern:<id>` / `collection:<id>` / `plugin:<id>`：结构化的局部能力查询；直接写 id 仍然查询内容。
+- `.pagekiln/catalog.json`：正常构建时生成的发现层副本。
 - `site.webmanifest`、OG 图、404 和部署文件：用于浏览器、分享和静态托管。
 
 ## Cookie 与无障碍

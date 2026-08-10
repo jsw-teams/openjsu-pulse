@@ -44,7 +44,7 @@ Pattern 決定頁面骨架，Block 提供可重用段落，Frontmatter 只保存
 | 更新產品決定或版本記錄 | `content/posts/<id>/<locale>.md` | 產品筆記、彙整、訂閱和搜尋 |
 | 調整結構與視覺 | `themes/default/theme.ts`、`theme.yml`、`style.css` | 主題級 Pattern、Block 和樣式 |
 | 修改網站資訊或能力開關 | `config.yml` | 網站元資料、語言、路由和功能設定 |
-| 讓 Agent 找到功能 | `.pagekiln/catalog.json`、`AGENTS.md` | 結構化能力清單和檔案導覽 |
+| 讓 Agent 找到功能 | `pagekiln catalog`、`pagekiln inspect block:<id>` | 基於原始碼的能力清單和檔案導覽 |
 
 ## 預設就能處理的事情
 

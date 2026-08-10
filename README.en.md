@@ -58,7 +58,7 @@ Unknown Blocks, invalid attributes, missing schema fields, and route collisions 
 
 ### Built-in outputs
 
-The default site emits static HTML, a custom 404 page, a feed (an RSS/Atom-style update subscription file), `sitemap.xml` (a search-engine site map), a local search index, `llms.txt` (a concise site entry point for Agents), `.pagekiln/catalog.json` (theme capabilities and content contexts), and `.well-known/agent.json`. Search results label the matching title, description, heading, body, or path instead of returning an unexplained title-only hit.
+The default site emits static HTML, a custom 404 page, a feed (an RSS/Atom-style update subscription file), `sitemap.xml` (a search-engine site map), a local search index, `llms.txt` (a concise site entry point for Agents), `.pagekiln/catalog.json` (theme capabilities and content contexts), and `.well-known/agent.json`. Search results label the matching title, description, heading, body, or path instead of returning an unexplained title-only hit. `pagekiln catalog` builds its capability view directly from config, content, and theme source; it does not render the site or require an existing `dist/`.
 
 ## Secondary Development
 
@@ -66,6 +66,7 @@ The default site emits static HTML, a custom 404 page, a feed (an RSS/Atom-style
 
 ```text
 config.yml                 site information, locales, routes, collections, plugin switches
+starter/                   minimal buildable project copied by `pagekiln init`
 content/                   Markdown content and user-owned assets
 themes/default/            theme.yml, i18n.yml, theme.ts, style.css, plugin scripts, Pattern/Block resources
 src/compiler.ts            BuildContext, parsing, schemas, graph, cache, static output
@@ -89,8 +90,10 @@ scripts/benchmark.mjs      temporary scale fixture, never production dist
 | `pagekiln d --dry-run` | Preview the deployment action from `config.yml` without uploading |
 | `pagekiln d` | Build and upload `dist/` using the target in `config.yml` |
 | `pagekiln check` | Validate Markdown, schemas, Blocks, routes, and outputs |
-| `pagekiln catalog` | Inspect the active theme's Patterns, Blocks, schemas, examples, and dependencies |
-| `pagekiln inspect <id>` | Inspect content identity, route, locale, and Directive source positions |
+| `pagekiln catalog` | Inspect source-backed Patterns, Blocks, schemas, plugins, and dependencies without a full build |
+| `pagekiln inspect <query>` | Inspect content or the `page:`, `block:`, `pattern:`, `collection:`, and `plugin:` namespaces as structured JSON |
+
+`pagekiln inspect <id>` still queries content by id; explicit namespaces avoid ambiguity when content and capabilities share names. A missing object returns a non-zero exit code and stable `INSPECT_NOT_FOUND` JSON error.
 
 ### Theme-first extension
 
@@ -100,7 +103,7 @@ Pattern → Block → Schema Data is the intended composition. Collections, loca
 
 ### Configuration boundaries
 
-`config.yml` manages site information, locales, navigation, collections, routes, schemas, image variants, search, privacy, and deployment settings. It is not a CSS, HTML, browser-script, or `unsafeHtml` injection surface. Visual behavior belongs in the theme; dynamic behavior belongs in `backend/handler.ts`.
+`config.yml` manages site information, locales, navigation, collections, routes, schemas, image variants, search, privacy, and deployment settings. It is not a CSS, HTML, browser-script, or `unsafeHtml` injection surface. Visual behavior belongs in the theme; dynamic behavior belongs in `backend/handler.ts`. The raw `config.yml`, `content/`, and `themes/` files are the source of truth; `.pagekiln/catalog.json` and `.well-known/agent.json` are generated discovery; `AGENTS.md` is operational guidance only.
 
 The default theme keeps styles in the unified `style.css`. CSS builds as one compressed line, and CSS/native ESM filenames receive content fingerprints without query-string cache keys. OG and product-note covers are produced from configured image variants, with default source images when a page has no asset.
 

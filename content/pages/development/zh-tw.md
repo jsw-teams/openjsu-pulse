@@ -50,7 +50,7 @@ Block 的屬性先在 schema 中宣告。渲染器使用 `context.escapeHtml`、
 1. 在 `theme.ts` 增加 Pattern 或 Block，並寫出適用的 context。
 2. 在 `theme.yml` 註冊名稱、短屬性、schema 範例和實際資源依賴。
 3. 在 `style.css` 或主題資源中完成桌面、窄屏和焦點狀態；預設視覺系統不加入無意義動效。
-4. 執行 `npm run catalog`，確認能力目錄能讓人和 Agent 找到它。
+4. 執行 `npm run catalog`，再用 `pagekiln inspect block:<id>` 或 `pattern:<id>` 檢查局部能力。
 5. 用一份真實 Markdown 執行 `pagekiln check` 與 `pagekiln g --profile`。
 
 普通需求優先重用既有 Block。頁面目錄、產品筆記、語言切換、摘要、封面、Feed（產品筆記訂閱清單）、網站地圖和本地搜尋都已經屬於核心能力，不需要為每個網站複製一套頁面程式碼。

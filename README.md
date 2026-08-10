@@ -58,7 +58,7 @@ cover: /assets/product-note-cover.webp
 
 ### Built-in outputs
 
-站点默认生成静态 HTML、404、自定义 Feed（RSS/Atom 类的更新订阅文件）、`sitemap.xml`（搜索引擎站点地图）、本地搜索索引、`llms.txt`（给 Agent 读取站点入口的简明文本）、`.pagekiln/catalog.json`（列出主题能力和内容上下文）以及 `.well-known/agent.json`。搜索结果会标注命中标题、摘要、正文小节或路径，而不是只给出模糊标题。
+站点默认生成静态 HTML、404、自定义 Feed（RSS/Atom 类的更新订阅文件）、`sitemap.xml`（搜索引擎站点地图）、本地搜索索引、`llms.txt`（给 Agent 读取站点入口的简明文本）、`.pagekiln/catalog.json`（列出主题能力和内容上下文）以及 `.well-known/agent.json`。搜索结果会标注命中标题、摘要、正文小节或路径，而不是只给出模糊标题。`pagekiln catalog` 直接从配置、内容和主题源码建立能力目录，不渲染全站或依赖已有 `dist/`。
 
 ## Secondary Development
 
@@ -66,6 +66,7 @@ cover: /assets/product-note-cover.webp
 
 ```text
 config.yml                 站点信息、语言、路由、collection 和插件开关
+starter/                   `pagekiln init` 复制的最小可构建项目模板
 content/                   Markdown 内容与用户资产
 themes/default/            theme.yml、i18n.yml、theme.ts、style.css、插件脚本和 Pattern/Block 资源
 src/compiler.ts            BuildContext、解析、schema、依赖图、缓存和静态输出
@@ -89,8 +90,10 @@ scripts/benchmark.mjs      临时规模夹具，不写入生产 dist
 | `pagekiln d --dry-run` | 按 `config.yml` 预览部署动作，不上传 |
 | `pagekiln d` | 按 `config.yml` 将 `dist/` 上传到明确目标 |
 | `pagekiln check` | 检查 Markdown、schema、Block、路由和输出 |
-| `pagekiln catalog` | 查看当前主题的 Pattern、Block、schema、示例和资源依赖 |
-| `pagekiln inspect <id>` | 查看内容身份、路由、locale 和 Directive 源位置 |
+| `pagekiln catalog` | 从当前源码查看 Pattern、Block、schema、插件和资源依赖；不执行完整构建 |
+| `pagekiln inspect <query>` | 以结构化 JSON 查看内容或 `page:`, `block:`, `pattern:`, `collection:`, `plugin:` 命名空间对象 |
+
+`pagekiln inspect <id>` 仍按内容 id 查询；命名空间查询用于避免内容和能力同名时产生歧义。找不到对象会返回非零退出码和稳定的 `INSPECT_NOT_FOUND` JSON 错误。
 
 ### Theme-first extension
 
@@ -100,7 +103,7 @@ Pattern → Block → Schema Data 是推荐组合方式。集合、翻译 fallba
 
 ### Configuration boundaries
 
-`config.yml` 只管理站点信息、语言、导航、collection、路由、schema、图片处理、搜索、隐私和部署等设置。它不是 CSS、HTML、浏览器脚本或 `unsafeHtml` 注入入口。视觉与行为进入主题目录，动态业务进入 `backend/handler.ts`。
+`config.yml` 只管理站点信息、语言、导航、collection、路由、schema、图片处理、搜索、隐私和部署等设置。它不是 CSS、HTML、浏览器脚本或 `unsafeHtml` 注入入口。视觉与行为进入主题目录，动态业务进入 `backend/handler.ts`。原始 `config.yml`、`content/` 和 `themes/` 是事实来源；`.pagekiln/catalog.json` 与 `.well-known/agent.json` 是生成的发现层；`AGENTS.md` 只提供操作约束。
 
 默认主题只保留实际使用的 `style.css`。CSS 构建为压缩单行文件，CSS 和原生 ESM 文件名使用内容指纹版本化，不依赖查询字符串缓存。OG 图和产品笔记封面由图片变体配置生成，未提供页面资源时使用默认源图。
 

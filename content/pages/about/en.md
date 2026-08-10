@@ -68,7 +68,7 @@ pagekiln g --profile
 npm run catalog
 ```
 
-`catalog` is a capability directory, not a content page. It lets a person or Agent see the active theme's Patterns, Blocks, schemas, contexts, and resource dependencies first. `inspect` then locates the route and directive positions for one Markdown document.
+`catalog` is a source-backed capability directory, not a content page. It reads the active config, content, and theme without rendering the site or requiring `dist/`. `inspect` keeps content-id lookup and also exposes local namespaces such as `block:<id>`, `pattern:<id>`, `collection:<id>`, and `plugin:<id>` as structured JSON.
 
 ## How to read a performance comparison
 

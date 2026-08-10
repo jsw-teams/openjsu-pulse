@@ -23,6 +23,7 @@
     "backend/",
     "content/",
     "src/",
+    "starter/",
     "themes/",
     "tsconfig.json",
     "tsconfig.emit.json",

@@ -89,7 +89,10 @@ function assetRequest(request: Request, defaultLocale: string): Request {
 function assetRequests(request: Request, defaultLocale: string, staticDirectory = ''): Request[] {
   const standard = assetRequest(request, defaultLocale);
   const original = new Request(request);
-  const candidates = [standard, original];
+  // Pages' ASSETS binding owns directory-index and trailing-slash resolution.
+  // Ask for the published URL first; translating `/` to `index.html` before
+  // the binding sees it can turn Pages' canonical 308 into a self-redirect.
+  const candidates = [original, standard];
   const normalizedStaticDirectory = String(staticDirectory).replace(/^\/+|\/+$/g, '');
   if (normalizedStaticDirectory && !standard.url.includes(`/${normalizedStaticDirectory}/`)) {
     const staticUrl = new URL(standard.url);
@@ -108,6 +111,19 @@ function assetRequests(request: Request, defaultLocale: string, staticDirectory 
   });
 }
 
+function isSelfRedirect(request: Request, response: Response): boolean {
+  if (response.status < 300 || response.status >= 400) return false;
+  const location = response.headers.get('location');
+  if (!location) return false;
+  try {
+    const source = new URL(request.url);
+    const target = new URL(location, source);
+    return target.origin === source.origin && target.pathname === source.pathname && target.search === source.search;
+  } catch {
+    return false;
+  }
+}
+
 export function createSiteFetchHandler<Environment = Record<string, unknown>, ExecutionContext = unknown>(
   options: SiteFetchOptions<Environment, ExecutionContext> = {}
 ) {
@@ -122,6 +138,10 @@ export function createSiteFetchHandler<Environment = Record<string, unknown>, Ex
       let response = new Response('Not found', { status: 404 });
       for (const candidate of assetRequests(request, defaultLocale, options.staticDirectory)) {
         response = await binding.fetch(candidate);
+        if (isSelfRedirect(request, response)) {
+          response = new Response('Not found', { status: 404, headers: { 'content-type': 'text/plain; charset=utf-8' } });
+          continue;
+        }
         if (response.status !== 404) return response;
       }
       return response;

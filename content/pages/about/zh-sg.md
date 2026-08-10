@@ -68,7 +68,7 @@ pagekiln g --profile
 npm run catalog
 ```
 
-`catalog` 是能力目录，不是内容页面；它让人或 Agent 先看到当前主题可以使用的 Pattern、Block、schema、context 和资源依赖。`inspect` 再定位单篇 Markdown 的路由和指令位置。
+`catalog` 是基于源码的能力目录，不是内容页面；它读取当前配置、内容和主题，不渲染全站，也不依赖已有 `dist/`。`inspect` 保留按内容 id 查询，并以结构化 JSON 提供 `block:<id>`、`pattern:<id>`、`collection:<id>` 和 `plugin:<id>` 等局部命名空间。
 
 ## 怎样理解性能比较
 

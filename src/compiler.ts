@@ -715,13 +715,21 @@ function contentNodes(doc: Document): MarkdownNode[] {
   return doc.nodes;
 }
 
+function discoveryBoundaries() {
+  return {
+    sourceOfTruth: ['config.yml', 'content/', 'themes/'],
+    generatedDiscovery: ['.pagekiln/catalog.json', '.well-known/agent.json'],
+    agentInstructions: ['AGENTS.md']
+  };
+}
+
 function agentFunctionMap() {
   return [
     { id: 'write-page', purpose: 'Write a general product or information page', paths: ['content/pages/<id>/<locale>.md'], commands: ['pagekiln check', 'pagekiln g'] },
     { id: 'write-post', purpose: 'Publish a dated product note for the note page, feed, archive, and search', paths: ['content/posts/<id>/<locale>.md'], commands: ['pagekiln check', 'pagekiln g'] },
     { id: 'change-layout', purpose: 'Change page structure or visual language', paths: ['themes/<name>/theme.yml', 'themes/<name>/theme.ts', 'themes/<name>/style.css'], commands: ['pagekiln catalog', 'pagekiln g --profile'] },
     { id: 'change-site', purpose: 'Change locales, routes, collections, SEO, privacy, search, or deployment settings', paths: ['config.yml'], commands: ['pagekiln check', 'pagekiln g --profile'] },
-    { id: 'discover-extension', purpose: 'Read active theme Patterns, Blocks, schemas, plugin switches, contexts, and resource dependencies', paths: ['.pagekiln/catalog.json', '.well-known/agent.json', 'AGENTS.md'], commands: ['pagekiln catalog', 'pagekiln inspect <id>'] },
+    { id: 'discover-extension', purpose: 'Read active theme Patterns, Blocks, collections, plugin switches, contexts, and resource dependencies', paths: ['themes/<name>/theme.yml', 'themes/<name>/theme.ts', 'config.yml'], commands: ['pagekiln catalog', 'pagekiln inspect block:<id>', 'pagekiln inspect pattern:<id>', 'pagekiln inspect collection:<id>', 'pagekiln inspect plugin:<id>'] },
     { id: 'preview', purpose: 'Open the local development server with a persistent incremental context', paths: ['src/bin/pagekiln.mjs', 'src/compiler.ts'], commands: ['pagekiln s'] },
     { id: 'deploy', purpose: 'Build and publish dist/ using the hosting target in config.yml', paths: ['config.yml', 'dist/'], commands: ['pagekiln d --dry-run', 'pagekiln d'] },
     { id: 'dynamic-backend', purpose: 'Add runtime business logic, secrets, writes, or webhooks', paths: ['backend/handler.ts'], commands: ['pagekiln g', 'pagekiln check'] },
@@ -745,7 +753,7 @@ function catalog(ctx: BuildContext) {
     },
     compiler: { runtime: 'node22-esm', renderer: 'typescript-safe-html', markdown: 'commonmark-gfm', yaml: 'yaml-1.2', directives: 'pagekiln-block-directive' },
     presets: Object.entries(ctx.theme.presets || {}).map(([name, value]) => ({ name, ...(value as Record<string, any>) })),
-    patterns: Object.values(ctx.themeDefinition.patterns).map(pattern => ({ name: pattern.name, contexts: pattern.contexts, resources: { styles: pattern.resources?.styles || ctx.theme.patternStyles?.[pattern.name] || [], scripts: pattern.resources?.scripts || [] } })),
+    patterns: Object.values(ctx.themeDefinition.patterns).map(pattern => ({ name: pattern.name, contexts: pattern.contexts, resources: { styles: pattern.resources?.styles || ctx.theme.patternStyles?.[pattern.name] || [], scripts: pattern.resources?.scripts || ctx.theme.patternScripts?.[pattern.name] || [] } })),
     blocks: Object.values(ctx.themeDefinition.blocks).map(block => ({
       name: block.name,
       schema: block.schema,
@@ -754,13 +762,25 @@ function catalog(ctx: BuildContext) {
       resources: { styles: block.resources?.styles || ctx.theme.blockStyles?.[block.name] || [], scripts: block.resources?.scripts || ctx.theme.blockScripts?.[block.name] || [] },
       examples: [block.example || `:::${block.name}${Object.entries(block.defaults || {}).map(([key, value]) => `${key}="${value}"`).join(' ') ? `{${Object.entries(block.defaults || {}).map(([key, value]) => `${key}="${value}"`).join(' ')}}` : ''}\n:::`]
     })),
-    collections: Object.entries(ctx.config.content?.collections || {}).map(([name, value]) => ({ name, ...(value as Record<string, any>) })),
+    collections: Object.entries(ctx.config.content?.collections || {}).map(([name, value]) => {
+      const settings = value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, any> : {};
+      return {
+        name,
+        ...settings,
+        contentType: String(settings.contentType || 'page'),
+        route: String(settings.route || '/:locale/:id/'),
+        pattern: String(settings.pattern || 'document'),
+        schema: settings.schema && typeof settings.schema === 'object' ? settings.schema : {},
+        feed: settings.feed === true,
+        archive: settings.archive === true
+      };
+    }),
     languages: ctx.config.activeLocales || [ctx.config.defaultLocale || 'en'],
     agent: {
       optional: true,
       role: 'assistive',
       defaultCommands: ['npm install', 'pagekiln s', 'pagekiln g'],
-      sourceOfTruth: ['config.yml', 'content/', 'themes/', '.pagekiln/catalog.json', 'AGENTS.md'],
+      ...discoveryBoundaries(),
       functionMap: agentFunctionMap()
     },
     privacy: {
@@ -995,7 +1015,7 @@ async function writeAgentInfo(ctx: BuildContext, siteUrl: string) {
     agentGuidance: {
       optional: true,
       role: 'assistive',
-      sourceOfTruth: ['config.yml', 'content/', 'themes/', '.pagekiln/catalog.json', 'AGENTS.md'],
+      ...discoveryBoundaries(),
       functionMap: agentFunctionMap()
     },
     generatedBy: { name: 'Pagekiln', version: 2, static: true, siteUrl }
@@ -1557,6 +1577,133 @@ export async function check(ctx: BuildContext) {
   if (errors.length) throw new Error(errors.join('\n')); return { ok: true, documents: ctx.docs.length, routes: ctx.routes.size || ctx.cache.routeCount || ctx.docs.length, outputs: ctx.outputs.size };
 }
 
-export async function inspect(ctx: BuildContext, query = '') { for (const doc of ctx.docs) if (!doc.nodes.length && doc.markdown) { doc.nodes = parseMarkdown(doc.markdown, doc.source, doc.bodyLine || 1); doc.directives = flattenDirectives(doc.nodes); } return ctx.docs.filter(doc => !query || doc.id === query || doc.source.includes(query)).map(doc => ({ id: doc.id, collection: doc.collection, locale: doc.locale, pattern: doc.pattern, route: routeFor(ctx, doc), source: doc.source, title: doc.title, directives: doc.directives.map(node => ({ name: node.name, attrs: node.attrs, position: node.position })) })); }
+class InspectError extends Error {
+  code: string;
+  details: Record<string, unknown>;
+
+  constructor(code: string, message: string, details: Record<string, unknown> = {}) {
+    super(message);
+    this.name = 'InspectError';
+    this.code = code;
+    this.details = details;
+  }
+}
+
+function inspectDocument(ctx: BuildContext, doc: Document) {
+  parseDocumentNodes(ctx, doc);
+  return {
+    id: doc.id,
+    collection: doc.collection,
+    locale: doc.locale,
+    pattern: doc.pattern,
+    route: routeFor(ctx, doc),
+    source: doc.source,
+    title: doc.title,
+    directives: doc.directives.map(node => ({ name: node.name, attrs: node.attrs, position: node.position }))
+  };
+}
+
+function inspectNotFound(query: string, kind: string, available: string[]): never {
+  throw new InspectError('INSPECT_NOT_FOUND', `No ${kind} matches "${query}".`, { query, kind, available });
+}
+
+function inspectContent(ctx: BuildContext, query: string, collection?: string, id?: string) {
+  const matches = ctx.docs.filter(doc => {
+    if (collection && doc.collection !== collection) return false;
+    if (id !== undefined) return doc.id === id;
+    return !query || doc.id === query || doc.source.includes(query);
+  });
+  if (query && !matches.length) inspectNotFound(query, collection ? `content in collection "${collection}"` : 'content', [...new Set(ctx.docs.map(doc => doc.id))].sort());
+  return { kind: 'content', query, items: matches.map(doc => inspectDocument(ctx, doc)) };
+}
+
+export async function inspect(ctx: BuildContext, query = '') {
+  const rawQuery = String(query || '').trim();
+  const separator = rawQuery.indexOf(':');
+  if (separator < 0) return inspectContent(ctx, rawQuery);
+
+  const namespace = rawQuery.slice(0, separator).trim().toLowerCase();
+  const id = rawQuery.slice(separator + 1).trim();
+  const availableNamespaces = ['block', 'pattern', 'collection', 'plugin', 'page', 'post'];
+  if (!availableNamespaces.includes(namespace)) {
+    throw new InspectError('INSPECT_INVALID_QUERY', `Unsupported inspect namespace "${namespace}".`, { query: rawQuery, allowedNamespaces: availableNamespaces });
+  }
+  if (!id) throw new InspectError('INSPECT_INVALID_QUERY', `Inspect namespace "${namespace}" requires an id.`, { query: rawQuery, allowedNamespaces: availableNamespaces });
+
+  if (namespace === 'page' || namespace === 'post') {
+    const collection = namespace === 'page' ? 'pages' : 'posts';
+    return inspectContent(ctx, rawQuery, collection, id);
+  }
+
+  if (namespace === 'block') {
+    const block = ctx.themeDefinition.blocks[id];
+    if (!block) inspectNotFound(rawQuery, 'Block', Object.keys(ctx.themeDefinition.blocks).sort());
+    return {
+      kind: 'block',
+      query: rawQuery,
+      item: {
+        name: block.name,
+        schema: block.schema,
+        defaults: block.defaults || {},
+        contexts: block.contexts || ['page', 'post'],
+        resources: {
+          styles: block.resources?.styles || ctx.theme.blockStyles?.[block.name] || [],
+          scripts: block.resources?.scripts || ctx.theme.blockScripts?.[block.name] || []
+        },
+        examples: [block.example || `:::${block.name}\n:::`]
+      }
+    };
+  }
+
+  if (namespace === 'pattern') {
+    const pattern = ctx.themeDefinition.patterns[id];
+    if (!pattern) inspectNotFound(rawQuery, 'Pattern', Object.keys(ctx.themeDefinition.patterns).sort());
+    return {
+      kind: 'pattern',
+      query: rawQuery,
+      item: {
+        name: pattern.name,
+        contexts: pattern.contexts,
+        resources: {
+          styles: pattern.resources?.styles || ctx.theme.patternStyles?.[pattern.name] || [],
+          scripts: pattern.resources?.scripts || ctx.theme.patternScripts?.[pattern.name] || []
+        }
+      }
+    };
+  }
+
+  if (namespace === 'collection') {
+    const settings = ctx.config.content?.collections?.[id];
+    if (!settings || typeof settings !== 'object' || Array.isArray(settings)) inspectNotFound(rawQuery, 'collection', Object.keys(ctx.config.content?.collections || {}).sort());
+    return {
+      kind: 'collection',
+      query: rawQuery,
+      item: {
+        name: id,
+        ...settings,
+        contentType: String(settings.contentType || 'page'),
+        route: String(settings.route || '/:locale/:id/'),
+        pattern: String(settings.pattern || 'document'),
+        schema: settings.schema && typeof settings.schema === 'object' ? settings.schema : {},
+        feed: settings.feed === true,
+        archive: settings.archive === true
+      }
+    };
+  }
+
+  const themePlugin = ctx.theme?.plugins?.[id];
+  const sitePlugin = ctx.config?.plugins?.[id];
+  if (themePlugin === undefined && sitePlugin === undefined) inspectNotFound(rawQuery, 'plugin', [...new Set([...Object.keys(ctx.theme?.plugins || {}), ...Object.keys(ctx.config?.plugins || {})])].sort());
+  return {
+    kind: 'plugin',
+    query: rawQuery,
+    item: {
+      name: id,
+      enabled: themePlugin?.enabled !== false && sitePlugin?.enabled !== false,
+      theme: themePlugin ?? null,
+      config: sitePlugin ?? null
+    }
+  };
+}
 
 export function getCatalog(ctx: BuildContext) { return catalog(ctx); }

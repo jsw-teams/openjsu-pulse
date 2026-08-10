@@ -99,7 +99,9 @@ The product-note title area contains the single language switcher. It displays â
 - `feed.xml`: a bounded product-note subscription list ordered by date.
 - `sitemap.xml`: the sitemap, including translated-page relationships.
 - `llms.txt`: the first site entry point for an Agent; `llms-full.txt` provides sharded page summaries and full-content links.
-- `.pagekiln/catalog.json`: the capability catalog for the active theme, including Patterns, Blocks, schemas, plugin resources, and dependencies.
+- `pagekiln catalog`: the source-backed capability catalog for the active theme, including Patterns, Blocks, schemas, plugins, and dependencies; it does not require a full build.
+- `pagekiln inspect block:<id>` / `pattern:<id>` / `collection:<id>` / `plugin:<id>`: structured local capability queries; a bare id still queries content.
+- `.pagekiln/catalog.json`: the generated discovery copy emitted during a normal build.
 - `site.webmanifest`, OG images, 404, and deployment files for browsers, sharing, and static hosting.
 
 ## Cookie and accessibility behavior

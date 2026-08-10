@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 
-import { createContext, refreshContext, build, check, inspect } from '../runtime/compiler.js';
+import { createContext, refreshContext, build, check, inspect, getCatalog } from '../runtime/compiler.js';
 import { promises as fs } from 'node:fs';
 import { watch } from 'node:fs';
 import { createServer } from 'node:http';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { deploy, deployHelp } from '../deploy.mjs';
 
 const args = process.argv.slice(2);
@@ -14,84 +15,7 @@ const commandArgs = args.slice(1);
 const root = process.env.PAGEKILN_SITE_ROOT || process.cwd();
 const publicCommands = new Set(['g', 's', 'd', 'build', 'check', 'catalog', 'inspect', 'init', 'help', '--help', '-h']);
 
-const INITIAL_CONFIG = `siteUrl: https://example.com
-defaultLocale: en
-activeLocales:
-  - en
-siteName:
-  en: New Pagekiln Site
-description:
-  en: A neutral Pagekiln site.
-branding:
-  showAttribution: false
-theme:
-  name: default
-  nav:
-    links: []
-content:
-  collections:
-    pages:
-      pattern: document
-      route: /:locale/:id/
-    posts:
-      pattern: blog
-      route: /:locale/posts/:id/
-deployment:
-  targets: []
-`;
-
-const INITIAL_THEME = `name: default
-module: theme.js
-style: style.css
-patterns: [blog, document, landing]
-blocks: [hero, feature-grid, compiler-board, metrics, research-matrix, comparison, pipeline, post-list]
-`;
-
-const INITIAL_THEME_MODULE = `const blocks = {
-  hero: {
-    name: 'hero',
-    schema: { tone: 'string', align: 'string' },
-    defaults: { tone: 'default', align: 'left' },
-    render: (node, context) => '<section class="block hero tone-' + context.escapeHtml(node.attrs.tone || 'default') + '">' + context.renderNodes(node.children) + '</section>'
-  },
-  'feature-grid': {
-    name: 'feature-grid',
-    schema: { columns: 'number' },
-    defaults: { columns: '3' },
-    render: (node, context) => '<section class="block feature-grid" style="--columns:' + context.escapeHtml(node.attrs.columns || '3') + '">' + context.renderNodes(node.children) + '</section>'
-  },
-  'post-list': {
-    name: 'post-list',
-    schema: { limit: 'number' },
-    defaults: { limit: '6' },
-    dependencies: (_node, context) => ['collection:posts:' + context.doc.locale],
-    render: (node, context) => '<section class="block post-list"><h2>Latest posts</h2>' + context.collection('posts').slice(0, Number(node.attrs.limit || 6)).map(post => '<article><h3><a href="' + context.safeUrl(context.routeFor(post)) + '">' + context.escapeHtml(post.title) + '</a></h3><p>' + context.escapeHtml(post.description) + '</p></article>').join('') + '</section>'
-  }
-};
-
-export default {
-  patterns: {
-    landing: { name: 'landing', contexts: ['page'], render: content => content },
-    document: { name: 'document', contexts: ['page', 'custom'], render: content => '<article class="document-body">' + content + '</article>' },
-    docs: { name: 'docs', contexts: ['page', 'docs'], render: content => '<article class="document-body">' + content + '</article>' },
-    blog: { name: 'blog', contexts: ['post', 'blog'], render: content => '<article class="post">' + content + '</article>' }
-  },
-  blocks
-};
-`;
-
-const INITIAL_HOME = `---
-title: Welcome
-description: A neutral Pagekiln starter.
-pattern: landing
----
-
-:::hero{tone="brand" align="left"}
-# Write Markdown. Compile the surrounding system.
-
-Your Pagekiln site is ready.
-:::
-`;
+const starterRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../starter');
 
 async function writeNew(file, value) {
   try {
@@ -101,14 +25,18 @@ async function writeNew(file, value) {
   }
 }
 
+async function copyStarter(source, destination) {
+  await fs.mkdir(destination, { recursive: true });
+  for (const entry of await fs.readdir(source, { withFileTypes: true })) {
+    const from = path.join(source, entry.name);
+    const to = path.join(destination, entry.name);
+    if (entry.isDirectory()) await copyStarter(from, to);
+    else await writeNew(to, await fs.readFile(from));
+  }
+}
+
 async function initialize() {
-  await fs.mkdir(path.join(root, 'content/pages/home'), { recursive: true });
-  await fs.mkdir(path.join(root, 'themes/default'), { recursive: true });
-  await writeNew(path.join(root, 'config.yml'), INITIAL_CONFIG);
-  await writeNew(path.join(root, 'themes/default/theme.yml'), INITIAL_THEME);
-  await writeNew(path.join(root, 'themes/default/theme.js'), INITIAL_THEME_MODULE);
-  await writeNew(path.join(root, 'themes/default/style.css'), 'body{font-family:system-ui}\n');
-  await writeNew(path.join(root, 'content/pages/home/en.md'), INITIAL_HOME);
+  await copyStarter(starterRoot, root);
   console.log('Initialized neutral Pagekiln site.');
 }
 
@@ -234,13 +162,18 @@ if (!publicCommands.has(requestedCommand)) {
   console.error('Run pagekiln --help for available commands.');
   process.exitCode = 1;
 } else if (command === 'help' || command === '--help' || command === '-h') {
-  console.log(`Usage: pagekiln <g|s|d|build|check|catalog|inspect|init> [options]\n\n  g                 Generate dist/\n  s [port]          Serve a local incremental preview\n  d [--dry-run]     Build and deploy from config.yml\n  build             Generate dist/ explicitly\n  check             Validate source and generated contracts\n  catalog           Print the active theme and extension catalog\n  inspect <id>      Inspect a catalog function or extension\n  init              Create a neutral starter site\n\n${deployHelp()}`);
+  console.log(`Usage: pagekiln <g|s|d|build|check|catalog|inspect|init> [options]\n\n  g                 Generate dist/\n  s [port]          Serve a local incremental preview\n  d [--dry-run]     Build and deploy from config.yml\n  build             Generate dist/ explicitly\n  check             Validate source and generated contracts\n  catalog           Print the source-backed theme and extension catalog\n  inspect <query>   Inspect content or a block, pattern, collection, or plugin\n  init              Create a neutral starter site\n\n${deployHelp()}`);
 } else if (command === 'catalog') {
   const ctx = await createContext(root);
-  await build(ctx);
-  console.log(await fs.readFile(path.join(ctx.out, '.pagekiln/catalog.json'), 'utf8'));
+  console.log(JSON.stringify(getCatalog(ctx), null, 2));
 } else if (command === 'inspect') {
-  console.log(JSON.stringify(await inspect(await createContext(root), commandArgs[0]), null, 2));
+  try {
+    console.log(JSON.stringify(await inspect(await createContext(root), commandArgs[0]), null, 2));
+  } catch (error) {
+    const code = error?.code || 'INSPECT_ERROR';
+    console.error(JSON.stringify({ error: { code, message: error.message || String(error), query: commandArgs[0] || '', ...(error?.details || {}) } }, null, 2));
+    process.exitCode = 1;
+  }
 } else if (command === 'check') {
   const ctx = await createContext(root);
   await build(ctx);
