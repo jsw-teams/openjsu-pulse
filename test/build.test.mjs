@@ -307,7 +307,7 @@ test('deployment output uses one Web Fetch handler and keeps static Pages mode w
     const sitesServer = await readFile(path.join(root, 'dist/server/index.js'), 'utf8');
     assert.match(worker, /createSiteFetchHandler/);
     assert.match(vps, /Deno\.serve/);
-    assert.match(sitesServer, /\.\.\/_pagekiln\/fetch-router\.js/);
+    assert.match(sitesServer, /\.\/_pagekiln\/fetch-router\.js/);
     assert.doesNotMatch(vps, /node:fs|createReadStream/);
     await assert.rejects(stat(path.join(root, 'dist/_worker.js')));
   } finally { await rm(root, { recursive: true, force: true }); }
