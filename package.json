@@ -1,12 +1,17 @@
 {
   "name": "pagekiln",
-  "version": "1.1.0",
-  "description": "Content-driven static site builder with optional posts, dynamic slots, site operations assets, and agent discovery.",
+  "version": "2.0.0",
+  "description": "Pagekiln 2.0: a TypeScript, static-first, schema-driven website compiler.",
   "license": "MIT",
   "type": "module",
-  "packageManager": "pnpm@10.18.0",
+  "packageManager": "npm@10.9.8",
   "bin": {
     "pagekiln": "src/bin/pagekiln.mjs"
+  },
+  "exports": {
+    ".": "./src/runtime/compiler.js",
+    "./theme-api": "./src/runtime/theme-api.js",
+    "./fetch-router": "./src/runtime/fetch-router.js"
   },
   "files": [
     "AGENTS.md",
@@ -14,19 +19,21 @@
     "NOTICE",
     "README.md",
     "README.en.md",
-    "astro.config.mjs",
     "config.yml",
+    "backend/",
     "content/",
     "src/",
-    "themes/"
+    "themes/",
+    "tsconfig.json",
+    "tsconfig.emit.json",
+    "tsconfig.theme.json",
+    "tsconfig.backend.json"
   ],
   "keywords": [
     "static-site-generator",
     "markdown",
-    "astro",
-    "llms-txt",
-    "agent-discovery",
-    "webmcp"
+    "typescript",
+    "incremental-build"
   ],
   "homepage": "https://github.com/jsw-teams/pagekiln#readme",
   "bugs": {
@@ -40,30 +47,39 @@
     "access": "public"
   },
   "scripts": {
-    "assets": "node src/assets.mjs",
-    "prebuild": "node src/prebuild.mjs",
-    "build": "node src/bin/pagekiln.mjs g",
-    "generate": "node src/bin/pagekiln.mjs g",
-    "serve": "node src/bin/pagekiln.mjs s",
-    "server": "node src/bin/pagekiln.mjs s",
-    "check": "node src/bin/pagekiln.mjs c"
+    "prebuild": "npm run compile-runtime && npm run compile-theme && npm run compile-backend",
+    "build": "node src/bin/pagekiln.mjs build",
+    "preg": "npm run compile-runtime && npm run compile-theme && npm run compile-backend",
+    "g": "node src/bin/pagekiln.mjs g",
+    "pres": "npm run compile-runtime && npm run compile-theme && npm run compile-backend",
+    "s": "node src/bin/pagekiln.mjs s",
+    "pred": "npm run compile-runtime && npm run compile-theme && npm run compile-backend",
+    "d": "node src/bin/pagekiln.mjs d",
+    "precheck": "npm run compile-runtime && npm run compile-theme && npm run compile-backend",
+    "check": "node src/bin/pagekiln.mjs check",
+    "precatalog": "npm run compile-runtime && npm run compile-theme && npm run compile-backend",
+    "catalog": "node src/bin/pagekiln.mjs catalog",
+    "preinspect": "npm run compile-runtime && npm run compile-theme && npm run compile-backend",
+    "inspect": "node src/bin/pagekiln.mjs inspect",
+    "test": "node --test test/*.test.mjs",
+    "bench": "node scripts/benchmark.mjs",
+    "bench:compare": "node scripts/benchmark-compare.mjs",
+    "compile-runtime": "tsc -p tsconfig.emit.json",
+    "compile-backend": "tsc -p tsconfig.backend.json",
+    "compile-theme": "tsc -p tsconfig.theme.json"
   },
   "dependencies": {
-    "@astrojs/rss": "^4.0.18",
-    "@astrojs/sitemap": "^3.7.3",
-    "astro": "^6.2.1",
-    "fast-glob": "^3.3.3",
-    "feed": "^4.2.2",
-    "gray-matter": "^4.0.3",
-    "html-minifier-terser": "^7.2.0",
-    "markdown-it": "^14.1.0",
-    "markdown-it-anchor": "^9.2.0",
-    "sharp": "^0.34.1"
+    "lucide": "0.468.0",
+    "markdown-it": "^15.0.0",
+    "markdown-it-task-lists": "^2.1.1",
+    "sharp": "^0.35.3",
+    "yaml": "^2.9.0"
   },
   "engines": {
     "node": ">=22.12.0"
   },
   "devDependencies": {
+    "@types/markdown-it": "^14.1.2",
     "typescript": "^5.9.3"
   }
 }

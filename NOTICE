@@ -11,3 +11,7 @@ MIT permission notice.
 
 Please credit "Pagekiln by JSW Teams" and link to the original repository when
 the project is identified in user-facing materials.
+
+The default theme uses selected Lucide icons, licensed under the ISC License.
+See https://lucide.dev and the lucide package license for the icon library
+copyright and permission terms.

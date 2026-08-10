@@ -1,141 +1,29 @@
 name: default
-description: Default blog theme.
+module: theme.ts
 style: style.css
-script: scripts/consent.js
-templates: templates
 i18n: i18n.yml
-features:
-  search: true
-  lightbox: true
-  media: true
-  comments: false
-  webMcp: true
-featureScripts:
-  search: scripts/search.js
-  lightbox: scripts/lightbox.js
-  media: scripts/media.js
-  comments: scripts/comments.js
-featureStyles:
-  consent: styles/consent.css
-featureCategories:
-  search: necessary
-  lightbox: necessary
-  media: necessary
-  comments: preferences
-  webMcp: necessary
-consent:
-  enabled: true
-  storageKey: pagekiln-consent
-  revision: 1
-  categories:
-    necessary:
-      required: true
-    preferences:
-      required: false
-    analytics:
-      required: false
-    marketing:
-      required: false
-pageStyles:
-  home: []
-  archive: []
-  categories: []
-  tags: []
-  search: []
-  term: []
-  page: []
-pageScripts:
-  home: []
-  archive: []
-  categories: []
-  tags: []
-  search: []
-  term: []
-  page: []
-styles: []
-scripts:
-  head: []
-  bodyEnd: []
-pagination:
-  homePageSize: 8
-head:
-  meta: []
-  links: []
-nav:
-  links:
-    - key: home
-      href: /:locale/
-      label:
-        zh-CN: 首页
-        zh-TW: 首頁
-        en: Home
-    - key: archive
-      href: /:locale/archive/
-      label:
-        zh-CN: 归档
-        zh-TW: 歸檔
-        en: Archive
-    - key: categories
-      href: /:locale/categories/
-      label:
-        zh-CN: 分类
-        zh-TW: 分類
-        en: Categories
-    - key: tags
-      href: /:locale/tags/
-      label:
-        zh-CN: 标签
-        zh-TW: 標籤
-        en: Tags
-    - key: about
-      href: /:locale/about/
-      label:
-        zh-CN: 关于
-        zh-TW: 關於
-        en: About
-  utilityLinks:
-    - key: search
-      href: /:locale/search/
-      icon: ⌕
-      label:
-        zh-CN: 搜索
-        zh-TW: 搜尋
-        en: Search
-footer:
-  copyright:
-    enabled: true
-    text: "© :year :siteName"
-  links:
-    - href: /:locale/feed.xml
-      label:
-        zh-CN: 订阅
-        zh-TW: 訂閱
-        en: Feed
-    - href: /:locale/about/
-      label:
-        zh-CN: 隐私政策
-        zh-TW: 隱私政策
-        en: Privacy
-    - href: /sitemap.xml
-      label:
-        zh-CN: 站点地图
-        zh-TW: 站點地圖
-        en: Sitemap
 plugins:
-  comments:
-    enabled: false
-    provider: none
-  analytics:
-    cloudflareWebAnalytics:
-      enabled: false
-      src: https://static.cloudflareinsights.com/beacon.min.js
-      token: YOUR_CLOUDFLARE_WEB_ANALYTICS_TOKEN
-      defer: true
-      consent: analytics
-      beacon:
-        spa: false
-  advertising:
-    googleAdsense:
-      enabled: false
-      client: ca-pub-0000000000000000
-      consent: marketing
+  search:
+    enabled: true
+    script: scripts/search.js
+  privacyConsent:
+    enabled: true
+    script: scripts/cookie-consent.js
+patterns:
+  - blog
+  - document
+  - docs
+  - landing
+blocks:
+  - hero
+  - feature-grid
+  - compiler-board
+  - metrics
+  - tool-comparison
+  - benchmark-chart
+  - research-matrix
+  - comparison
+  - pipeline
+  - post-list
+  - toc
+  - cta

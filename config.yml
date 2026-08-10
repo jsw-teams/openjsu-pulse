@@ -1,12 +1,20 @@
 siteUrl: https://example.com
 defaultLocale: en
 activeLocales:
+  - zh-sg
+  - zh-tw
   - en
 siteName:
-  en: Pagekiln Starter
+  zh-sg: Pagekiln
+  zh-tw: Pagekiln
+  en: Pagekiln
 description:
-  en: A neutral Pagekiln starter site.
+  zh-sg: 把 Markdown、受约束 Block 与站点配置编译成可检查静态产物。
+  zh-tw: 把 Markdown、受約束 Block 與網站設定編譯成可檢查靜態產物。
+  en: Compile Markdown, constrained Blocks, and site config into inspectable static output.
 author:
+  zh-sg: Site Owner
+  zh-tw: Site Owner
   en: Site Owner
 theme:
   name: default
@@ -16,7 +24,22 @@ theme:
         href: /:locale/
       - key: about
         href: /:locale/about/
+      - key: guide
+        href: /:locale/guide/
+      - key: development
+        href: /:locale/development/
+      - key: posts
+        href: /:locale/posts/
     utilityLinks: []
+
+# Site configuration selects built-in capabilities; markup, CSS, and browser code stay in the theme.
+plugins:
+  search:
+    enabled: true
+    provider: Pagekiln
+  privacyConsent:
+    enabled: true
+    provider: Pagekiln
 
 icons:
   favicon: /favicon.ico
@@ -24,18 +47,38 @@ icons:
   appleTouchIcon: /apple-touch-icon.png
   icon192: /assets/icon-192.png
   icon512: /assets/icon-512.png
+  source: /assets/icon-source.png
   manifest: /site.webmanifest
 
-pwa:
-  backgroundColor: "#f7f2e8"
-  themeColor: "#17211d"
+branding:
+  showAttribution: false
+  attributionUrl: https://github.com/jsw-teams/pagekiln
+  attribution:
+    zh-sg: Pagekiln by JSW Teams
+    zh-tw: Pagekiln by JSW Teams
+    en: Pagekiln by JSW Teams
 
-head:
-  meta:
-    - name: theme-color
-      content: "#17211d"
-      enabled: true
-  links: []
+pwa:
+  backgroundColor: "#f3f0e8"
+  themeColor: "#155b68"
+
+images:
+  social: assets/og-default-product.webp
+  variants:
+    - source: og-default-product-source.png
+      output: assets/og-default-product.webp
+      width: 1200
+      height: 630
+      fit: cover
+      format: webp
+      quality: 82
+    - source: product-note-cover-source.png
+      output: assets/product-note-cover.webp
+      width: 1200
+      height: 800
+      fit: cover
+      format: webp
+      quality: 82
 
 robots:
   rules:
@@ -44,8 +87,103 @@ robots:
         - /
 
 llms:
-  title: Pagekiln Starter
-  description: A neutral starter site for Pagekiln.
+  title: Pagekiln
+  description: The static-first website compiler for content that scales.
+  full:
+    enabled: true
+    shardSize: 250
+
+search:
+  enabled: true
+  maxResults: 8
+  shardSize: 500
+
+outputs:
+  markdownMirrors: true
+
+archive:
+  pageSize: 50
+  collection: posts
 
 feed:
-  title: Pagekiln Starter
+  title: Pagekiln
+  limit: 20
+  collection: posts
+
+privacy:
+  controller:
+    name: Site Owner
+    contactUrl: https://github.com/jsw-teams/pagekiln
+    supervisoryAuthorityUrl: https://edpb.europa.eu/about-edpb/about-edpb_en
+  cookieConsent:
+    enabled: true
+    policyRoute: /:locale/privacy/
+    agentRoute: /.well-known/agent.json
+    storage: cookie
+    retentionDays: 365
+    categories:
+      - id: essential
+        required: true
+        default: true
+        retentionDays: 365
+      - id: analytics
+        required: false
+        default: false
+        retentionDays: 0
+      - id: advertising
+        required: false
+        default: false
+        retentionDays: 0
+content:
+  collections:
+    pages:
+      contentType: page
+      pattern: document
+      route: /:locale/:id/
+      schema:
+        title:
+          type: string
+          required: true
+        description: string
+        pattern: string
+    posts:
+      contentType: post
+      pattern: blog
+      route: /:locale/posts/:id/
+      feed: true
+      archive: true
+      orderBy: date:desc
+      schema:
+        title:
+          type: string
+          required: true
+        description: string
+        date: string
+        cover: string
+        ogImage: string
+        pattern: string
+
+deployment:
+  targets: []
+  cloudflare:
+    accountId: null
+    pages:
+      project: null
+      branch: null
+    workers:
+      name: null
+      compatibilityDate: '2026-08-10'
+  github:
+    remote: null
+    branch: null
+  vps:
+    host: null
+    user: null
+    port: 22
+    remotePath: null
+    identityFile: null
+  openaiSites:
+    metadata: .openai/hosting.json
+  backend: true
+  dynamicRoutes:
+    - /api/health

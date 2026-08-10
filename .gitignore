@@ -1,4 +1,6 @@
 node_modules/
+.pagekiln/
+src/runtime/
 public/
 dist/
 .astro/

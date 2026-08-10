@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": false,
+    "outDir": ".pagekiln/theme-runtime",
+    "rootDir": ".",
+    "rewriteRelativeImportExtensions": true
+  },
+  "include": ["themes/**/*.ts", "src/theme-api.ts", "src/lib/**/*.ts", "src/**/*.d.ts"]
+}
