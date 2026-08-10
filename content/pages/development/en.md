@@ -102,6 +102,7 @@ deployment:
   targets: [vps]
   cloudflare:
     accountId: CF_ACCOUNT_ID
+    apiTokenEnv: CLOUDFLARE_API_TOKEN
     pages:
       project: site-name
       branch: production
@@ -111,17 +112,19 @@ deployment:
   github:
     remote: origin
     branch: gh-pages
+    tokenEnv: GITHUB_TOKEN
   vps:
     host: vps.example.com
     user: deploy
     port: 22
     remotePath: /var/www/site
     identityFile: ~/.ssh/id_ed25519
-  openaiSites:
-    metadata: .openai/hosting.json
+    publicKeyFile: ~/.ssh/id_ed25519.pub
 ```
 
-`cloudflare.pages.project` is the Pages project name; `cloudflare.workers.name` and `compatibilityDate` identify the Worker generated in `dist/wrangler.toml`. `github.remote` and `branch` must already exist locally. VPS requires the SSH host, user, port, and an existing remote directory; omit `identityFile` to use the OpenSSH agent or user config. Credentials stay outside this file.
+`cloudflare.pages.project` is the Pages project name; `cloudflare.workers.name` and `compatibilityDate` identify the Worker generated in `dist/wrangler.toml`. When `cloudflare.apiTokenEnv` is set, deployment reads the token from that environment variable; when omitted, Wrangler uses its local login. `github.remote` and `branch` must already exist locally; an HTTPS remote can use the environment token named by `github.tokenEnv`, while an SSH remote uses the local SSH agent/config. VPS requires the SSH host, user, port, and an existing remote directory; `identityFile` is the private key and `publicKeyFile` is optional, with the public key pre-installed in the server's `authorized_keys`. Credentials stay outside this file.
+
+OpenAI Sites remains an optional adapter, but this project has removed its Sites binding. A hosting platform reporting a successful deployment does not imply access from every region; DNS, ISP routing, enterprise network policy, platform regional availability, and custom-domain state can still cause failures. Test from target regions and keep Cloudflare, GitHub Pages, or VPS as alternative delivery paths when broad reachability matters.
 
 ```bash
 pagekiln d --dry-run

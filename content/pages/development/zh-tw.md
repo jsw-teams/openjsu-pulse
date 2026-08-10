@@ -102,6 +102,7 @@ deployment:
   targets: [vps]
   cloudflare:
     accountId: CF_ACCOUNT_ID
+    apiTokenEnv: CLOUDFLARE_API_TOKEN
     pages:
       project: site-name
       branch: production
@@ -111,17 +112,19 @@ deployment:
   github:
     remote: origin
     branch: gh-pages
+    tokenEnv: GITHUB_TOKEN
   vps:
     host: vps.example.com
     user: deploy
     port: 22
     remotePath: /var/www/site
     identityFile: ~/.ssh/id_ed25519
-  openaiSites:
-    metadata: .openai/hosting.json
+    publicKeyFile: ~/.ssh/id_ed25519.pub
 ```
 
-`cloudflare.pages.project` 是 Pages 專案名稱；`cloudflare.workers.name` 和 `compatibilityDate` 用於產生 `dist/wrangler.toml`。`github.remote` 和 `branch` 必須是本機已有的遠端儲存庫與目標分支。VPS 必須填寫 SSH 主機、使用者、連接埠和已存在的遠端目錄；省略 `identityFile` 時使用 OpenSSH agent 或使用者設定。憑證不寫入此檔案。
+`cloudflare.pages.project` 是 Pages 專案名稱；`cloudflare.workers.name` 和 `compatibilityDate` 用於產生 `dist/wrangler.toml`。設定 `cloudflare.apiTokenEnv` 時，部署從該環境變數讀取 token；不設定時使用 Wrangler 本機登入狀態。`github.remote` 和 `branch` 必須是本機已有的遠端儲存庫與目標分支；HTTPS remote 可以透過 `github.tokenEnv` 使用環境 token，SSH remote 使用本機 SSH agent/config。VPS 必須填寫 SSH 主機、使用者、連接埠和已存在的遠端目錄；`identityFile` 是私鑰，`publicKeyFile` 可選且公鑰必須預先寫入伺服器 `authorized_keys`。憑證不寫入此檔案。
+
+OpenAI Sites 仍是可選適配，但本專案已移除 Sites 繫結。即使託管平台回報部署成功，也不能推導出所有地區都能存取；DNS、電信商路由、企業網路策略、平台區域可用性和自訂網域狀態都可能造成部分地區失敗。需要廣泛可達性時，應從目標地區實測並保留 Cloudflare、GitHub Pages 或 VPS 的替代出口。
 
 ```bash
 pagekiln d --dry-run

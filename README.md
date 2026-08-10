@@ -129,6 +129,7 @@ deployment:
   targets: [vps, cloudflare-pages]
   cloudflare:
     accountId: CF_ACCOUNT_ID
+    apiTokenEnv: CLOUDFLARE_API_TOKEN
     pages:
       project: site-name
       branch: production
@@ -138,18 +139,19 @@ deployment:
   github:
     remote: origin
     branch: gh-pages
+    tokenEnv: GITHUB_TOKEN
   vps:
     host: vps.example.com
     user: deploy
     port: 22
     remotePath: /var/www/site
     identityFile: ~/.ssh/id_ed25519
-  openaiSites:
-    metadata: .openai/hosting.json
-    staticDirectory: dist
+    publicKeyFile: ~/.ssh/id_ed25519.pub
 ```
 
-然后运行 `pagekiln d`；`pagekiln d --dry-run` 只检查所有已选动作。Cloudflare Pages 需要项目名，可选分支；Workers 需要 Worker 名称和兼容日期，Wrangler 凭据从环境变量或本机配置读取。GitHub 需要已存在的 remote 名称和目标分支。VPS 需要主机、用户、SSH 端口和已存在的远程目录，可选 `identityFile`；省略密钥时使用 OpenSSH agent/config。OpenAI Sites 会先检查 `dist/server/index.js`、`dist/index.html` 和 `.openai/hosting.json`，再把已构建状态交给 Sites 连接器：推送当前源码 HEAD、保存一个版本、部署已保存版本并轮询状态；CLI 不创建站点、不伪造凭据。当前配置把静态根统一为 `dist`，Sites 入口同时生成静态资源回退，以便动态 Fetch 入口和静态页面使用同一份交付物。启用 backend 后，核心生成同一份 Fetch handler 的 Cloudflare Workers module、Cloudflare Pages Advanced Mode `_worker.js` 和 VPS `Deno.serve` 入口；秘密只从运行时环境读取。
+然后运行 `pagekiln d`；`pagekiln d --dry-run` 只检查所有已选动作。Cloudflare Pages 需要项目名，可选分支；Workers 需要 Worker 名称和兼容日期。配置 `cloudflare.apiTokenEnv` 后，脚本只从该环境变量读取 Cloudflare API token；省略或设为 `null` 时交给 Wrangler 使用本机登录状态。GitHub 需要已存在的 remote 名称和目标分支；配置 `github.tokenEnv` 后，HTTPS remote 使用子进程环境中的 Git authorization header，token 不进入命令行、配置或日志，SSH remote 则继续使用本机 SSH agent/config。VPS 需要主机、用户、SSH 端口和已存在的远程目录；`identityFile` 是私钥，`publicKeyFile` 可选用于确认配套公钥文件存在，公钥必须预先放在服务器的 `authorized_keys` 中，Pagekiln 不上传密钥。所有凭据只存在运行时环境或本机密钥文件中。OpenAI Sites 目标仍是可选适配，但本项目已移除 Sites 绑定，不会再默认发布到该平台。
+
+凭据边界遵循 [GitHub 的 HTTPS token 说明](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)、[Wrangler 的 Cloudflare API token 说明](https://developers.cloudflare.com/workers/wrangler/commands/general/) 和 [OpenSSH scp 的 `-i` 私钥参数](https://man.openbsd.org/scp.1)。部署成功只代表托管平台接收并发布了产物，不代表所有地区都能访问；DNS、运营商路由、企业网络策略、平台区域可用性和自定义域名状态都可能造成部分地区打不开。面向多地区访客时，应从目标地区实测，并准备 Cloudflare、GitHub Pages 或 VPS 等替代出口。
 
 生产直接依赖有明确职责：`markdown-it` 和 `markdown-it-task-lists` 解析 GFM，`yaml` 解析 YAML 1.2，`sharp` 生成图片变体，`lucide` 提供成熟开源 SVG 图标。遍历、watch、hash、路由、RSS、站点地图、搜索序列化、原子写和测试使用 Node/Web Standard，未增加重复便利包。
 

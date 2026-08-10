@@ -129,6 +129,7 @@ deployment:
   targets: [vps, cloudflare-pages]
   cloudflare:
     accountId: CF_ACCOUNT_ID
+    apiTokenEnv: CLOUDFLARE_API_TOKEN
     pages:
       project: site-name
       branch: production
@@ -138,18 +139,19 @@ deployment:
   github:
     remote: origin
     branch: gh-pages
+    tokenEnv: GITHUB_TOKEN
   vps:
     host: vps.example.com
     user: deploy
     port: 22
     remotePath: /var/www/site
     identityFile: ~/.ssh/id_ed25519
-  openaiSites:
-    metadata: .openai/hosting.json
-    staticDirectory: dist
+    publicKeyFile: ~/.ssh/id_ed25519.pub
 ```
 
-Then run `pagekiln d`; `pagekiln d --dry-run` inspects every selected action. Cloudflare Pages needs a project name and optional branch; Workers needs a Worker name and compatibility date, while Wrangler credentials come from environment variables or local configuration. GitHub needs an existing remote name and target branch. VPS needs a host, user, SSH port, and an existing remote directory, with an optional `identityFile`; when omitted, OpenSSH agent/config is used. The OpenAI Sites target checks `dist/server/index.js`, `dist/index.html`, and the existing `.openai/hosting.json`, then hands the validated source state to the Sites connector: push the current source HEAD, save one version, deploy that saved version, and poll its status. The CLI does not create a project or invent credentials. This project keeps the static root uniformly at `dist` and emits a static-asset fallback beside the Sites Fetch entry, so dynamic routes and public files use the same deliverable. With the backend enabled, the compiler emits a Cloudflare Workers module, a Cloudflare Pages Advanced Mode `_worker.js`, and a VPS `Deno.serve` entry using the same Fetch handler. Secrets come only from runtime bindings.
+Then run `pagekiln d`; `pagekiln d --dry-run` inspects every selected action. Cloudflare Pages needs a project name and optional branch; Workers needs a Worker name and compatibility date. When `cloudflare.apiTokenEnv` is set, the script reads the Cloudflare API token only from that environment variable; omit it or set it to `null` to let Wrangler use its local login. GitHub needs an existing remote name and target branch; when `github.tokenEnv` is set, an HTTPS remote receives authorization through the child process environment rather than command-line arguments, while an SSH remote continues to use the local SSH agent/config. VPS needs a host, user, SSH port, and an existing remote directory; `identityFile` is the private key and `publicKeyFile` is optional to assert that the companion public-key file exists. The public key must already be in the server's `authorized_keys`; Pagekiln never uploads keys. Credentials remain in the runtime environment or local key files. OpenAI Sites remains an optional adapter, but this project has removed its Sites binding and will not publish there by default.
+
+The credential boundary follows [GitHub's HTTPS token guidance](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens), [Wrangler's Cloudflare authentication guidance](https://developers.cloudflare.com/workers/wrangler/commands/general/), and [OpenSSH scp's `-i` identity-file option](https://man.openbsd.org/scp.1). A successful deployment only means that the hosting platform accepted and published the output; it does not guarantee access from every region. DNS, ISP routing, enterprise network policy, platform regional availability, and custom-domain state can still make a site unreachable in some locations. Test from target regions and keep Cloudflare, GitHub Pages, or VPS as alternative delivery paths when broad reachability matters.
 
 Production dependencies have narrow roles: `markdown-it` and `markdown-it-task-lists` parse GFM, `yaml` parses YAML 1.2, `sharp` creates image variants, and `lucide` supplies mature open-source SVG icon nodes. Traversal, watch, hashing, routing, feeds, site maps, search serialization, atomic writes, and tests use Node/Web Standards rather than convenience packages.
 

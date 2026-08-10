@@ -47,8 +47,9 @@ Static compilation must not create a Request/Fetch/HTTP lifecycle per page. Dyna
 - CDN, Caddy, or Nginx can serve the unified `dist/` directly.
 - Cloudflare Workers uses a standard module Worker, static asset binding, and assets-first routing except configured dynamic paths.
 - Cloudflare Pages stays pure static with `deployment.backend: false`; when enabled it emits Advanced Mode `_worker.js`.
-- `deployment.targets` accepts one target or a list and runs the selected targets in order. Cloudflare Pages uses `deployment.cloudflare.pages.project` and optional `branch`; Workers uses `deployment.cloudflare.workers.name` and `compatibilityDate`; `github` uses `deployment.github.remote/branch`; and `vps` uses `deployment.vps.host/user/port/remotePath` plus an optional `identityFile` for SCP.
+- `deployment.targets` accepts one target or a list and runs the selected targets in order. Cloudflare Pages uses `deployment.cloudflare.pages.project` and optional `branch`, with an optional `apiTokenEnv` naming a runtime API-token variable; Workers uses `deployment.cloudflare.workers.name` and `compatibilityDate`; `github` uses `deployment.github.remote/branch` plus an optional `tokenEnv` for HTTPS; and `vps` uses `deployment.vps.host/user/port/remotePath`, `identityFile` for a private key, and an optional `publicKeyFile` for a key pair.
 - `openai-sites` only hands off the configured, existing `.openai/hosting.json` to the OpenAI Sites connector; it does not create a project or invent credentials.
+- A successful hosting deployment does not guarantee reachability from every region; validate DNS, routing, platform availability, and enterprise network access from the regions that matter.
 - VPS dynamic execution uses `Deno.serve`; Caddy/Nginx serves static files.
 
 All dynamic targets share the same Fetch handler. Secrets come only from runtime bindings or environment variables. Human visitors open one localized Cookie selector from the footer; Agents read the separate machine-readable privacy disclosure at `/.well-known/agent.json`.

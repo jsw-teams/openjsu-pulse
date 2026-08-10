@@ -164,9 +164,10 @@ content:
         pattern: string
 
 deployment:
-  targets: [openai-sites]
+  targets: []
   cloudflare:
     accountId: null
+    apiTokenEnv: CLOUDFLARE_API_TOKEN
     pages:
       project: null
       branch: null
@@ -176,15 +177,14 @@ deployment:
   github:
     remote: null
     branch: null
+    tokenEnv: GITHUB_TOKEN
   vps:
     host: null
     user: null
     port: 22
     remotePath: null
     identityFile: null
-  openaiSites:
-    metadata: .openai/hosting.json
-    staticDirectory: dist
+    publicKeyFile: null
   backend: true
   dynamicRoutes:
     - /api/health

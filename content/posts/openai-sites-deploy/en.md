@@ -40,3 +40,9 @@ The archive contains `dist/`, Sites metadata, and the required dynamic entry. Pa
 ## Boundary of this decision
 
 OpenAI Sites owns access mode, the public URL, and custom domains; domain verification still requires the DNS records supplied by the platform at the domain provider. Pagekiln owns source, configuration, build output, and the verifiable deployment entry, and never writes platform credentials into site files.
+
+## A successful deployment is not universal reachability
+
+OpenAI Sites can accept a build and report a successful deployment, but that only confirms that the platform published the output. It does not guarantee that every region, ISP, or enterprise network can establish a connection. DNS propagation, cross-border or regional routing, enterprise firewalls, platform regional availability, and custom-domain state can make the site unreachable or unstable for some visitors. Test from the regions you serve and keep Cloudflare, GitHub Pages, or a VPS as an alternate delivery path when broad reachability matters.
+
+This project has removed its local OpenAI Sites binding, so it will not keep publishing to that Site by default. The note remains as the boundary documentation for the optional Sites adapter.
