@@ -31,7 +31,7 @@ type CachedDocument = { hash: string; outputs: string[]; dependencies?: string[]
 type CachedImage = { hash: string; output: string };
 type CacheManifest = { version: 2; rendererVersion?: string; configHash?: string; themeHash?: string; assetHash?: string; contentRoots?: Record<string, number>; routeCount?: number; documents: Record<string, CachedDocument>; images?: Record<string, CachedImage>; outputs: string[]; outputHashes?: Record<string, string> };
 export type BuildProfile = { discover: number; load: number; validate: number; parse: number; route: number; render: number; assets: number; write: number; total: number; documents: number; changedOutputs: number; imagesProcessed: number; imageCacheHits: number };
-const RENDERER_VERSION = '2.4.15';
+const RENDERER_VERSION = '2.4.16';
 const MAX_MARKDOWN_CACHE = 32;
 const MAX_SOURCE_PARSE_CACHE = 64;
 const LOAD_CONCURRENCY = 32;
@@ -1149,13 +1149,19 @@ async function writeDeployments(ctx: BuildContext) {
   const sites = deployment.openaiSites && typeof deployment.openaiSites === 'object' ? deployment.openaiSites : {};
   const staticDirectory = String(sites.staticDirectory || '').replace(/^\/+|\/+$/g, '');
   const staticOption = staticDirectory && staticDirectory !== 'dist' ? `, staticDirectory: ${JSON.stringify(staticDirectory)}` : '';
-  await writeIfChanged(ctx, 'server/index.js', `import { createSiteFetchHandler } from './_pagekiln/fetch-router.js';\n${sitesBackendImport}const fetchHandler = createSiteFetchHandler({ router, defaultLocale: '${locale}'${staticOption} });\nexport { fetchHandler };\nexport default { fetch: fetchHandler };\n`);
+  const staticAssetsImport = staticDirectory && staticDirectory !== 'dist' ? `import { fetchStaticAsset } from './_pagekiln/static-assets.js';\n` : '';
+  const staticAssetsOption = staticDirectory && staticDirectory !== 'dist' ? ', assets: fetchStaticAsset' : '';
+  await writeIfChanged(ctx, 'server/index.js', `import { createSiteFetchHandler } from './_pagekiln/fetch-router.js';\n${sitesBackendImport}${staticAssetsImport}const fetchHandler = createSiteFetchHandler({ router, defaultLocale: '${locale}'${staticOption}${staticAssetsOption} });\nexport { fetchHandler };\nexport default { fetch: fetchHandler };\n`);
+}
+
+function openaiSitesStaticDirectory(ctx: BuildContext): string {
+  const deployment = ctx.config.deployment && typeof ctx.config.deployment === 'object' ? ctx.config.deployment : {};
+  const sites = deployment.openaiSites && typeof deployment.openaiSites === 'object' ? deployment.openaiSites : {};
+  return String(sites.staticDirectory || '').replace(/^\/+|\/+$/g, '');
 }
 
 async function writeSiteStaticDirectory(ctx: BuildContext) {
-  const deployment = ctx.config.deployment && typeof ctx.config.deployment === 'object' ? ctx.config.deployment : {};
-  const sites = deployment.openaiSites && typeof deployment.openaiSites === 'object' ? deployment.openaiSites : {};
-  const staticDirectory = String(sites.staticDirectory || '').replace(/^\/+|\/+$/g, '');
+  const staticDirectory = openaiSitesStaticDirectory(ctx);
   if (!staticDirectory || staticDirectory === 'dist') return;
   const ignored = new Set(['.assetsignore', '_worker.js', 'cloudflare-worker.mjs', 'vps-server.mjs', 'wrangler.toml']);
   const outputs = [...ctx.outputs];
@@ -1167,6 +1173,33 @@ async function writeSiteStaticDirectory(ctx: BuildContext) {
       if (error.code !== 'ENOENT') throw error;
     }
   }
+}
+
+function staticContentType(file: string): string {
+  const types: Record<string, string> = {
+    '.css': 'text/css; charset=utf-8', '.csv': 'text/csv; charset=utf-8', '.eot': 'application/vnd.ms-fontobject',
+    '.gif': 'image/gif', '.html': 'text/html; charset=utf-8', '.ico': 'image/x-icon', '.jpeg': 'image/jpeg',
+    '.jpg': 'image/jpeg', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8',
+    '.md': 'text/markdown; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.pdf': 'application/pdf',
+    '.png': 'image/png', '.svg': 'image/svg+xml', '.txt': 'text/plain; charset=utf-8', '.webmanifest': 'application/manifest+json; charset=utf-8',
+    '.webp': 'image/webp', '.woff': 'font/woff', '.woff2': 'font/woff2', '.xml': 'application/xml; charset=utf-8'
+  };
+  return types[path.extname(file).toLowerCase()] || 'application/octet-stream';
+}
+
+async function writeSiteStaticRuntime(ctx: BuildContext) {
+  const staticDirectory = openaiSitesStaticDirectory(ctx);
+  if (!staticDirectory || staticDirectory === 'dist') return;
+  const staticRoot = path.join(ctx.out, staticDirectory);
+  const entries: string[] = [];
+  for (const file of await walk(staticRoot)) {
+    const relative = normalizePath(path.relative(staticRoot, file));
+    if (!relative || relative.startsWith('../')) continue;
+    const data = (await fs.readFile(file)).toString('base64');
+    entries.push(`  ${JSON.stringify(`/${relative}`)}: [${JSON.stringify(staticContentType(file))}, ${JSON.stringify(data)}]`);
+  }
+  const source = `const assets = {\n${entries.join(',\n')}\n};\n\nfunction decode(value) {\n  const binary = atob(value);\n  const bytes = new Uint8Array(binary.length);\n  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);\n  return bytes;\n}\n\nexport function fetchStaticAsset(request) {\n  const pathname = new URL(request.url).pathname;\n  const asset = assets[pathname];\n  if (!asset) return new Response('Not found', { status: 404 });\n  const headers = new Headers({ 'content-type': asset[0] });\n  if (pathname.startsWith('/assets/')) headers.set('cache-control', 'public, max-age=31536000, immutable');\n  return new Response(request.method === 'HEAD' ? null : decode(asset[1]), { status: 200, headers });\n}\n`;
+  await writeIfChanged(ctx, 'server/_pagekiln/static-assets.js', source);
 }
 
 export async function createContext(root = process.cwd()): Promise<BuildContext> {
@@ -1468,7 +1501,7 @@ export async function build(ctx: BuildContext): Promise<BuildContext> {
     if (feedCollectionName && ctx.docs.some(doc => doc.collection === feedCollectionName && doc.locale === locale)) await writeIfChanged(ctx, `${locale}/feed.xml`, feedXml(ctx, locale, feedCollectionName));
   }
   await writeLlms(ctx, siteUrl);
-  await writeIfChanged(ctx, '.pagekiln/catalog.json', JSON.stringify(catalog(ctx), null, 2)); await writeDeployments(ctx); await copyThemeAndAssets(ctx); await writeSiteStaticDirectory(ctx); ctx.profile.assets = duration(assetStart);
+  await writeIfChanged(ctx, '.pagekiln/catalog.json', JSON.stringify(catalog(ctx), null, 2)); await writeDeployments(ctx); await copyThemeAndAssets(ctx); await writeSiteStaticDirectory(ctx); await writeSiteStaticRuntime(ctx); ctx.profile.assets = duration(assetStart);
   const previousOutputs = new Set(ctx.cache.outputs || []); const writeStart = performance.now();
   for (const old of previousOutputs) if (!ctx.outputs.has(old)) { const target = path.join(ctx.out, old); try { await fs.rm(target); } catch (error: any) { if (error.code !== 'ENOENT') throw error; } }
   ctx.profile.write = duration(writeStart);

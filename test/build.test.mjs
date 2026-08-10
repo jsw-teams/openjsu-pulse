@@ -321,6 +321,8 @@ test('Sites deployment mirrors public output into its configured static director
     await build(await createContext(root));
     assert.match(await readFile(path.join(root, 'dist/static/index.html'), 'utf8'), /Choose a site language/);
     assert.match(await readFile(path.join(root, 'dist/static/en/index.html'), 'utf8'), /Hello/);
+    assert.match(await readFile(path.join(root, 'dist/server/index.js'), 'utf8'), /static-assets\.js/);
+    assert.match(await readFile(path.join(root, 'dist/server/_pagekiln/static-assets.js'), 'utf8'), /index\.html/);
     await assert.rejects(stat(path.join(root, 'dist/static/server/index.js')));
   } finally { await rm(root, { recursive: true, force: true }); }
 });
