@@ -17,20 +17,20 @@ Use `npm run g`, `npm run check`, and `npm run s` from a source checkout. After 
 
 ### Content paths
 
-Put general pages in `content/pages/<id>/<locale>.md`, product notes in `content/posts/<id>/<locale>.md`, and assets in `content/assets/`. The default site provides `zh-sg`, `zh-tw`, and `en`; the final locale segment defines translation groups, routes, and hreflang.
+`pages` stores the site's current effective content in `content/pages/<id>/<locale>.md`; home, About, Guide, Reference, and directory pages belong there. Update the relevant page when Pagekiln behavior changes. `docs` is a document-presentation Pattern inside `pages`, not a third collection. `posts` stores dated records of completed product decisions, implementations, releases, incidents, deployments, or measured results in `content/posts/<id>/<locale>.md`; every Product Note requires `date` and enters the date-ordered archive and Feed. Write current usage in `pages` and historical records in `posts`. Put assets in `content/assets/`. The default site provides `zh-sg`, `zh-tw`, and `en`; the final locale segment defines translation groups, routes, and hreflang.
 
 ```markdown
 ---
-title: Ship a reusable product note
-description: Record one clear product decision.
+title: Search results gained hit locations
+description: Record the 2026-08-10 product change that added visible hit-location labels.
 pattern: blog
-date: 2026-08-09
+date: 2026-08-10
 cover: /assets/product-note-cover.webp
 ---
 
-# Ship a reusable product note
+# Search results gained hit locations
 
-Start with the decision, evidence, and follow-up. Text before `<more>` becomes the archive excerpt.
+This note records one completed change. Current search usage belongs in the Guide under `content/pages/`; text before `<more>` becomes the archive excerpt.
 
 <more>
 
@@ -44,13 +44,13 @@ The body supports GFM tables, task lists, strikethrough, blockquotes, fenced cod
 ```markdown
 :::feature-grid{columns="3"}
 ### Pages
-For home, guide, and directory surfaces.
+`pages` stores current home, guide, reference, and directory content. Update the relevant page when behavior changes.
 
 ### Product notes
-For decisions that keep changing.
+`posts` stores dated decisions, implementations, releases, and incidents that already happened; it is not the current usage manual.
 
 ### Themes
-For visual and structural extension.
+Themes own Patterns, Blocks, visual language, and optional browser behavior.
 :::
 ```
 

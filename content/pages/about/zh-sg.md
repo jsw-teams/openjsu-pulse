@@ -21,6 +21,10 @@ pattern: docs
 
 Pagekiln 的区别不是“把所有工具都做一遍”，而是把常见产品内容需求预先放进核心：集合路由、三语言、摘要、封面、归档、Feed（产品笔记订阅清单）、站点地图、本地搜索、404、OG 图和静态部署文件。需要新增页面形状时，先改主题。
 
+## Pagekiln 的内容契约
+
+项目有两个内容集合。`pages` 保存当前有效的站点内容；所描述的行为变化后，直接更新页面。`posts` 保存已经完成的决定、实现、发布、问题处理、部署和测量结果；`date` 必填，归档和 Feed 组成它的时间线。`docs` 是 `pages` 内的 Pattern，不是 collection。当前使用说明放在 `content/pages/`；记录某次变更为什么发生放在 `content/posts/`。
+
 ## Astro：页面文件和内容集合
 
 Astro 的[官方 Pages 文档](https://docs.astro.build/en/basics/astro-pages/)说明，`src/pages/` 文件负责路由，并支持 `.astro`、Markdown、MDX、HTML 和端点文件；页面通常通过布局复用完整文档结构。[Content Collections](https://docs.astro.build/en/guides/content-collections/)说明了本地 Markdown/MDX 集合、loader、entry data 和 schema；[国际化指南](https://docs.astro.build/en/recipes/i18n/)说明可以用集合和动态路由组织翻译。

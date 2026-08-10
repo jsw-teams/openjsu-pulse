@@ -5,7 +5,7 @@ Use the repository's source files and generated discovery output as the contract
 ## Boundaries
 
 - `config.yml` owns site metadata, locales, navigation, collections, routes, schemas, privacy, search, images, and deployment settings. It is not a CSS, HTML, browser-script, or `unsafeHtml` injection surface.
-- `content/pages/<id>/<locale>.md` owns general pages; `content/posts/<id>/<locale>.md` owns dated notes; `content/assets/` owns user assets.
+- `content/pages/<id>/<locale>.md` owns current effective site content; `docs` is a Pattern within this collection, not another collection. `content/posts/<id>/<locale>.md` owns dated Product Notes and requires `date`; `content/assets/` owns user assets.
 - `themes/<name>/theme.yml`, `i18n.yml`, `theme.ts`, `style.css`, and theme resources own Patterns, Blocks, shell markup, visual behavior, localized UI copy, icons, search, and Cookie presentation. Optional plugins live under `plugins.<name>` and support `enabled: true|false`.
 - `backend/handler.ts` is the only source for dynamic business logic, secrets, writes, and webhooks.
 - `src/` owns the compiler, CLI, libraries, Fetch router, and theme contract. Never hand-edit `src/runtime/`, `.pagekiln/`, or `dist/`; they are generated.

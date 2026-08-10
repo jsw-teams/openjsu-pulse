@@ -1,26 +1,30 @@
 ---
-title: Why product notes are their own collection
-description: Keep changing product decisions in posts so general pages can stay stable.
+title: Why current pages and Product Notes are separate
+description: A dated record of the 2026-08-08 decision to separate current documentation from product history.
 date: 2026-08-08
 cover: /assets/product-note-cover.webp
 pattern: blog
 tags: [content, collections]
 ---
 
-# Why product notes are their own collection
+# Why current pages and Product Notes are separate
 
-Pagekiln's home and guide explain stable usage. Product notes record decisions that are still moving. When both kinds of content share one list, a page has to act as product introduction, update log, and archive at once, so readers cannot tell which statement is current.
+This note records the 2026-08-08 decision to separate current documentation from the product timeline. Current operation belongs in the [Guide](/en/guide/) and [Development](/en/development/); this note preserves the decision context and is not a second usage manual.
+
+The two content types answer different questions: current pages tell readers how Pagekiln works now, while Product Notes preserve how Pagekiln became this version.
 
 <more>
 
-## The file boundary I keep
+## The decision recorded here
 
-General pages live in `content/pages/<id>/<locale>.md`. Product notes live in `content/posts/<id>/<locale>.md`; dates order them and the collection connects the archive, Feed, and local search.
+`pages` stores the site's current effective content: the home page, About, Guide, Reference, and directories. When the implementation changes, the relevant page changes with it. A `docs` Pattern changes presentation inside `pages`; it is not a separate `docs` collection.
 
-## The excerpt comes from the body
+`posts` stores dated records of completed decisions, implementations, releases, incidents, deployments, and measured results. The required date places each Product Note in the archive and Feed. The original note keeps its historical context; a later change gets a new note rather than silently rewriting the old one into a current guide.
 
-The list excerpt ends at `<more>`. Without that boundary, the compiler takes a readable excerpt from the body, so the archive does not collapse into title-only rows.
+## Why the timeline has its own collection
 
-## The theme owns presentation
+The separation lets the home page and Guide answer the current question without carrying a changelog in every paragraph. The archive and Feed answer the chronological question without becoming an alternative source for current instructions.
 
-The `blog` Pattern provides the cover, date, language switcher, outline, previous and next notes, and related notes. When I change that structure, I work in the theme instead of copying HTML into every note.
+The body before `<more>` supplies the archive excerpt. The boundary is optional, while the Product Note date is required. The `blog` Pattern owns the note's cover, date, language switcher, outline, and related-note presentation.
+
+When the current operation changes, follow the [current Guide](/en/guide/) and [Secondary development](/en/development/). This historical record remains evidence of the 2026-08-08 content decision.

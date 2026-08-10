@@ -21,6 +21,10 @@ This page does not turn “best tool” into a single score. It answers a practi
 
 Pagekiln is not trying to reproduce every ecosystem. It places common product-content needs in the core: collection routes, three locales, excerpts, covers, the archive, a Feed, sitemap, local search, 404, OG images, and static deployment files. A new page shape starts in the theme.
 
+## Pagekiln's content contract
+
+The project has two content collections. `pages` stores current effective site content; update a page when the behavior it describes changes. `posts` stores dated records of completed decisions, implementations, releases, incidents, deployments, and measured results; `date` is required, and the archive and Feed form its timeline. `docs` is a Pattern inside `pages`, not a collection. Current usage belongs in `content/pages/`; a record of why a change happened belongs in `content/posts/`.
+
 ## Astro: page files and content collections
 
 Astro's [official Pages documentation](https://docs.astro.build/en/basics/astro-pages/) says that files in `src/pages/` own routing and supports `.astro`, Markdown, MDX, HTML, and endpoint files; layouts are the normal way to reuse a document shell. [Content Collections](https://docs.astro.build/en/guides/content-collections/) describes local Markdown/MDX collections, loaders, entry data, and schemas. The [internationalization guide](https://docs.astro.build/en/recipes/i18n/) describes using collections and dynamic routes to organize translations.

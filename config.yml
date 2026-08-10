@@ -158,7 +158,9 @@ content:
           type: string
           required: true
         description: string
-        date: string
+        date:
+          type: string
+          required: true
         cover: string
         ogImage: string
         pattern: string

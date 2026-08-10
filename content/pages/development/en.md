@@ -8,6 +8,10 @@ pattern: docs
 
 Pagekiln puts its extension boundary in the theme. Content, collections, routes, locales, search, image caching, and deployment output belong to the core; new page structure and visual language start in `themes/<name>/`.
 
+## Content boundaries remain explicit
+
+`content/pages/` is the current-state source for home, About, Guide, Reference, and directory pages. Update the relevant page when the behavior it describes changes. `content/posts/` is the dated history of completed decisions, implementations, releases, incidents, deployments, and measurements; every Product Note requires `date` and enters the archive and Feed. `docs` is a Pattern used by a `pages` entry, not a collection. Current operation belongs in pages; a record of a completed change belongs in posts.
+
 ## The directory is the capability map
 
 ```text

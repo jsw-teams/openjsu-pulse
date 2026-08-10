@@ -1,50 +1,50 @@
 ---
-title: Turn content into a product site
-description: Write readable Markdown for pages and product notes; the theme supplies structure while the compiler generates localized static delivery.
+title: Turn current content into a product site
+description: Write current site pages and dated product notes; the theme supplies structure while the compiler generates localized static delivery.
 pattern: landing
 ---
 
 :::hero{tone="brand" align="left"}
 *PAGEKILN CONTENT COMPILER*
 
-# Write content. Stop copying pages.
+# Write the current page. Keep the history.
 
-Pagekiln keeps pages, product notes, and theme structure in one project. Common site needs come from the core; visual language and page structure start in the theme.
+Pagekiln keeps current site content and dated product history in one project. `pages` answers how the site works now; `posts` preserves what changed on a date.
 
-[Start with one Markdown page](/en/guide/) [See the theme boundary](/en/development/)
+[Read the content contract](/en/guide/) [See the theme boundary](/en/development/)
 :::
 
 :::compiler-board
-### Write content
-Put the home page, product pages, and guides in `content/pages/`. Put dated updates in `content/posts/`. The path already describes the content identity and locale.
+### Current pages
+Put the home page, product information, Guide, Reference, and directories in `content/pages/`. These files describe the site's current effective information. When Pagekiln behavior changes, update the corresponding page.
+
+### Dated product notes
+Put completed decisions, implementations, releases, incidents, and deployment records in `content/posts/`. Every Product Note has a required date and enters the dated archive and Feed; it is not the current usage manual.
 
 ### Compose structure
-Patterns decide the page frame, Blocks provide reusable sections, and Frontmatter holds page data. The body stays headings, prose, tables, and links.
-
-### Produce delivery files
-One build creates three locale routes, static HTML, a product-note archive, a Feed, a sitemap, and a local-search index. Pages do not need a browser framework to load.
+Patterns decide the page frame, Blocks provide reusable sections, and Frontmatter holds schema data. `docs` is a presentation Pattern for a page in `pages`, not a third collection.
 :::
 
 :::feature-grid{columns="3"}
-### General pages
-The `pages` collection covers the home page, product information, guides, and directories. It is for durable information rather than dated entries.
+### Current pages
+`pages` stores the current effective site content. Home, About, Guide, and Reference pages are updated when the implementation they describe changes.
 
 ### Product notes
-Release changes, design decisions, and investigations live in `posts`. Dates, excerpts, covers, translations, the archive, and the Feed follow the collection.
+`posts` stores dated records of changes that already happened. The required date drives the archive and Feed, while the current instructions remain in `pages`.
 
-### Theme development
-Start a new page section in `themes/<name>/`. Collections, routes, localization, image caching, and deployment output stay in the core, so authors do not repeat them.
+### Docs Pattern
+`docs` only controls document presentation. For example, `content/pages/guide/en.md` remains a `pages` entry with `pattern: docs`.
 :::
 
-## Read the file boundaries first
+## Choose the content boundary
 
 | Need | File entry | Result |
 | --- | --- | --- |
-| Write the home or a product page | `content/pages/<id>/<locale>.md` | General page and locale route |
-| Record a product decision or update | `content/posts/<id>/<locale>.md` | Note, archive, Feed, and search |
+| Explain how Pagekiln works now | `content/pages/<id>/<locale>.md` | Current page in the locale route |
+| Record why a change happened on a date | `content/posts/<id>/<locale>.md` | Dated Product Note, archive, Feed, and search entry |
+| Present a current page as documentation | `content/pages/<id>/<locale>.md` with `pattern: docs` | A docs-shaped `pages` page, not a new collection |
 | Change structure or visual language | `themes/default/theme.ts`, `theme.yml`, `style.css` | Theme-owned Patterns, Blocks, and styles |
 | Change site metadata or capability switches | `config.yml` | Site metadata, locales, routes, and feature settings |
-| Help an Agent locate a capability | `pagekiln catalog`, `pagekiln inspect block:<id>` | Source-backed capability and file navigation |
 
 ## What is already part of the project
 
@@ -54,7 +54,7 @@ Markdown tables, excerpt boundaries, locale fallback, note covers, a sitemap, an
 :::
 
 :::cta{href="/en/guide/"}
-## Write one real page first
+## Start with the page your visitor needs now
 
-Put a product explanation or decision in Markdown, run the check, and let the theme decide how the content should look.
+Put current usage in `content/pages/`. Put a dated explanation of a completed change in `content/posts/`, run the check, and let the theme decide how the content should look.
 :::

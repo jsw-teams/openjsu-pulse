@@ -17,20 +17,20 @@ npm run s
 
 ### Content paths
 
-通用页面放在 `content/pages/<id>/<locale>.md`，产品笔记放在 `content/posts/<id>/<locale>.md`，资源放在 `content/assets/`。默认站点提供 `zh-sg`、`zh-tw`、`en`，文件名最后的 locale 决定翻译关系、路由和 hreflang。
+`pages` 保存站点当前有效的内容，放在 `content/pages/<id>/<locale>.md`；首页、About、Guide、Reference 和目录页都属于这里。Pagekiln 行为变化后，更新对应页面。`docs` 只是 `pages` 中的文档呈现 Pattern，不是第三个 collection。`posts` 保存已经发生的产品决定、实现、发布、问题处理、部署或测量结果，放在 `content/posts/<id>/<locale>.md`；每篇 Product Note 的 `date` 必填，并进入按日期排列的归档和 Feed。当前使用说明写在 `pages`，历史记录写在 `posts`。资源放在 `content/assets/`。默认站点提供 `zh-sg`、`zh-tw`、`en`，文件名最后的 locale 决定翻译关系、路由和 hreflang。
 
 ```markdown
 ---
-title: 发布一条可复用的产品笔记
-description: 记录一次明确的产品决定。
+title: 搜索结果新增命中位置
+description: 记录 2026-08-10 新增可见命中位置标签的产品变更。
 pattern: blog
-date: 2026-08-09
+date: 2026-08-10
 cover: /assets/product-note-cover.webp
 ---
 
-# 发布一条可复用的产品笔记
+# 搜索结果新增命中位置
 
-先写决定、证据和后续影响。`<more>` 前的内容会成为归档摘要。
+这篇笔记记录一次已经完成的变更。当前搜索使用方式回到 `content/pages/` 中的 Guide；`<more>` 前的内容会成为归档摘要。
 
 <more>
 
@@ -44,13 +44,13 @@ cover: /assets/product-note-cover.webp
 ```markdown
 :::feature-grid{columns="3"}
 ### 页面
-适合首页、说明和目录。
+`pages` 保存当前有效的首页、说明和目录。行为变化后，直接更新对应页面。
 
 ### 产品笔记
-适合持续记录产品决策。
+`posts` 保存有日期的已发生决定、实现、发布和问题处理，不是当前使用文档。
 
 ### 主题
-适合二次开发视觉与页面结构。
+主题负责 Pattern、Block、视觉和可选浏览器行为。
 :::
 ```
 
@@ -86,7 +86,7 @@ scripts/benchmark.mjs      临时规模夹具，不写入生产 dist
 | --- | --- |
 | `pagekiln init` | 创建不含生产域名、令牌和个人身份的中性项目 |
 | `pagekiln g --profile` | 生成静态站点并写入机器可读构建剖面 |
-| `pagekiln s [port]` | 长期保持 BuildContext 的增量预览 |
+| `pagekiln s [port]` | 保持 BuildContext 的增量预览 |
 | `pagekiln d --dry-run` | 按 `config.yml` 预览部署动作，不上传 |
 | `pagekiln d` | 按 `config.yml` 将 `dist/` 上传到明确目标 |
 | `pagekiln check` | 检查 Markdown、schema、Block、路由和输出 |

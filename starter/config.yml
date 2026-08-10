@@ -13,10 +13,32 @@ theme:
 content:
   collections:
     pages:
+      contentType: page
       pattern: document
       route: /:locale/:id/
+      schema:
+        title:
+          type: string
+          required: true
+        description: string
+        pattern: string
     posts:
+      contentType: post
       pattern: blog
       route: /:locale/posts/:id/
+      feed: true
+      archive: true
+      orderBy: date:desc
+      schema:
+        title:
+          type: string
+          required: true
+        description: string
+        date:
+          type: string
+          required: true
+        cover: string
+        ogImage: string
+        pattern: string
 deployment:
   targets: []

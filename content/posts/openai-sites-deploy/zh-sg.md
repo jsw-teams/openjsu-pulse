@@ -1,21 +1,23 @@
 ---
-title: 通过 OpenAI Sites 发布 dist
-description: 记录 Pagekiln 将已验证的 dist 交给 OpenAI Sites 发布的完整边界。
+title: OpenAI Sites 部署适配记录
+description: 记录 2026-08-10 的 OpenAI Sites 交接实验；当前部署以 Guide 和 CLI help 为准。
 date: 2026-08-10
 cover: /assets/product-note-cover.webp
 pattern: blog
 tags: [deployment, openai-sites]
 ---
 
-# 通过 OpenAI Sites 发布 dist
+# OpenAI Sites 部署适配记录
 
-这次部署把静态根统一设为 `dist`。Pagekiln 先生成页面和 Sites 所需的 `server/index.js`，再把同一份已验证的源码和构建产物交给 OpenAI Sites；站点不依赖命令行临时填写项目 ID 或令牌。
+这篇笔记记录 2026-08-10 完成的 OpenAI Sites 交接实验。Pagekiln 当前默认配置不绑定 OpenAI Sites；deploy 代码仍保留 `openai-sites` 作为可选连接器交接，并要求已有的 Sites 元数据。当前操作请查看[二次开发中的部署说明](/zh-sg/development/)和 CLI help；这篇笔记是部署历史，不是当前部署教程。
+
+这次实验把 `dist/` 作为唯一静态根目录，验证如何把已检查的构建交给已有 Sites 项目，同时不在命令行临时填写项目 ID 或令牌。
 
 <more>
 
-## 配置只表达站点事实
+## 实验时使用的配置
 
-站点根目录的配置保留项目绑定和静态根：
+下面的配置描述这次实验，不是当前默认配置。当前项目在站点所有者于 `config.yml` 选择目标前保持 `deployment.targets` 为空：
 
 ```yaml
 deployment:
@@ -25,24 +27,16 @@ deployment:
     staticDirectory: dist
 ```
 
-`.openai/hosting.json` 只保存已经存在的 `project_id`。源码凭据由 Sites 连接器短时提供，不能写入配置、远程 URL 或提交记录。
+`.openai/hosting.json` 表示一个已经存在的 `project_id`。Sites 提供短时连接器凭据；凭据不能放进配置、远程 URL 或提交记录。
 
-## 发布顺序
+## 这次实验改变了什么
 
-先运行 `pagekiln g` 和 `pagekiln check`，再运行 `pagekiln d --dry-run` 检查目标。部署脚本会确认 `dist/server/index.js` 和 `dist/index.html` 都存在，然后把动作交给 Sites 连接器：推送当前源码分支的准确 HEAD，保存一个引用该提交的版本，部署已保存版本，并轮询生产状态。
+交接流程检查 `dist/server/index.js` 和 `dist/index.html`，再把源码状态和构建产物交给 Sites 连接器。测试顺序是引用准确的源码提交、保存一个版本、部署该版本并轮询生产状态。传输失败时必须重试同一个保存上下文；提交过期时要依据远端真实分支 HEAD 重新构建。
 
-归档同时包含 `dist/`、Sites 元数据和必要的动态入口。页面请求由同一份 Web Standard Fetch handler 处理；静态文件使用 `dist` 作为根，入口旁边的静态资源回退用于处理平台未注入静态绑定的情况。
+实验也确认了静态边界：生成的输出仍是应该被托管的交付物；选定目标支持动态请求时，动态请求使用共享的 Web Standard Fetch handler。
 
-## 失败时保持同一发布上下文
+## 边界和结果
 
-`Transport send error` 是连接器传输层的临时故障，只能在短暂等待后重试同一个保存动作；不能重新创建站点或生成另一套项目 ID。若 Sites 返回 `stale_commit_sha`，先读取远端分支的真实 HEAD，重新构建与该提交一致的归档，再保存版本。只有保存成功并返回版本后才允许部署。
+OpenAI Sites 负责访问方式、公开 URL 和自定义域名验证。Pagekiln 负责源码、配置、构建输出和部署入口。平台报告部署成功，只能证明平台完成了发布，不保证每个地区、运营商或企业网络都能连接。DNS 传播、区域路由、防火墙、平台可用性和自定义域名状态，都可能让部分访客无法访问。需要覆盖目标地区时，应从实际地区测试，并准备 Cloudflare、GitHub Pages 或 VPS 等备用出口。
 
-## 这次决定的边界
-
-OpenAI Sites 的访问权限、公开 URL 和自定义域名属于 Sites 管理面；域名验证仍需在域名服务商添加平台提供的 DNS 记录。Pagekiln 只负责源码、配置、构建输出和可验证的部署入口，不把平台凭据写进站点文件。
-
-## 部署成功不等于所有地区可访问
-
-OpenAI Sites 可以接受构建并报告部署成功，但这只证明平台完成了发布，不代表每个地区、运营商或企业网络都能建立到站点的连接。DNS 传播、跨境或区域路由、企业防火墙、平台区域可用性以及自定义域名状态，都可能让部分访客打不开或访问不稳定。需要广泛可达性时，应从目标地区实测，并准备 Cloudflare、GitHub Pages 或 VPS 作为替代出口。
-
-本项目已经移除本地 OpenAI Sites 绑定，因此不会继续默认发布到该站点；这篇笔记保留为可选 Sites 适配的部署边界说明。
+实验结束后移除了本地 Sites 绑定。可选适配仍面向已有 Sites 项目；当前部署选择以[当前二次开发部署说明](/zh-sg/development/)和 `config.yml` 为准。

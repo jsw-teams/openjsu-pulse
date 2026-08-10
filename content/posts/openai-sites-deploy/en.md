@@ -1,21 +1,23 @@
 ---
-title: Publishing dist through OpenAI Sites
-description: The current Pagekiln boundary for handing a validated dist build to OpenAI Sites.
+title: OpenAI Sites deployment adaptation record
+description: A dated record of the 2026-08-10 OpenAI Sites handoff experiment; current deployment follows the Guide and CLI help.
 date: 2026-08-10
 cover: /assets/product-note-cover.webp
 pattern: blog
 tags: [deployment, openai-sites]
 ---
 
-# Publishing dist through OpenAI Sites
+# OpenAI Sites deployment adaptation record
 
-This deployment keeps `dist` as the single static root. Pagekiln generates the pages and the Sites `server/index.js` entry, then hands the same validated source state and build output to OpenAI Sites; the site does not ask the command line to invent a project ID or token.
+This note records the OpenAI Sites handoff experiment completed on 2026-08-10. Pagekiln's current default configuration does not bind OpenAI Sites. The deploy code retains `openai-sites` as an optional connector handoff and requires existing Sites metadata. For current operation, use the [deployment section of Development](/en/development/) and CLI help; this note is deployment history, not the current deployment tutorial.
+
+The experiment kept `dist/` as the single static root and tested how a validated build could be handed to an existing Sites project without putting a project id or token in the command line.
 
 <more>
 
-## Configuration states site facts
+## Historical test configuration
 
-The site-root configuration keeps the project binding and static root together:
+The following configuration describes the experiment, not the current default. The current project keeps `deployment.targets` empty until a site owner selects a target in `config.yml`:
 
 ```yaml
 deployment:
@@ -25,24 +27,16 @@ deployment:
     staticDirectory: dist
 ```
 
-`.openai/hosting.json` stores only an existing `project_id`. Sites provides a short-lived source credential for the connector handoff; it must not enter configuration, a remote URL, or a commit.
+`.openai/hosting.json` represented an existing `project_id`. Sites supplied the short-lived connector credential; it did not belong in configuration, a remote URL, or a commit.
 
-## Publishing order
+## What the experiment changed
 
-Run `pagekiln g` and `pagekiln check`, then `pagekiln d --dry-run` to inspect the selected target. The deployment script checks `dist/server/index.js` and `dist/index.html`, then hands the operation to the Sites connector: push the exact HEAD of the current source branch, save one version referencing that commit, deploy the saved version, and poll the production status.
+The handoff checked `dist/server/index.js` and `dist/index.html`, then passed the source state and build output to the Sites connector. The tested order was to reference the exact source commit, save one version, deploy that saved version, and poll the production status. A transport failure had to retry the same save context; a stale commit required rebuilding from the real remote branch head.
 
-The archive contains `dist/`, Sites metadata, and the required dynamic entry. Page requests use the same Web Standard Fetch handler; static files use `dist` as their root, and the generated fallback beside the entry handles platforms that do not inject a static binding.
+The experiment also confirmed the static boundary: the generated output remains the artifact to serve, while dynamic requests use the shared Web Standard Fetch handler when the selected target supports it.
 
-## Keep one publish context when something fails
+## Boundary and result
 
-`Transport send error` is a temporary connector transport failure. After a short wait, retry the same save operation; do not create another site or invent another project ID. If Sites returns `stale_commit_sha`, read the real remote branch HEAD, rebuild an archive from that exact commit, and save again. Deploy only after saving a version succeeds.
+OpenAI Sites owns access mode, the public URL, and custom-domain verification. Pagekiln owns source, configuration, build output, and the deployment entry. A successful platform deployment only proves that the platform published the output; it does not guarantee access from every region, ISP, or enterprise network. DNS propagation, regional routing, firewalls, platform availability, and custom-domain state can leave some visitors unable to connect. Regional reachability requires tests from the regions served and an alternate path such as Cloudflare, GitHub Pages, or a VPS.
 
-## Boundary of this decision
-
-OpenAI Sites owns access mode, the public URL, and custom domains; domain verification still requires the DNS records supplied by the platform at the domain provider. Pagekiln owns source, configuration, build output, and the verifiable deployment entry, and never writes platform credentials into site files.
-
-## A successful deployment is not universal reachability
-
-OpenAI Sites can accept a build and report a successful deployment, but that only confirms that the platform published the output. It does not guarantee that every region, ISP, or enterprise network can establish a connection. DNS propagation, cross-border or regional routing, enterprise firewalls, platform regional availability, and custom-domain state can make the site unreachable or unstable for some visitors. Test from the regions you serve and keep Cloudflare, GitHub Pages, or a VPS as an alternate delivery path when broad reachability matters.
-
-This project has removed its local OpenAI Sites binding, so it will not keep publishing to that Site by default. The note remains as the boundary documentation for the optional Sites adapter.
+The local Sites binding was removed after the experiment. The optional adapter remains for an existing Sites project, while the current deployment choice belongs in the [current Development guide](/en/development/) and `config.yml`.

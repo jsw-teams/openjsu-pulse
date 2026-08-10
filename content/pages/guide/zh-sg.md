@@ -1,22 +1,25 @@
 ---
-title: 从一页 Markdown 开始
-description: 用 Markdown、主题合约和站务配置三个入口完成一次可检查的构建。
+title: 编写当前页面和有日期的产品笔记
+description: 把当前 Pagekiln 用法放进 pages，把已经完成的产品变更放进有日期的 posts。
 pattern: docs
 ---
 
-# 从一页 Markdown 开始
+# 编写当前页面和有日期的产品笔记
 
-Pagekiln 面向需要长期维护产品内容的人。先写内容，再让主题提供页面结构；站点信息和功能开关集中在 `config.yml`，不用在每个页面复制导航、语言和 SEO 代码。
+Pagekiln 有两个职责不同的内容集合。`pages` 保存站点当前有效的信息。`posts` 保存已经发生的变更记录，并按日期形成历史时间线。Pagekiln 行为改变时，更新对应页面；如果这次变化值得进入历史，再新增一篇产品笔记。
 
 :::pipeline
-### 写一份页面
-在 `content/pages/home/zh-sg.md` 写 Frontmatter 和普通 Markdown。首页、产品介绍和指南都属于通用页面。
+### 编写当前页面
+在 `content/pages/home/zh-sg.md` 写 Frontmatter 和普通 Markdown。首页、About、Guide、Reference 和目录页在描述站点现在怎样工作时，都属于 `pages`。
+
+### 记录已经完成的变更
+在 `content/posts/<id>/<locale>.md` 写产品笔记。`date` 字段必填。每篇笔记记录一个决定、实现、发布、问题处理、部署或测量结果；它不是当前 Guide 的替代品。
 
 ### 运行检查
-`pagekiln check` 会检查字段、Pattern、Block、路由冲突和 Markdown 源位置。错误会指向具体文件、行和列。
+`pagekiln check` 会检查字段、Pattern、Block、路由冲突和 Markdown 源位置。缺少必填字段时，错误会指出源文件、行和列。
 
 ### 本地预览
-`pagekiln s` 在 `http://127.0.0.1:4173/` 提供预览。内容变化只刷新受影响的输出，浏览器页面保持静态 HTML。
+`pagekiln s` 在 `http://127.0.0.1:4173/` 提供预览。内容变化只刷新受影响的输出，浏览器继续接收静态 HTML。
 
 ### 生成站点
 `pagekiln g --profile` 生成 `dist/`，同时记录构建阶段、改变的输出和图片缓存命中情况。
@@ -26,43 +29,67 @@ Pagekiln 面向需要长期维护产品内容的人。先写内容，再让主�
 
 ```text
 content/
-├─ pages/<id>/<locale>.md       通用页面
-├─ posts/<id>/<locale>.md       产品笔记
+├─ pages/<id>/<locale>.md       当前站点内容
+├─ posts/<id>/<locale>.md       有日期的产品笔记
 └─ assets/                      OG 图、封面和其他资源
 ```
 
-例如 `content/posts/search/zh-sg.md` 会成为 `posts` 集合中的 `search` 产品笔记。文件名中的 `zh-sg` 决定语言路由、日期格式、站点地图和搜索索引。
+`docs` 是 Pattern，不是 collection。例如 `content/pages/guide/zh-sg.md` 是 `pages` 条目，只使用 `pattern: docs`。
 
-页面只需要 Frontmatter 和 Markdown：
+## 在 pages 和 posts 之间选择
+
+| 内容 | 当前文档页面 | 产品笔记 |
+| --- | --- | --- |
+| 目的 | 描述 Pagekiln 现在怎样工作 | 记录某一天发生了什么变化 |
+| collection | `pages` | `posts` |
+| 时间关系 | 当前状态 | 按时间排列的历史 |
+| 行为变化后 | 更新原有页面 | 保留旧笔记，为新变化新增笔记 |
+| 日期 | 不是页面身份的一部分 | Frontmatter 必填字段 |
+| Feed / archive | 不进入产品笔记时间线 | 自动进入归档和 Feed |
+| Pattern | `document`、`docs` 或其他页面 Pattern | 默认 `blog` |
+
+要写当前使用说明时，使用 `content/pages/`。要记录今天为什么修改 catalog 时，使用 `content/posts/` 并填写日期。
+
+## 当前文档页面
+
+这个示例回答当前构建做什么，不带历史事件日期：
 
 ```markdown
 ---
-title: 搜索如何指出命中位置
-description: 记录本地搜索的输入、排序和命中提示。
+title: 本地搜索
+description: 当前 Pagekiln 构建怎样建立本地搜索索引并标记命中位置。
 pattern: docs
 ---
 
-# 搜索如何指出命中位置
+# 本地搜索
 
-搜索结果会标明命中发生在标题、摘要、章节、正文或路径，并高亮对应文字。
+Pagekiln 当前会为每种语言建立静态搜索索引。浏览器会按照标题、描述、章节、正文和路径命中排序，标记命中位置，并高亮匹配文字。
 ```
 
-产品笔记可以增加日期、封面和摘要边界：
+行为改变后，直接更新这页，让它继续解释当前状态。
+
+## 有日期的产品笔记
+
+这个示例记录一次已经完成的变更，不承担当前功能说明：
 
 ```markdown
 ---
-title: 一次搜索体验调整
-date: 2026-08-09
-cover: /assets/product-note-cover.webp
+title: 搜索结果新增命中位置
+description: 记录 2026-08-10 新增可见命中位置标签的变更。
+date: 2026-08-10
 pattern: blog
 ---
 
-先写这段作为列表摘要。
+# 搜索结果新增命中位置
+
+这篇笔记记录一次已经完成的变更：每条命中结果现在会显示标题、摘要、章节、正文或路径标签。
 
 <more>
 
-再写完整的实现记录。
+当前搜索行为以 Guide 为准。这篇笔记保留当时的决定和实现背景，进入有日期的归档。
 ```
+
+`date` 必填。封面和 `<more>` 摘要边界是可选字段。
 
 ## 什么时候使用 Block
 
@@ -85,7 +112,7 @@ Directive 属性只放短标量。未知 Block、属性拼写错误和缺少上�
 
 ## 三种语言怎样协作
 
-当前项目启用 `zh-sg`、`zh-tw`、`en`。同一个 id 下放三份文件即可形成翻译组：
+当前项目启用 `zh-sg`、`zh-tw`、`en`。同一个 id 下的三份文件形成一个翻译组：
 
 ```yaml
 defaultLocale: en

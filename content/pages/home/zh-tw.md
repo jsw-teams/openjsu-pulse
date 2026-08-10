@@ -1,50 +1,50 @@
 ---
-title: 讓內容成為產品網站
-description: 用可讀的 Markdown 撰寫頁面和產品筆記；主題負責結構，編譯器生成多語言靜態交付。
+title: 把目前內容做成產品網站
+description: 用 Markdown 撰寫目前網站頁面和有日期的產品筆記；主題負責結構，編譯器生成多語言靜態交付。
 pattern: landing
 ---
 
 :::hero{tone="brand" align="left"}
 *Pagekiln 內容編譯器*
 
-# 撰寫內容，不再複製頁面。
+# 撰寫目前頁面，也保留變更歷史。
 
-Pagekiln 把頁面、產品筆記和主題結構放在同一個專案裡。常見網站需求由核心直接處理，視覺和頁面結構從主題開始擴充。
+Pagekiln 把目前網站內容和帶日期的產品歷史放在同一個專案裡。`pages` 回答網站現在如何運作；`posts` 保留某一天發生了哪些變化。
 
-[從一頁 Markdown 開始](/zh-tw/guide/) [查看主題邊界](/zh-tw/development/)
+[閱讀內容契約](/zh-tw/guide/) [查看主題邊界](/zh-tw/development/)
 :::
 
 :::compiler-board
-### 寫入內容
-把首頁、產品頁和使用說明放進 `content/pages/`。把帶日期的更新放進 `content/posts/`。檔名已經說明內容身份和語言。
+### 目前頁面
+把首頁、產品介紹、Guide、Reference 和目錄放進 `content/pages/`。這些檔案描述網站目前有效的資訊；Pagekiln 行為改變後，直接更新對應頁面。
+
+### 有日期的產品筆記
+把已完成的決定、實作、發布、問題處理和部署記錄放進 `content/posts/`。每篇產品筆記都必須有日期，並進入按日期排列的彙整和 Feed；它不是目前的使用手冊。
 
 ### 組合結構
-Pattern 決定頁面骨架，Block 提供可重用段落，Frontmatter 只保存頁面資料。正文繼續使用標題、段落、表格和連結。
-
-### 生成交付物
-一次建置生成三種語言路由、靜態 HTML、產品筆記彙整、訂閱清單、網站地圖和本地搜尋索引。瀏覽器不需要載入頁面框架。
+Pattern 決定頁面骨架，Block 提供可重用段落，Frontmatter 保存 schema 資料。`docs` 是 pages 中的文件呈現 Pattern，不是第三個 collection。
 :::
 
 :::feature-grid{columns="3"}
-### 通用頁面
-首頁、產品介紹、指南和目錄頁屬於 `pages`。它們不被日期和文章列表綁住，適合長期維護的產品資訊。
+### 目前頁面
+`pages` 保存目前有效的網站內容：首頁、About、Guide 和 Reference 在所描述的實作改變後直接更新。
 
 ### 產品筆記
-版本變化、設計決定和問題復盤屬於 `posts`。日期、摘要、封面、翻譯、彙整和訂閱入口會隨集合一起更新。
+`posts` 保存已經發生的變更記錄。必填日期驅動彙整和 Feed；目前操作說明仍然放在 `pages`。
 
-### 主題開發
-新增一段頁面結構先修改 `themes/<name>/`。集合、路由、多語言、圖片快取和部署輸出留在核心，內容作者不用重複處理。
+### Docs Pattern
+`docs` 只控制文件呈現。例如 `content/pages/guide/zh-tw.md` 仍是 `pages` 條目，只使用 `pattern: docs`。
 :::
 
-## 先看檔案邊界
+## 先選擇內容邊界
 
-| 需求 | 檔案入口 | 頁面結果 |
+| 需求 | 檔案入口 | 結果 |
 | --- | --- | --- |
-| 撰寫首頁或產品介紹 | `content/pages/<id>/<locale>.md` | 通用頁面與本地化路由 |
-| 更新產品決定或版本記錄 | `content/posts/<id>/<locale>.md` | 產品筆記、彙整、訂閱和搜尋 |
+| 說明 Pagekiln 現在如何運作 | `content/pages/<id>/<locale>.md` | 目前狀態頁面與語言路由 |
+| 記錄某一天為何發生變更 | `content/posts/<id>/<locale>.md` | 有日期的產品筆記、彙整、Feed 和搜尋條目 |
+| 以文件形式呈現目前頁面 | `content/pages/<id>/<locale>.md` 並使用 `pattern: docs` | docs 形式的 `pages` 頁面，不新增 collection |
 | 調整結構與視覺 | `themes/default/theme.ts`、`theme.yml`、`style.css` | 主題級 Pattern、Block 和樣式 |
 | 修改網站資訊或能力開關 | `config.yml` | 網站元資料、語言、路由和功能設定 |
-| 讓 Agent 找到功能 | `pagekiln catalog`、`pagekiln inspect block:<id>` | 基於原始碼的能力清單和檔案導覽 |
 
 ## 預設就能處理的事情
 
@@ -54,7 +54,7 @@ Markdown 表格、摘要邊界、三語言回退、文章封面、網站地圖�
 :::
 
 :::cta{href="/zh-tw/guide/"}
-## 先寫一頁真實內容
+## 先寫訪客現在需要的頁面
 
-把一個產品介紹或一條產品決定寫進 Markdown，執行檢查，再讓主題決定它如何呈現。
+目前使用說明放進 `content/pages/`；要為已完成變更記錄原因和結果時，放進 `content/posts/`，執行檢查，再讓主題決定它如何呈現。
 :::

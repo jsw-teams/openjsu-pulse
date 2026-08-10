@@ -65,7 +65,7 @@ messages:
       guide: 打开使用文档
     archive:
       title: 产品笔记归档
-      description: 记录产品决策、实现与发布
+      description: 按日期记录已经发生的产品决定、实现变更与发布
       continue: 继续阅读
       previousPage: 上一页
       nextPage: 下一页
@@ -156,7 +156,7 @@ messages:
       guide: 開啟使用文件
     archive:
       title: 產品筆記彙整
-      description: 記錄產品決策、實作與發布
+      description: 按日期記錄已經發生的產品決定、實作變更與發布
       continue: 繼續閱讀
       previousPage: 上一頁
       nextPage: 下一頁
@@ -247,7 +247,7 @@ messages:
       guide: Open the guide
     archive:
       title: Product note archive
-      description: Product decisions, implementation, and releases in sequence
+      description: Dated records of product decisions, implementation changes, and releases
       continue: Continue
       previousPage: Previous page
       nextPage: Next page

@@ -725,8 +725,8 @@ function discoveryBoundaries() {
 
 function agentFunctionMap() {
   return [
-    { id: 'write-page', purpose: 'Write a general product or information page', paths: ['content/pages/<id>/<locale>.md'], commands: ['pagekiln check', 'pagekiln g'] },
-    { id: 'write-post', purpose: 'Publish a dated product note for the note page, feed, archive, and search', paths: ['content/posts/<id>/<locale>.md'], commands: ['pagekiln check', 'pagekiln g'] },
+    { id: 'write-page', purpose: 'Write current site content for a page, guide, reference, or directory', paths: ['content/pages/<id>/<locale>.md'], commands: ['pagekiln check', 'pagekiln g'] },
+    { id: 'write-post', purpose: 'Record a dated Product Note for the history, Feed, archive, and search', paths: ['content/posts/<id>/<locale>.md'], commands: ['pagekiln check', 'pagekiln g'] },
     { id: 'change-layout', purpose: 'Change page structure or visual language', paths: ['themes/<name>/theme.yml', 'themes/<name>/theme.ts', 'themes/<name>/style.css'], commands: ['pagekiln catalog', 'pagekiln g --profile'] },
     { id: 'change-site', purpose: 'Change locales, routes, collections, SEO, privacy, search, or deployment settings', paths: ['config.yml'], commands: ['pagekiln check', 'pagekiln g --profile'] },
     { id: 'discover-extension', purpose: 'Read active theme Patterns, Blocks, collections, plugin switches, contexts, and resource dependencies', paths: ['themes/<name>/theme.yml', 'themes/<name>/theme.ts', 'config.yml'], commands: ['pagekiln catalog', 'pagekiln inspect block:<id>', 'pagekiln inspect pattern:<id>', 'pagekiln inspect collection:<id>', 'pagekiln inspect plugin:<id>'] },

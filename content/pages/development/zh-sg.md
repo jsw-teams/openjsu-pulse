@@ -8,6 +8,10 @@ pattern: docs
 
 我把 Pagekiln 的扩展边界放在主题。内容、集合、路由、语言、搜索、图片缓存和部署输出由核心负责；新页面结构和视觉语言先进入 `themes/<name>/`。
 
+## 内容边界保持明确
+
+`content/pages/` 是首页、About、Guide、Reference 和目录页的当前状态来源；所描述的行为变化后，直接更新对应页面。`content/posts/` 是已经完成的决定、实现、发布、问题处理、部署和测量的有日期历史；每篇产品笔记都必须有 `date`，并进入归档和 Feed。`docs` 是 `pages` 条目使用的 Pattern，不是 collection。当前操作说明放在 pages，已完成变更的记录放在 posts。
+
 ## 目录就是功能地图
 
 ```text
