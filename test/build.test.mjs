@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, writeFile, readFile, rm, stat } from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
+import { pathToFileURL } from 'node:url';
 import { createContext, refreshContext, build } from '../src/compiler.ts';
 
 const FIXTURE_THEME = `const block = (name, render) => ({ name, schema: {}, render });
@@ -324,6 +325,11 @@ test('Sites deployment mirrors public output into its configured static director
     assert.match(await readFile(path.join(root, 'dist/server/index.js'), 'utf8'), /static-assets\.js/);
     assert.match(await readFile(path.join(root, 'dist/server/_pagekiln/static-assets.js'), 'utf8'), /index\.html/);
     assert.doesNotMatch(await readFile(path.join(root, 'dist/server/_pagekiln/static-assets.js'), 'utf8'), /server\/index\.js/);
+    const { fetchStaticAsset } = await import(`${pathToFileURL(path.join(root, 'dist/server/_pagekiln/static-assets.js')).href}?test=${Date.now()}`);
+    for (const requestPath of ['/dist/', '/dist/en/index.html', '/sitemap.xml']) {
+      const response = await fetchStaticAsset(new Request(`https://example.test${requestPath}`));
+      assert.equal(response.status, 200, requestPath);
+    }
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 

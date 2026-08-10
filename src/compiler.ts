@@ -31,7 +31,7 @@ type CachedDocument = { hash: string; outputs: string[]; dependencies?: string[]
 type CachedImage = { hash: string; output: string };
 type CacheManifest = { version: 2; rendererVersion?: string; configHash?: string; themeHash?: string; assetHash?: string; contentRoots?: Record<string, number>; routeCount?: number; documents: Record<string, CachedDocument>; images?: Record<string, CachedImage>; outputs: string[]; outputHashes?: Record<string, string> };
 export type BuildProfile = { discover: number; load: number; validate: number; parse: number; route: number; render: number; assets: number; write: number; total: number; documents: number; changedOutputs: number; imagesProcessed: number; imageCacheHits: number };
-const RENDERER_VERSION = '2.4.18';
+const RENDERER_VERSION = '2.4.19';
 const MAX_MARKDOWN_CACHE = 32;
 const MAX_SOURCE_PARSE_CACHE = 64;
 const LOAD_CONCURRENCY = 32;
@@ -1200,7 +1200,7 @@ async function writeSiteStaticRuntime(ctx: BuildContext) {
     const data = (await fs.readFile(file)).toString('base64');
     entries.push(`  ${JSON.stringify(`/${relative}`)}: [${JSON.stringify(staticContentType(file))}, ${JSON.stringify(data)}]`);
   }
-  const source = `const assets = {\n${entries.join(',\n')}\n};\n\nfunction decode(value) {\n  const binary = atob(value);\n  const bytes = new Uint8Array(binary.length);\n  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);\n  return bytes;\n}\n\nexport function fetchStaticAsset(request) {\n  const pathname = new URL(request.url).pathname;\n  const asset = assets[pathname];\n  if (!asset) return new Response('Not found', { status: 404 });\n  const headers = new Headers({ 'content-type': asset[0] });\n  if (pathname.startsWith('/assets/')) headers.set('cache-control', 'public, max-age=31536000, immutable');\n  return new Response(request.method === 'HEAD' ? null : decode(asset[1]), { status: 200, headers });\n}\n`;
+  const source = `const assets = {\n${entries.join(',\n')}\n};\n\nfunction decode(value) {\n  const binary = atob(value);\n  const bytes = new Uint8Array(binary.length);\n  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);\n  return bytes;\n}\n\nfunction publicPath(pathname) {\n  const withoutDist = pathname === '/dist' ? '/' : pathname.startsWith('/dist/') ? pathname.slice(5) : pathname;\n  return withoutDist === '/' || withoutDist.endsWith('/') ? withoutDist + 'index.html' : withoutDist;\n}\n\nexport function fetchStaticAsset(request) {\n  const pathname = publicPath(new URL(request.url).pathname);\n  const asset = assets[pathname];\n  if (!asset) return new Response('Not found', { status: 404 });\n  const headers = new Headers({ 'content-type': asset[0] });\n  if (pathname.startsWith('/assets/')) headers.set('cache-control', 'public, max-age=31536000, immutable');\n  return new Response(request.method === 'HEAD' ? null : decode(asset[1]), { status: 200, headers });\n}\n`;
   await writeIfChanged(ctx, 'server/_pagekiln/static-assets.js', source);
 }
 
