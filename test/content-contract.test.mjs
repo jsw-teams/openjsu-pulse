@@ -168,6 +168,11 @@ test('Starter posts contract matches the formal example and the new Product Note
 
     const notes = formal.docs.filter(doc => doc.collection === 'posts' && doc.id === 'prompt-skill-after-models');
     assert.deepEqual(notes.map(doc => doc.locale).sort(), ['en', 'zh-sg', 'zh-tw']);
+    assert.ok(notes.every(doc => doc.data.cover === '/assets/product-note-cover.webp'));
+    await build(formal);
+    const home = await readFile(path.join(repoRoot, 'dist/zh-sg/index.html'), 'utf8');
+    assert.match(home, /product-note-cover\.webp/);
+    assert.equal((home.match(/模型越来越强之后/g) || []).length, 1);
   } finally {
     await rm(starterRoot, { recursive: true, force: true });
   }

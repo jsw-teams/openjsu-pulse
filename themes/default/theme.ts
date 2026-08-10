@@ -154,7 +154,7 @@ function postCover(post: ThemeRenderContext['doc'], context: ThemeRenderContext,
   const markerLabel = context.translate('collections.posts', 'Product notes');
   const cover = post.data?.cover ? context.safeUrl(String(post.data.cover)) : '';
   const image = cover ? `<img src="${cover}" alt="" loading="${index === undefined ? 'eager' : 'lazy'}" decoding="async">` : '';
-  return `<div class="post-card-cover${cover ? ' has-image' : ''}">${image}<span>${context.escapeHtml(markerLabel)}</span><strong>${context.escapeHtml(post.title)}</strong></div>`;
+  return `<div class="post-card-cover${cover ? ' has-image' : ''}">${image}<span>${context.escapeHtml(markerLabel)}</span></div>`;
 }
 
 const blocks: Record<string, ThemeBlockDefinition> = {

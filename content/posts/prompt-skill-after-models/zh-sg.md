@@ -2,6 +2,7 @@
 title: 模型越来越强之后，我们还需要学提示词和 Skill 吗？
 description: 从 2026 年的模型、Coding Agent、Skill 与 Pagekiln 2.0 重构出发，重新讨论提示词、上下文、重复工作流，以及 AI 写代码之后更棘手的技术债问题。
 date: 2026-08-11
+cover: /assets/product-note-cover.webp
 pattern: blog
 tags: [ai, agent, prompt, skill, pagekiln]
 ---

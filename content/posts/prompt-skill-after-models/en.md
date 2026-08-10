@@ -2,6 +2,7 @@
 title: Do we still need to learn prompts and Skills as models get stronger?
 description: A 2026 view of models, Coding Agents, Skills, Pagekiln 2.0, and the technical debt that appears after code generation becomes cheap.
 date: 2026-08-11
+cover: /assets/product-note-cover.webp
 pattern: blog
 tags: [ai, agent, prompt, skill, pagekiln]
 ---
