@@ -1,39 +1,37 @@
 ---
-title: Secondary development starts in the theme
-description: Change Patterns, Blocks, and the unified stylesheet first; use plugin switches for optional browser behavior and backend for runtime needs.
+title: Develop a Block and theme extension
+description: A practical theme-first workflow for adding a Block, registering resources, testing it, and deploying the result.
 pattern: docs
 ---
 
-# Secondary development starts in the theme
+# Develop a Block and theme extension
 
-Pagekiln puts its extension boundary in the theme. Content, collections, routes, locales, search, image caching, and deployment output belong to the core; new page structure and visual language start in `themes/<name>/`.
+Pagekiln secondary development starts in a copied theme. The compiler owns Markdown, schemas, routes, dependencies, assets, and output; the theme owns Patterns, Blocks, layout, CSS, browser ESM, icons, and privacy presentation. This page describes the current extension path.
 
-## Content boundaries remain explicit
+## 1. Copy the theme boundary
 
-`content/pages/` is the current-state source for home, About, Guide, Reference, and directory pages. Update the relevant page when the behavior it describes changes. `content/posts/` is the dated history of completed decisions, implementations, releases, incidents, deployments, and measurements; every Product Note requires `date` and enters the archive and Feed. `docs` is a Pattern used by a `pages` entry, not a collection. Current operation belongs in pages; a record of a completed change belongs in posts.
-
-## The directory is the capability map
+Start in a new theme directory so the original theme remains a working reference:
 
 ```text
-themes/default/
-├─ theme.yml                 Patterns, Blocks, resources, plugin declarations
-├─ theme.ts                  page shell, Pattern, and Block renderers
-├─ style.css                 global layout, responsive, accessibility styles
-├─ i18n.yml                  localized theme UI messages
-└─ scripts/                  native ESM needed after consent or by a page
+themes/<name>/
+├─ theme.yml
+├─ theme.ts
+├─ style.css
+├─ i18n.yml
+└─ scripts/                 optional native browser ESM
 ```
 
-`src/` is the compiler and Fetch router. `backend/` is only for requests, secrets, writes, and webhooks. `config.yml` manages site information, collections, routes, capability switches, and deployment settings; it is not a CSS, HTML, or script injection surface.
+`theme.yml` declares `theme.ts`, `style.css`, i18n resources, Patterns, Blocks, and plugin resources. Keep plugin names below the theme-level `plugins` switch. Theme i18n belongs in `themes/<name>/i18n.yml`, not in the root site config.
 
-## The theme contract
+## 2. Add a Block in `theme.ts`
 
-The theme module exports `defineTheme`:
+Use the small theme API and keep the Block schema scalar and explicit:
 
 ```ts
 import { defineTheme } from '../../src/theme-api.ts';
 
 export default defineTheme({
-  name: 'default',
+  name: 'nebula',
   patterns: {
     document: { name: 'document', contexts: ['page'], render: content => content }
   },
@@ -41,45 +39,113 @@ export default defineTheme({
     notice: {
       name: 'notice',
       schema: { tone: 'string' },
-      render: (node, context) => `<aside class="notice">${context.renderNodes(node.children)}</aside>`
+      render: (node, context) => {
+        const tone = context.escapeHtml(node.attributes.tone || 'info');
+        return `<aside class="notice notice--${tone}">${context.renderNodes(node.children)}</aside>`;
+      }
     }
   }
 });
 ```
 
-Declare Block attributes in the schema first. Renderers use `context.escapeHtml`, `context.safeUrl`, and `context.renderNodes`; do not concatenate unreviewed input into raw HTML. `unsafeHtml` is reserved for trusted fragments that have crossed the compiler review boundary.
+`context.renderNodes` renders Markdown children. Use `context.escapeHtml` for text and attributes and `context.safeUrl` for links. Do not pass unreviewed Markdown, frontmatter, or config values through `unsafeHtml`.
 
-## Add a page structure from the theme directory
+Register the same Block in `theme.yml`:
 
-1. Add a Pattern or Block in `theme.ts` and declare its context.
-2. Register its name, scalar attributes, schema example, and resource dependencies in `theme.yml`.
-3. Complete desktop, narrow-screen, and focus states in `style.css` or theme resources; keep the default visual system free of unnecessary motion.
-4. Run `npm run catalog`, then use `pagekiln inspect block:<id>` or `pattern:<id>` to verify the local capability.
-5. Build a real Markdown example with `pagekiln check` and `pagekiln g --profile`.
+```yaml
+name: nebula
+module: theme.ts
+style: style.css
+blocks:
+  - notice
+patterns:
+  - document
+plugins:
+  privacyConsent:
+    enabled: true
+```
 
-Reuse an existing Block when it expresses the content. Page archives, product notes, language switching, excerpts, covers, the Feed, sitemap, and local search are core capabilities; a project does not need to copy another page engine for them.
+The schema in code and the registration in `theme.yml` are one contract. A name missing from the registration should fail discovery or check; do not hide an unregistered Block behind a compiler conditional.
 
-## How search points to the match
+## 3. Use the Block in Markdown
 
-The compiler creates a static index for each locale. The default theme ranks title, summary, section, content, and path hits in the browser. Each result labels the hit location, takes a nearby snippet, and marks the exact matching text. A single Latin letter asks for more input, so typing `n` does not return a noisy list; a single Chinese character remains searchable.
+Add a directive to a page under `content/pages/`:
 
-The search script uses native Fetch and DOM APIs, not a framework. When an index exceeds the shard threshold, the entry JSON lists shard URLs instead of loading one large file.
+```markdown
+:::notice{tone="info"}
+The current instructions are in the Guide.
+:::
+```
 
-## Mobile and animation boundaries
+The directive attribute is short and scalar. Headings, paragraphs, lists, tables, code, and links remain ordinary Markdown. If the Block describes a current behavior, use a page; if it records a dated implementation decision, use a Product Note with a required `date`.
 
-The default theme uses a single-column reading flow, a right-side expandable outline, responsive tables with `data-label`, and a narrow layout that does not depend on a horizontal scrollbar. Its stylesheet intentionally has no transition or keyframe animation; interaction is communicated by color, border, focus, and open states. `prefers-reduced-motion: reduce` keeps scroll behavior explicit. Check new components at 320px, with long CJK headings, long paths, and keyboard input.
+## 4. Put visual behavior in one stylesheet
 
-## Cookie, asset, and cache behavior
+Add the Block rule to the theme's `style.css`:
 
-Cookie categories, retention, copy, and provider integrations live in `privacy.cookieConsent` in `config.yml`; the `privacyConsent` theme plugin declares its script and has an `enabled` switch. Optional scripts appear only as `<template>` before a choice and are inserted after consent. Human visitors see a footer settings entry; machines read `/.well-known/agent.json`.
+```css
+.notice{border-inline-start:3px solid var(--accent);padding:1rem 1.2rem;background:var(--panel);color:var(--ink)}
+```
 
-Built CSS is minified to one line. CSS and browser ESM filenames carry a theme fingerprint such as `style.<fingerprint>.css`, and asset links use no query string. Image cache keys include the source, parameters, and Sharp version; an unchanged image is not processed again.
+The compiler emits CSS as one compressed line and fingerprints the filename. Keep responsive behavior, focus states, table adaptation, icon sizing, and reduced-motion behavior in this stylesheet or declared theme resources. Delete overlapping old rules and dead compatibility files when the new rule replaces them; do not rely on cascade order to keep two designs alive.
 
-## The build graph and reproducible measurement
+The default theme uses the Lucide icon package through the theme module. Reuse the declared icon library instead of adding a second icon font or an inline SVG collection for the same controls.
 
-One BuildContext handles discovery, loading, parsing, validation, routing, rendering, and writes. A normal edit uses mtime and size as the fast path, then hashes changed inputs; only affected pages and outputs are written. `.pagekiln/manifest.json`, the dependency graph, and output hashes are recoverable without a database.
+## 5. Discover and test the extension
 
-When a measurement is useful, use the temporary fixture:
+Run the commands in this order:
+
+```bash
+npm run compile-theme
+npm run catalog
+pagekiln inspect block:notice
+pagekiln check
+pagekiln g --profile
+pagekiln s
+```
+
+`catalog` confirms the active theme's Patterns, Blocks, plugins, schema names, and resource dependencies. `inspect block:notice` answers one capability question as structured output. `check` catches unknown Blocks, invalid attributes, route collisions, and missing required fields with a source position. `g` confirms the Block renders to static output; `s` confirms the browser preview reloads after a theme or Markdown edit.
+
+## 6. Add optional browser behavior
+
+Put native ESM in `themes/<name>/scripts/` and declare it under the appropriate plugin. Give every optional plugin an explicit switch:
+
+```yaml
+plugins:
+  privacyConsent:
+    enabled: true
+  search:
+    enabled: true
+```
+
+Optional analytics or advertising scripts remain inert until the visitor grants the matching Cookie category. Essential consent storage is enabled by the privacy contract; the footer opens the same settings dialog that the visitor can reopen later. Browser code should be loaded once, with one owner per event handler. Delete a superseded script instead of leaving two handlers to compete.
+
+## 7. Keep site settings and runtime code separate
+
+`config.yml` contains site metadata, locales, collections, routes, schemas, privacy settings, and deployment destinations. It does not contain CSS paths, arbitrary HTML, or browser-script bodies. `backend/handler.ts` is the source location for dynamic requests, secrets, writes, and webhooks; use the shared Fetch router and compile the backend before deployment.
+
+For a static-only site, leave backend execution off for Pages and serve `dist/` from a CDN, Caddy, or Nginx. For the configured deployment targets:
+
+```yaml
+deployment:
+  targets: [cloudflare-pages]
+  cloudflare:
+    apiTokenEnv: CLOUDFLARE_API_TOKEN
+    pages:
+      project: example-site
+      branch: production
+```
+
+```bash
+pagekiln d --dry-run
+pagekiln d
+```
+
+Use `targets: [cloudflare-pages, github-pages, vps]` when one release must publish to several destinations. Configure each provider's project, remote, branch, SSH host, user, port, remote path, and key path in `config.yml`; keep secret values in environment variables or the local SSH setup.
+
+## 8. Measure a change
+
+The optional fixture measures 100 temporary pages and reports JSON lines for cold, no-change, edit, add, delete, theme, and settings changes:
 
 ```bash
 npm run compile-runtime
@@ -88,64 +154,18 @@ npm run compile-backend
 npm run bench -- 100
 ```
 
-The fixture is for local measurement. It does not read the example site's content or write the production `dist/`. The complete JSON keeps every scenario, phase, and machine field. `maxRssMiB` is the peak resident memory of the Node build process; one MiB is 1,024² bytes. It is not the size of `dist/` or the memory used by one page.
+`maxRssMiB` is the Node process peak resident memory, not the output directory size. The fixture is removed after the run and is not a product performance promise.
 
-## Deployment boundaries
+## 9. Final extension checklist
 
-- A CDN, Caddy, or Nginx serves `dist/` directly.
-- Cloudflare Workers use a static-asset binding and a standard module worker; static requests stay in the asset layer first.
-- Cloudflare Pages is static when backend is off and emits Advanced Mode `_worker.js` when backend is on.
-- The VPS dynamic entry uses `Deno.serve`; Caddy or Nginx still serves static files.
-
-All three dynamic targets import the same Fetch handler. Secrets come only from runtime bindings or environment variables.
-
-`pagekiln d` builds before publishing. From this source checkout, use `npm run d`; the bare command is available after `npm link` or a package installation. Put one target or a target list and each provider's destination in `config.yml`; the command only accepts `--dry-run` for inspection. Selected targets run in order. Cloudflare Pages uses Wrangler, GitHub uses `git subtree`, `vps` uses OpenSSH SCP, and `openai-sites` requires an existing `.openai/hosting.json` for the Sites connector handoff.
-
-```yaml
-deployment:
-  targets: [vps]
-  cloudflare:
-    accountId: CF_ACCOUNT_ID
-    apiTokenEnv: CLOUDFLARE_API_TOKEN
-    pages:
-      project: site-name
-      branch: production
-    workers:
-      name: site-worker
-      compatibilityDate: '2026-08-10'
-  github:
-    remote: origin
-    branch: gh-pages
-    tokenEnv: GITHUB_TOKEN
-  vps:
-    host: vps.example.com
-    user: deploy
-    port: 22
-    remotePath: /var/www/site
-    identityFile: ~/.ssh/id_ed25519
-    publicKeyFile: ~/.ssh/id_ed25519.pub
+```text
+[ ] theme.ts exports the Block through defineTheme
+[ ] theme.yml registers the Block and its resources
+[ ] style.css owns the responsive and focus states
+[ ] duplicate CSS, JS, and compatibility layers are deleted
+[ ] plugin switches are explicit
+[ ] i18n stays in themes/<name>/i18n.yml
+[ ] pagekiln catalog and inspect describe the Block
+[ ] pagekiln check, build, test, and preview pass
+[ ] generated dist/ is reviewed and not edited manually
 ```
-
-`cloudflare.pages.project` is the Pages project name; `cloudflare.workers.name` and `compatibilityDate` identify the Worker generated in `dist/wrangler.toml`. When `cloudflare.apiTokenEnv` is set, deployment reads the token from that environment variable; when omitted, Wrangler uses its local login. `github.remote` and `branch` must already exist locally; an HTTPS remote can use the environment token named by `github.tokenEnv`, while an SSH remote uses the local SSH agent/config. VPS requires the SSH host, user, port, and an existing remote directory; `identityFile` is the private key and `publicKeyFile` is optional, with the public key pre-installed in the server's `authorized_keys`. Credentials stay outside this file.
-
-OpenAI Sites remains an optional adapter, but this project has removed its Sites binding. A hosting platform reporting a successful deployment does not imply access from every region; DNS, ISP routing, enterprise network policy, platform regional availability, and custom-domain state can still cause failures. Test from target regions and keep Cloudflare, GitHub Pages, or VPS as alternative delivery paths when broad reachability matters.
-
-```bash
-pagekiln d --dry-run
-pagekiln d
-```
-
-## After a change
-
-```bash
-npm run compile-runtime
-npm run compile-theme
-npm run compile-backend
-npm test
-pagekiln check
-npm run catalog
-npm run inspect -- home
-pagekiln g --profile
-```
-
-Check generated HTML, 404, Feed, sitemap, search indexes, `llms.txt`, deployment files, and fingerprinted theme files. `dist/` is generated output; do not edit it by hand.

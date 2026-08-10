@@ -166,7 +166,7 @@ test('Starter posts contract matches the formal example and the new Product Note
     const inspected = await inspect(formal, 'collection:posts');
     assert.equal(inspected.item.schema.date.required, true);
 
-    const notes = formal.docs.filter(doc => doc.collection === 'posts' && doc.id === 'agent-discovery-contract');
+    const notes = formal.docs.filter(doc => doc.collection === 'posts' && doc.id === 'prompt-skill-after-models');
     assert.deepEqual(notes.map(doc => doc.locale).sort(), ['en', 'zh-sg', 'zh-tw']);
   } finally {
     await rm(starterRoot, { recursive: true, force: true });

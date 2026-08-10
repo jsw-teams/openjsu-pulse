@@ -1,86 +1,131 @@
 ---
-title: "對比研究：每個工具怎樣組織內容"
-description: 對照官方入口，說明 Pagekiln 目前的主題與站務設定邊界。
+title: 實用比較：安裝、預覽、部署與擴充
+description: 比較 Pagekiln、Astro、Eleventy、Hugo、VitePress 和 Docusaurus 的官方操作路徑。
 pattern: docs
 ---
 
-# 對比研究：每個工具怎樣組織內容
+# 實用比較：安裝、預覽、部署與擴充
 
-這頁不製作「誰更強」的總分。它回答一個更實際的問題：同類工具要求我維護什麼，頁面結構從哪裡開始，什麼時候需要進入主題或元件程式碼。速度資料另行透過固定版本、固定夾具和完整命令測量，不在這裡用估算填空。
+本頁比較開發者需要實際操作的命令和檔案，不把一次 benchmark 執行變成普遍排名。表中的命令來自各專案官方文件；Pagekiln 命令以本倉庫目前 CLI 為準。
 
-## 一張邊界表
+## 最短可執行路徑
 
-| 工具 | 官方內容入口 | 官方擴充入口 | 維護重點 |
-| --- | --- | --- | --- |
-| Astro | `src/pages/`、Markdown、Content Collections | `.astro` 頁面、布局和整合 | 頁面元件、內容集合 schema、整合設定 |
-| Eleventy | Markdown 和模板檔案 | Liquid、Nunjucks、shortcode、Data Cascade | 模板語言、資料級聯、集合和資源流程 |
-| Hugo | `content/`、Front Matter、Markdown | `layouts/`、shortcodes、資源處理 | 內容樹、section、模板查找、多語言設定 |
-| VitePress | `docs/` Markdown | Vue 主題和 Markdown 內 Vue 元件 | Vue 主題、文件導覽和客戶端行為 |
-| Docusaurus | `docs/` Markdown/MDX、`src/pages/` | React 主題、插件、MDX | docs/sidebar/version/i18n 結構和 React 元件 |
-| Pagekiln | `content/pages/`、`content/posts/`、Frontmatter、GFM | `themes/<name>/` 的 Pattern、Block、`theme.ts`、`style.css` 和二級插件 | Markdown 檔案、主題目錄和網站設定 |
+| 工具 | 安裝 / 啟動 | 本機預覽 | 生產建置 | 擴充入口 |
+| --- | --- | --- | --- | --- |
+| Pagekiln | `npm install`；`npm link`；`pagekiln init` | `pagekiln s` | `pagekiln g` → `dist/` | `themes/<name>/theme.ts`、`theme.yml`、`style.css`、外掛開關 |
+| Astro | `npm create astro@latest` | `npm run dev` | `npm run build` → `dist/` | `.astro` 頁面、元件、integrations |
+| Eleventy | `npm install @11ty/eleventy`；`npx @11ty/eleventy --serve` | `npx @11ty/eleventy --serve` | `npx @11ty/eleventy` → `_site/` | 範本、shortcodes、Data Cascade |
+| Hugo | 安裝 Hugo；`hugo new site` | `hugo server` | `hugo` → `public/` | `layouts/`、shortcodes、modules、resources |
+| VitePress | `npx vitepress init` | `npm run docs:dev` | `npm run docs:build` → `.vitepress/dist/` | Vue 主題、Markdown 中的 Vue 元件 |
+| Docusaurus | `npm init docusaurus@latest my-website classic` | `npm run start` | `npm run build` → `build/` | React 主題、plugins、MDX |
 
-Pagekiln 的差異不是「把所有工具都做一遍」，而是把常見產品內容需求預先放進核心：集合路由、三語言、摘要、封面、彙整、Feed（產品筆記訂閱清單）、網站地圖、本地搜尋、404、OG 圖和靜態部署檔案。需要新增頁面形狀時，先改主題。
+輸出目錄是部署事實，不是外觀細節：託管平台必須發佈建置命令產生的目錄。Pagekiln 目前統一靜態目錄是 `dist/`，部署命令從 `config.yml` 讀取目的地。
 
-## Pagekiln 的內容契約
+## Pagekiln 任務配方
 
-專案有兩個內容集合。`pages` 保存目前有效的網站內容；所描述的行為改變後，直接更新頁面。`posts` 保存已完成的決定、實作、發布、問題處理、部署和測量結果；`date` 必填，彙整和 Feed 組成它的時間線。`docs` 是 `pages` 內的 Pattern，不是 collection。目前使用說明放在 `content/pages/`；記錄某次變更為何發生放在 `content/posts/`。
-
-## Astro：頁面檔案和內容集合
-
-Astro 的[官方 Pages 文件](https://docs.astro.build/en/basics/astro-pages/)說明，`src/pages/` 檔案負責路由，並支援 `.astro`、Markdown、MDX、HTML 和 endpoint 檔案；頁面通常透過布局重用完整文件結構。[Content Collections](https://docs.astro.build/en/guides/content-collections/)說明本地 Markdown/MDX 集合、loader、entry data 和 schema；[國際化指南](https://docs.astro.build/en/recipes/i18n/)說明可用集合和動態路由組織翻譯。
-
-這條官方路徑適合需要元件和整合的網站。選擇 Pagekiln 時，維護重點換成 `content/<collection>/<id>/<locale>.md` 和主題合約；正文不進入 JSX/MDX，普通頁面也不帶 hydration。
-
-## Eleventy：模板、資料和集合
-
-[Eleventy 官方首頁](https://www.11ty.dev/)以 Markdown 檔案和模板語言為起點，並展示集合列表。[Data Cascade 文件](https://www.11ty.dev/docs/data-cascade/)說明模板、目錄、內容和全域資料如何合併；[Collections 文件](https://www.11ty.dev/docs/collections/)說明如何把內容分組供列表使用。
-
-這條官方路徑把自由度交給模板語言和資料級聯。選擇 Pagekiln 時，不需要為每個專案重新決定頁面身份、翻譯組、產品筆記彙整和搜尋索引；需要不同視覺再換主題。
-
-## Hugo：內容樹、section 和多語言
-
-Hugo 的[內容格式文件](https://gohugo.io/content-management/formats/)說明 Markdown 是預設內容格式，也支援其他格式和 Front Matter。[Sections 文件](https://gohugo.io/content-management/sections/)說明頂層內容目錄和 `_index.md` 如何形成 section、列表頁和模板選擇。[多語言文件](https://gohugo.io/content-management/multilingual/)說明檔名語言後綴、翻譯關係、語言資源和回退行為。
-
-這條官方路徑適合內容樹、section 和資源能力都很重要的網站。選擇 Pagekiln 時，集合和路由寫進 `config.yml`，檔名直接形成 locale 和 id；主題只處理呈現。
-
-## VitePress：Markdown 作為 Vue 元件
-
-VitePress 的[入門文件](https://vitepress.dev/guide/getting-started)以 `docs/` Markdown 和 VuePress 風格主題開始，並提供 Markdown、部署、主題和國際化入口。[Using Vue in Markdown](https://vitepress.dev/guide/using-vue.html)明確說明 Markdown 會先編譯成 HTML，再作為 Vue Single-File Component 處理；頁面可以匯入 Vue 元件並加入腳本。
-
-這條官方路徑適合以 Vue 為主題擴充邊界的文件站點。選擇 Pagekiln 時，頁面正文保持 CommonMark/GFM；互動只在明確需要的主題腳本中出現，靜態頁面預設不 hydration。
-
-## Docusaurus：docs、sidebar、版本和 React
-
-Docusaurus 的[安裝文件](https://docusaurus.io/docs/installation)展示 `docs/`、`blog/`、`src/pages/` 和靜態目錄。[Create a doc](https://docusaurus.io/docs/create-doc)說明在 `docs/` 放 Markdown，Front Matter 和目錄結構共同影響 id、URL 和 sidebar。[國際化介紹](https://docusaurus.io/docs/i18n/introduction)說明 locale 目錄、主題翻譯、插件翻譯和 hreflang 目標。
-
-這條官方路徑適合需要 docs sidebar、版本和 React/MDX 生態的文件入口。選擇 Pagekiln 時，產品頁面和產品筆記使用兩個明確 collection；內容型需求留在核心，主題開發不需要修改編譯器。
-
-## Pagekiln 實際維護什麼
-
-```text
-content/       人類可讀的頁面、產品筆記和資源
-themes/        頁面結構、Block、i18n.yml、style.css 和原生 ESM
-config.yml     網站資訊、集合、路由、語言和能力開關
-backend/       需要請求、秘密、寫入或 webhook 的動態邏輯
-```
-
-每次修改後的最短檢查路徑是：
+### 安裝新網站
 
 ```bash
+npm install
+npm link
+pagekiln init
 pagekiln check
-pagekiln g --profile
-npm run catalog
 ```
 
-`catalog` 是基於原始碼的能力目錄，不是內容頁面；它讀取目前設定、內容和主題，不渲染整站，也不依賴既有 `dist/`。`inspect` 保留按內容 id 查詢，並以結構化 JSON 提供 `block:<id>`、`pattern:<id>`、`collection:<id>` 和 `plugin:<id>` 等局部命名空間。
+Starter 是真實原始碼目錄。它的 `config.yml`、`content/` 和 `themes/` 展示 CLI 複製的契約。
 
-## 怎樣理解性能比較
+### 預覽並編輯
 
-Hugo、Eleventy 和 Pagekiln 的速度數字必須來自同一台機器、同一份輸入、同一版本和同一輸出契約。只比較 CLI 的冷啟動會遺漏網站地圖、搜尋、404、Feed 和部署檔案；把這些檔案補回去又會改變測量範圍。儲存庫保留 `scripts/benchmark.mjs` 和 `scripts/benchmark-compare.mjs` 作為本地工具，不把某次結果寫成產品承諾，也不把暫時 JSON 發布到 `dist/`。
+```bash
+pagekiln s
+pagekiln s --port=4174
+```
 
-## 選擇建議
+預覽服務監看 `config.yml`、`content/` 和 `themes/`。Markdown、CSS 或主題編輯會觸發重建和瀏覽器重新整理，診斷錯誤後程序仍保持執行。
 
-- 需要 `.astro`、Vue 或 React 元件生態時，選擇對應工具的官方主題路徑。
-- 需要深度內容樹、section、taxonomy 或資源處理時，優先研究 Hugo 官方能力。
-- 需要自由模板語言和 Data Cascade 時，研究 Eleventy 的模板路徑。
-- 需要把產品內容交給 Markdown，並希望集合、語言、搜尋、彙整和靜態交付已有邊界時，選擇 Pagekiln 的主題優先路徑。
+### 部署
+
+```yaml
+deployment:
+  targets: [cloudflare-pages, github-pages, vps]
+  cloudflare:
+    apiTokenEnv: CLOUDFLARE_API_TOKEN
+    pages:
+      project: example-site
+      branch: production
+  github:
+    remote: origin
+    branch: gh-pages
+    tokenEnv: GITHUB_TOKEN
+  vps:
+    host: vps.example.com
+    user: deploy
+    port: 22
+    remotePath: /var/www/example-site
+    identityFile: ~/.ssh/id_ed25519
+```
+
+```bash
+pagekiln d --dry-run
+pagekiln d
+```
+
+支援的 connector 是 `cloudflare-pages`、`cloudflare-workers`、`github-pages`、`vps` 和可選的 `openai-sites` handoff。Token 放在環境變數中。VPS 使用本機 SSH agent 或既有私鑰認證，伺服器必須已授權對應公鑰。純靜態託管不需要動態 backend。
+
+### 開發 Block
+
+```text
+content/pages/guide/zh-tw.md   目前說明
+themes/default/theme.ts        Block 渲染器和 schema
+themes/default/theme.yml       Block/資源註冊
+themes/default/style.css       單一視覺來源
+```
+
+透過 `defineTheme` 實作 Block，在 `theme.yml` 註冊，用 Markdown 指令呼叫，再執行：
+
+```bash
+npm run compile-theme
+pagekiln catalog
+pagekiln inspect block:notice
+pagekiln check
+pagekiln g
+```
+
+完整範例和安全邊界見[二次開發](/zh-tw/development/)。
+
+## 各工具需要維護什麼
+
+### Pagekiln
+
+內容身份明確：`content/pages/<id>/<locale>.md` 是目前網站內容，`content/posts/<id>/<locale>.md` 是帶必填 `date` 的產品筆記。`docs` 是 `pages` 內的 Pattern，不是並列 collection。`config.yml` 負責網站設定和部署目的地；複製的主題負責 Pattern、Block、CSS、瀏覽器 ESM 和外掛呈現。
+
+### Astro
+
+Astro[官方安裝文件](https://docs.astro.build/en/install-and-setup/)從 `npm create astro@latest` 開始；[開發與建置文件](https://docs.astro.build/en/develop-and-build/)使用 `npm run dev` 和 `npm run build`。`.astro` 頁面、元件、integrations 和 content collections 構成擴充面。需要元件和 integrations 作為主要開發方式時，使用這條路徑。
+
+### Eleventy
+
+Eleventy[官網](https://www.11ty.dev/)展示 Markdown、範本、`npx @11ty/eleventy --serve` 和 `_site/`；[Data Cascade](https://www.11ty.dev/docs/data-cascade/)與[Collections](https://www.11ty.dev/docs/collections/)是主要組織面。需要多種範本語言和資料組合時，使用這條路徑。
+
+### Hugo
+
+Hugo[快速開始](https://gohugo.io/getting-started/quick-start/)使用 `hugo new site`、`hugo server` 和 `hugo`，輸出為 `public/`；[內容組織](https://gohugo.io/content-management/organization/)和[shortcodes](https://gohugo.io/content-management/shortcodes/)把結構放進內容樹和版面。需要 sections、taxonomies、範本和原生二進位檔時，使用這條路徑。
+
+### VitePress
+
+VitePress[入門文件](https://vitepress.dev/guide/getting-started)使用 `npx vitepress init`、`npm run docs:dev` 和 `npm run docs:build`；[在 Markdown 中使用 Vue](https://vitepress.dev/guide/using-vue.html)讓 Vue 元件和用戶端行為成為文件創作的一部分。文件站本身就是 Vue 應用程式時，使用這條路徑。
+
+### Docusaurus
+
+Docusaurus[安裝文件](https://docusaurus.io/docs/installation)使用 React starter、`npm run start` 和 `npm run build`；[i18n 文件](https://docusaurus.io/docs/i18n/introduction)處理 locale 目錄以及主題和外掛翻譯。需要 docs sidebar、版本、MDX 和 React plugins 時，使用這條路徑。
+
+## 按下一個具體任務選擇
+
+- 需要 Markdown 優先的產品站，並且要明確區分目前頁面、有日期產品筆記、語言、搜尋、歸檔、sitemap 和靜態部署：使用 Pagekiln，從 Guide 開始。
+- 需要 `.astro` 元件或 integrations 生態：使用 Astro starter。
+- 需要範本語言選擇和 Data Cascade：使用 Eleventy starter。
+- 需要 sections、taxonomies、shortcodes 和原生二進位檔：使用 Hugo 快速開始。
+- 需要在文件中使用 Vue 元件：使用 VitePress。
+- 需要帶 sidebar、版本和外掛翻譯的 React/MDX 文件：使用 Docusaurus。
+
+選擇應跟隨下一個需要編寫的檔案。對 Pagekiln 來說，目前用法寫入 `content/pages/`，有日期的變化寫入 `content/posts/`，新 Block 寫入 `themes/<name>/theme.ts`。

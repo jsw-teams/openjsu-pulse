@@ -1,76 +1,68 @@
 ---
-title: Write current pages and dated Product Notes
-description: Put current Pagekiln usage in pages and completed product changes in dated posts.
+title: Install, preview, build, and deploy Pagekiln
+description: The practical path from a new Pagekiln site to a checked, previewed, and deployable dist directory.
 pattern: docs
 ---
 
-# Write current pages and dated Product Notes
+# Install, preview, build, and deploy Pagekiln
 
-Pagekiln has two content collections with different responsibilities. `pages` stores the site's current effective information. `posts` stores dated records of changes that already happened. When Pagekiln behavior changes, update the relevant page; record the change in a new Product Note when it belongs in the history.
+This is the current operating guide. `pages` describes how the site works now; `posts` records dated product changes. If the compiler or theme behavior changes, update this page and the other current pages. Read the [development guide](/en/development/) when the task is to add a Block or change the theme.
 
-:::pipeline
-### Write a current page
-Put Frontmatter and ordinary Markdown in `content/pages/home/en.md`. Home, About, Guide, Reference, and directory pages belong to `pages` when they describe the site as it works now.
+## 1. Install
 
-### Record a completed change
-Put a Product Note in `content/posts/<id>/<locale>.md`. Its `date` field is required. The note records one decision, implementation, release, incident, deployment, or measured result; it is not a replacement for the current Guide.
+Pagekiln requires Node.js `>=22.12.0` and npm. In a checkout of this repository:
 
-### Run the check
-`pagekiln check` validates fields, Patterns, Blocks, route collisions, and Markdown source positions. Missing required fields point to the source file, line, and column.
+```bash
+git clone https://github.com/jsw-teams/pagekiln.git
+cd pagekiln
+npm install
+```
 
-### Preview locally
-`pagekiln s` serves `http://127.0.0.1:4173/`. A content change refreshes affected outputs while the browser still receives static HTML.
+Compile the runtime, theme, and backend once before using the source checkout:
 
-### Generate the site
-`pagekiln g --profile` writes `dist/` and records build phases, changed outputs, and image-cache hits.
-:::
+```bash
+npm run compile-runtime
+npm run compile-theme
+npm run compile-backend
+```
 
-## Where content lives
+To create a neutral site in another directory, link the local CLI and copy the real `starter/` template:
+
+```bash
+npm link
+mkdir my-site
+cd my-site
+pagekiln init
+```
+
+`pagekiln init` does not create a second template hidden in the CLI. It copies `starter/`, including `config.yml`, content, and theme resources.
+
+## 2. Write the first content
+
+The source tree has two collections:
 
 ```text
 content/
-├─ pages/<id>/<locale>.md       current site content
+├─ pages/<id>/<locale>.md       current site information
 ├─ posts/<id>/<locale>.md       dated Product Notes
-└─ assets/                      OG images, covers, and other resources
+└─ assets/                      images and other site assets
 ```
 
-`docs` is a Pattern, not a collection. For example, `content/pages/guide/en.md` is a `pages` entry with `pattern: docs`.
-
-## Choose between pages and posts
-
-| Content | Current document page | Product Note |
-| --- | --- | --- |
-| Purpose | Describe how Pagekiln works now | Record what changed on a date |
-| Collection | `pages` | `posts` |
-| Time relationship | Current state | Chronological history |
-| After behavior changes | Update the existing page | Keep the old note and add a new note for the new change |
-| Date | Not part of page identity | Required Frontmatter field |
-| Feed / archive | Does not enter the Product Note timeline | Enters the archive and Feed automatically |
-| Pattern | `document`, `docs`, or another page Pattern | `blog` by default |
-
-If you are writing current usage instructions, use `content/pages/`. If you are recording why catalog changed today, use `content/posts/` and add the date.
-
-## A current document page
-
-This example answers what the current build does, without a historical event date:
+Write a current page in `content/pages/`. Home, About, Guide, Reference, and directory pages belong there when they answer what the site does now. `docs` is a Pattern inside `pages`, not a third collection.
 
 ```markdown
 ---
 title: Local search
-description: How the current Pagekiln build creates the local search index and labels matches.
+description: How the current build indexes content and marks result locations.
 pattern: docs
 ---
 
 # Local search
 
-Pagekiln currently creates a static search index for each locale. The browser ranks title, description, heading, body, and path matches, then labels the matching location and highlights the matched text.
+Pagekiln currently creates a locale-specific static index and labels each result by the matching title, section, content, or path.
 ```
 
-When that behavior changes, update this page so it remains the current explanation.
-
-## A dated Product Note
-
-This example records one completed change rather than describing the current feature contract:
+Write a Product Note in `content/posts/<id>/<locale>.md` only when recording one dated decision, implementation, release, incident, deployment, or measurement. The `date` field is required.
 
 ```markdown
 ---
@@ -82,59 +74,116 @@ pattern: blog
 
 # Search results gained hit locations
 
-This note records the completed change that added a visible title, summary, section, content, or path label to each matching result.
-
-<more>
-
-The current search behavior belongs in the Guide. This note keeps the decision and implementation context for the dated archive.
+This note records what changed on that date and why. The current search instructions remain in the Guide.
 ```
 
-The `date` is required. A cover and `<more>` excerpt boundary are optional.
+When current behavior changes, update the existing page. Keep an old Product Note as history and add a new note for a new dated change. This keeps `pages` as current state and `posts` as chronological history.
 
-## When to use a Block
+## 3. Check the source
 
-Keep headings, lists, tables, code, and links in Markdown. Use a Block Directive only for a page section that needs stable reuse:
+Run the check before previewing or deploying:
 
-```markdown
-:::feature-grid{columns="3"}
-### Content entry
-Every page file has a clear location.
-
-### Page structure
-Patterns and Blocks come from the theme.
-
-### Output check
-The generated files can be inspected.
-:::
+```bash
+pagekiln check
 ```
 
-Directive attributes stay short and scalar. An unknown Block, invalid attribute, or missing context fails the build with a source position and a suggestion.
+The check validates YAML frontmatter, required schema fields, collection routes, translation groups, Pattern and Block names, directive attributes, and route collisions. A missing Product Note `date` fails the check; a current page does not need a date.
 
-## How the three locales work together
+Use source discovery when you need to know what the active theme actually provides:
 
-The project enables `zh-sg`, `zh-tw`, and `en`. Three files with the same id form one translation group:
+```bash
+pagekiln catalog
+pagekiln inspect collection:pages
+pagekiln inspect collection:posts
+pagekiln inspect block:notice
+```
+
+`catalog` reads the source-backed capability surface without requiring a complete site build. `inspect` returns structured facts for a content id or an explicit namespace.
+
+## 4. Preview locally
+
+Start the incremental preview server:
+
+```bash
+pagekiln s
+```
+
+Open [http://127.0.0.1:4173/](http://127.0.0.1:4173/). Use another port when the default is occupied:
+
+```bash
+pagekiln s --port=4174
+```
+
+The server builds once, watches `config.yml`, `content/`, and `themes/`, and reloads the browser after an affected output is rebuilt. A Markdown, frontmatter, CSS, or theme change is therefore visible in the preview without restarting the process. A diagnostic build error is printed while the preview process remains available for the next fix.
+
+From the repository checkout, the equivalent npm aliases are `npm run s` and `npm run s -- --port=4174`.
+
+## 5. Build `dist/`
+
+Generate the publishable static output:
+
+```bash
+pagekiln g
+pagekiln g --profile
+```
+
+The short command is the same operation as `pagekiln build`. It writes `dist/`, including HTML, one-line fingerprinted CSS, browser ESM assets, feeds, sitemap, search data, `llms.txt`, the custom 404 page, and target-specific deployment files. The build profile is stored at `dist/.pagekiln/build-profile.json`.
+
+The source checkout can use `npm run g -- --profile`. Do not edit `dist/` by hand; edit the source and generate it again.
+
+## 6. Deploy from `config.yml`
+
+Deployment is configured in the site file, not by passing provider credentials on the command line. Select one target or several:
 
 ```yaml
-defaultLocale: en
-activeLocales: [zh-sg, zh-tw, en]
+deployment:
+  targets: [cloudflare-pages, vps]
+  cloudflare:
+    apiTokenEnv: CLOUDFLARE_API_TOKEN
+    pages:
+      project: example-site
+      branch: production
+  vps:
+    host: vps.example.com
+    user: deploy
+    port: 22
+    remotePath: /var/www/example-site
+    identityFile: ~/.ssh/id_ed25519
+    publicKeyFile: ~/.ssh/id_ed25519.pub
 ```
 
-The product-note title area contains the single language switcher. It displays “简体中文”, “繁體中文”, and “English”, rather than internal codes. Theme UI messages live in `themes/<name>/i18n.yml`, outside the site-operations config; missing messages use the theme's `fallbackLocale` while preserving `lang`, canonical, and `hreflang` metadata.
+The supported targets are `cloudflare-pages`, `cloudflare-workers`, `github-pages`, `vps`, and the optional `openai-sites` connector handoff. Credentials stay in environment variables, a local SSH agent, or the SSH key files; do not put tokens or private key contents in `config.yml`.
 
-## What the build writes
+Inspect the resolved actions before uploading:
 
-- `feed.xml`: a bounded Product Note subscription list ordered by date.
-- `sitemap.xml`: the sitemap, including translated-page relationships.
-- `llms.txt`: the first site entry point for an Agent; `llms-full.txt` provides sharded page summaries and full-content links.
-- `pagekiln catalog`: the source-backed capability catalog for the active theme, including Patterns, Blocks, schemas, plugins, and dependencies; it does not require a full build.
-- `pagekiln inspect block:<id>` / `pattern:<id>` / `collection:<id>` / `plugin:<id>`: structured local capability queries; a bare id still queries content.
-- `.pagekiln/catalog.json`: the generated discovery copy emitted during a normal build.
-- `site.webmanifest`, OG images, 404, and deployment files for browsers, sharing, and static hosting.
+```bash
+pagekiln d --dry-run
+```
 
-## Cookie and accessibility behavior
+Upload selected targets after the dry run:
 
-The `privacyConsent` theme plugin and the site-level `config.yml` switch control Cookie consent. Essential categories stay enabled and optional categories start off; optional scripts are not inserted before a visitor chooses. Human visitors can reopen the settings from the footer. Machines read `/.well-known/agent.json`, so the two entry points remain separate. The site also provides a skip link, visible focus, semantic headings, mobile table labels, and a no-motion default with reduced-motion scroll handling.
+```bash
+pagekiln d
+```
 
-## Next step
+`pagekiln d` builds first. Cloudflare Pages publishes `dist/` with Wrangler; Cloudflare Workers uses the generated standard module Worker; GitHub Pages pushes `dist/` to the configured remote branch; VPS copies `dist/` with SCP to the configured path. A VPS host must already have SSH access, the destination directory, and the public key in `authorized_keys` when key authentication is used.
 
-Run `pagekiln check`, then `pagekiln s`. To generate a publishable `dist/`, run `pagekiln g`; to change page structure, read [Secondary development](/en/development/); to understand adjacent tools' documented authoring paths, read [Research and boundaries](/en/about/).
+Cloudflare Pages is static when `deployment.backend: false`; the backend-enabled Advanced Mode output is a different deployment boundary. A CDN, Caddy, or Nginx can serve the static `dist/` directly. OpenAI Sites is not the default binding for this project and may be unavailable from some regions; test the final domain from the regions that matter.
+
+## 7. Change the theme or add a Block
+
+Copy a theme into `themes/<name>/` and implement a Block in `theme.ts`. Register it in `theme.yml`, put its styles in the unified `style.css`, then run `catalog`, `inspect`, `check`, `build`, and `serve`. The complete example is in [Secondary development](/en/development/).
+
+Do not add a second CSS file, browser script, or compatibility wrapper to preserve a superseded implementation. When a redesign replaces an old rule or handler, delete the duplicate and verify the generated output.
+
+## 8. Before publishing
+
+```bash
+npm test
+pagekiln check
+pagekiln g --profile
+pagekiln inspect collection:posts
+pagekiln d --dry-run
+```
+
+Check the three language links, the custom 404 route, `feed.xml`, `sitemap.xml`, `llms.txt`, optional Cookie scripts, keyboard focus, narrow-screen tables, and the generated deployment files. Product Notes must appear in date-descending archive/feed output; current pages must not be forced to carry a date.

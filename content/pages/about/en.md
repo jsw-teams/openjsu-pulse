@@ -1,86 +1,131 @@
 ---
-title: "Research: how each tool organizes content"
-description: Compare official entry paths with Pagekiln's current theme and site-configuration boundaries.
+title: "Practical comparison: install, preview, deploy, and extend"
+description: Compare the official working paths of Pagekiln, Astro, Eleventy, Hugo, VitePress, and Docusaurus.
 pattern: docs
 ---
 
-# Research: how each tool organizes content
+# Practical comparison: install, preview, deploy, and extend
 
-This page does not turn “best tool” into a single score. It answers a practical question: what does each project ask me to maintain, where does page structure begin, and when do I enter a theme or component code? Speed is measured separately with fixed versions, a fixed fixture, and a complete command; this page does not fill cells with estimates.
+This comparison is about the commands and files a developer must operate. It does not turn one benchmark run into a universal ranking. The linked commands are from each project's official documentation; Pagekiln commands are the current CLI in this repository.
 
-## One boundary table
+## The shortest working path
 
-| Tool | Official content entry | Official extension entry | Main maintenance surface |
-| --- | --- | --- | --- |
-| Astro | `src/pages/`, Markdown, Content Collections | `.astro` pages, layouts, integrations | Page components, collection schemas, integrations |
-| Eleventy | Markdown and template files | Liquid, Nunjucks, shortcodes, Data Cascade | Template language, data cascade, collections, assets |
-| Hugo | `content/`, Front Matter, Markdown | `layouts/`, shortcodes, resource processing | Content tree, sections, template lookup, i18n |
-| VitePress | Markdown under `docs/` | Vue theme and Vue components in Markdown | Vue theme, document navigation, client behavior |
-| Docusaurus | Markdown/MDX under `docs/`, `src/pages/` | React theme, plugins, MDX | Docs, sidebar, version, i18n, React components |
-| Pagekiln | `content/pages/`, `content/posts/`, Frontmatter, GFM | Patterns, Blocks, `theme.ts`, `style.css`, and nested plugins in `themes/<name>/` | Markdown files, theme directory, site config |
+| Tool | Install / start | Local preview | Production build | Extension entry |
+| --- | --- | --- | --- | --- |
+| Pagekiln | `npm install`; `npm link`; `pagekiln init` | `pagekiln s` | `pagekiln g` → `dist/` | `themes/<name>/theme.ts`, `theme.yml`, `style.css`, plugin switches |
+| Astro | `npm create astro@latest` | `npm run dev` | `npm run build` → `dist/` | `.astro` pages, components, integrations |
+| Eleventy | `npm install @11ty/eleventy`; `npx @11ty/eleventy --serve` | `npx @11ty/eleventy --serve` | `npx @11ty/eleventy` → `_site/` | templates, shortcodes, Data Cascade |
+| Hugo | install the Hugo binary; `hugo new site` | `hugo server` | `hugo` → `public/` | `layouts/`, shortcodes, modules, resources |
+| VitePress | `npx vitepress init` | `npm run docs:dev` | `npm run docs:build` → `.vitepress/dist/` | Vue theme, Vue components in Markdown |
+| Docusaurus | `npm init docusaurus@latest my-website classic` | `npm run start` | `npm run build` → `build/` | React theme, plugins, MDX |
 
-Pagekiln is not trying to reproduce every ecosystem. It places common product-content needs in the core: collection routes, three locales, excerpts, covers, the archive, a Feed, sitemap, local search, 404, OG images, and static deployment files. A new page shape starts in the theme.
+The output directory is a deployment fact, not a cosmetic detail: configure the host to publish the directory produced by the build command. Pagekiln's current unified static directory is `dist/`; its deploy command reads destinations from `config.yml`.
 
-## Pagekiln's content contract
+## Pagekiln task recipes
 
-The project has two content collections. `pages` stores current effective site content; update a page when the behavior it describes changes. `posts` stores dated records of completed decisions, implementations, releases, incidents, deployments, and measured results; `date` is required, and the archive and Feed form its timeline. `docs` is a Pattern inside `pages`, not a collection. Current usage belongs in `content/pages/`; a record of why a change happened belongs in `content/posts/`.
-
-## Astro: page files and content collections
-
-Astro's [official Pages documentation](https://docs.astro.build/en/basics/astro-pages/) says that files in `src/pages/` own routing and supports `.astro`, Markdown, MDX, HTML, and endpoint files; layouts are the normal way to reuse a document shell. [Content Collections](https://docs.astro.build/en/guides/content-collections/) describes local Markdown/MDX collections, loaders, entry data, and schemas. The [internationalization guide](https://docs.astro.build/en/recipes/i18n/) describes using collections and dynamic routes to organize translations.
-
-That official path suits sites that need components and integrations. With Pagekiln, the maintenance surface becomes `content/<collection>/<id>/<locale>.md` plus the theme contract; the body stays CommonMark/GFM and ordinary pages do not hydrate.
-
-## Eleventy: templates, data, and collections
-
-The [Eleventy home page](https://www.11ty.dev/) starts with Markdown and template languages and demonstrates collection output. [Data Cascade](https://www.11ty.dev/docs/data-cascade/) explains how template, directory, content, and global data combine. [Collections](https://www.11ty.dev/docs/collections/) explains grouping content for lists.
-
-That official path gives the project freedom through template languages and data cascade. With Pagekiln, a project does not need to redefine page identity, translation groups, the product-note archive, and the search index for every site; a different visual language is a theme choice.
-
-## Hugo: content tree, sections, and languages
-
-Hugo's [content formats documentation](https://gohugo.io/content-management/formats/) says Markdown is the default content format and documents Front Matter and other formats. [Sections](https://gohugo.io/content-management/sections/) explains how top-level content directories and `_index.md` create sections, list pages, and template selection. [Multilingual mode](https://gohugo.io/content-management/multilingual/) documents filename language suffixes, translation links, language resources, and fallback behavior.
-
-That official path suits sites where the content tree, sections, and resource features are central. With Pagekiln, collections and routes live in `config.yml`, filenames directly form locale and id, and the theme owns presentation.
-
-## VitePress: Markdown as a Vue component
-
-VitePress's [Getting Started guide](https://vitepress.dev/guide/getting-started) starts with Markdown under `docs/` and a Vue-oriented theme, with sections for Markdown, deployment, themes, and i18n. [Using Vue in Markdown](https://vitepress.dev/guide/using-vue.html) explicitly says that Markdown is compiled to HTML and then processed as a Vue Single-File Component; pages can import Vue components and add scripts.
-
-That official path suits a documentation site whose theme boundary is Vue. With Pagekiln, the body remains CommonMark/GFM; interaction appears only in an explicit theme script, and static pages do not carry a framework runtime by default.
-
-## Docusaurus: docs, sidebars, versions, and React
-
-Docusaurus's [installation guide](https://docusaurus.io/docs/installation) shows `docs/`, `blog/`, `src/pages/`, and a static directory. [Create a doc](https://docusaurus.io/docs/create-doc) explains Markdown under `docs/`, with Front Matter and folder structure affecting ids, URLs, and sidebars. The [i18n introduction](https://docusaurus.io/docs/i18n/introduction) explains locale directories, theme translations, plugin translations, and hreflang goals.
-
-That official path suits a documentation portal that needs docs sidebars, versions, and a React/MDX ecosystem. With Pagekiln, product pages and product notes use two explicit collections; content needs stay in the core and theme work does not require compiler edits.
-
-## What Pagekiln actually maintains
-
-```text
-content/       human-readable pages, product notes, and assets
-themes/        page structure, Blocks, i18n.yml, style.css, native ESM
-config.yml     site information, collections, routes, locales, switches
-backend/       dynamic logic that needs requests, secrets, writes, webhooks
-```
-
-The shortest verification path after a change is:
+### Install a new site
 
 ```bash
+npm install
+npm link
+pagekiln init
 pagekiln check
-pagekiln g --profile
-npm run catalog
 ```
 
-`catalog` is a source-backed capability directory, not a content page. It reads the active config, content, and theme without rendering the site or requiring `dist/`. `inspect` keeps content-id lookup and also exposes local namespaces such as `block:<id>`, `pattern:<id>`, `collection:<id>`, and `plugin:<id>` as structured JSON.
+The starter is a real source directory. Its `config.yml`, `content/`, and `themes/` show the contract that the CLI copies.
 
-## How to read a performance comparison
+### Preview and edit
 
-Hugo, Eleventy, and Pagekiln timing must use the same machine, input, version, and output contract. Comparing only CLI cold start omits sitemap, search, 404, Feed, and deployment files; adding them back changes the measurement boundary. The repository keeps `scripts/benchmark.mjs` and `scripts/benchmark-compare.mjs` as local tools. It does not turn one run into a product promise or publish a temporary JSON report into `dist/`.
+```bash
+pagekiln s
+pagekiln s --port=4174
+```
 
-## Choosing a starting point
+The preview server watches `config.yml`, `content/`, and `themes/`. An affected Markdown, CSS, or theme edit rebuilds and reloads the browser while the process stays alive after a diagnostic error.
 
-- Choose Astro, VitePress, or Docusaurus when their component ecosystem is the required authoring surface.
-- Study Hugo first when a deep content tree, sections, taxonomies, or resource processing is central.
-- Study Eleventy when template-language freedom and Data Cascade are the main requirement.
-- Choose Pagekiln's theme-first path when product content should remain Markdown while collections, locales, search, archives, and static delivery already have defined boundaries.
+### Deploy
+
+```yaml
+deployment:
+  targets: [cloudflare-pages, github-pages, vps]
+  cloudflare:
+    apiTokenEnv: CLOUDFLARE_API_TOKEN
+    pages:
+      project: example-site
+      branch: production
+  github:
+    remote: origin
+    branch: gh-pages
+    tokenEnv: GITHUB_TOKEN
+  vps:
+    host: vps.example.com
+    user: deploy
+    port: 22
+    remotePath: /var/www/example-site
+    identityFile: ~/.ssh/id_ed25519
+```
+
+```bash
+pagekiln d --dry-run
+pagekiln d
+```
+
+The supported connectors are `cloudflare-pages`, `cloudflare-workers`, `github-pages`, `vps`, and the optional `openai-sites` handoff. Tokens stay in environment variables. VPS authentication uses the local SSH agent or an existing private key; the public key must already be authorized on the server. Static hosting does not require a dynamic backend.
+
+### Develop a Block
+
+```text
+content/pages/guide/en.md       current explanation
+themes/default/theme.ts         Block renderer and schema
+themes/default/theme.yml        Block/resource registration
+themes/default/style.css        one visual owner
+```
+
+Implement the Block through `defineTheme`, register it in `theme.yml`, use it with a Markdown directive, and verify it with:
+
+```bash
+npm run compile-theme
+pagekiln catalog
+pagekiln inspect block:notice
+pagekiln check
+pagekiln g
+```
+
+The full example and security boundary are in the [development guide](/en/development/).
+
+## What each tool makes you maintain
+
+### Pagekiln
+
+Content identity is explicit: `content/pages/<id>/<locale>.md` is current site content, and `content/posts/<id>/<locale>.md` is a dated Product Note with a required `date`. `docs` is a Pattern inside `pages`, not a parallel collection. `config.yml` owns site settings and deployment destinations; the copied theme owns Patterns, Blocks, CSS, browser ESM, and plugin presentation.
+
+### Astro
+
+Astro's [official install guide](https://docs.astro.build/en/install-and-setup/) starts with `npm create astro@latest`. Its [development and build guide](https://docs.astro.build/en/develop-and-build/) uses `npm run dev` and `npm run build`; `.astro` pages, components, integrations, and content collections form the extension surface. Choose this path when component and integration code is the primary authoring model.
+
+### Eleventy
+
+Eleventy's [official site](https://www.11ty.dev/) demonstrates Markdown, templates, `npx @11ty/eleventy --serve`, and `_site/`. Its [Data Cascade](https://www.11ty.dev/docs/data-cascade/) and [Collections](https://www.11ty.dev/docs/collections/) are the main organization surfaces. Choose this path when multiple template languages and data composition are central.
+
+### Hugo
+
+Hugo's [quick start](https://gohugo.io/getting-started/quick-start/) uses `hugo new site`, `hugo server`, and `hugo`; its output is `public/`. [Content organization](https://gohugo.io/content-management/organization/) and [shortcodes](https://gohugo.io/content-management/shortcodes/) place structure in the content tree and layouts. Choose this path when sections, taxonomies, templates, and a native binary are the priority.
+
+### VitePress
+
+VitePress's [getting started guide](https://vitepress.dev/guide/getting-started) uses `npx vitepress init`, `npm run docs:dev`, and `npm run docs:build`. Its [Vue-in-Markdown guide](https://vitepress.dev/guide/using-vue.html) makes Vue components and client behavior part of document authoring. Choose this path when the documentation site is a Vue application.
+
+### Docusaurus
+
+Docusaurus's [installation guide](https://docusaurus.io/docs/installation) uses a React-based starter, `npm run start`, and `npm run build`; its [i18n guide](https://docusaurus.io/docs/i18n/introduction) covers locale directories and theme/plugin translations. Choose this path when docs sidebars, versions, MDX, and React plugins are required.
+
+## Choose by the next concrete task
+
+- Need a Markdown-first product site with explicit current pages, dated Product Notes, locales, search, archive, sitemap, and static deployment: use Pagekiln and start with the Guide.
+- Need `.astro` components or an integration ecosystem: follow Astro's official starter.
+- Need template-language choice and Data Cascade: follow Eleventy's starter.
+- Need sections, taxonomies, shortcodes, and a native binary: follow Hugo's quick start.
+- Need Vue components inside a documentation site: follow VitePress.
+- Need React/MDX docs with sidebars, versions, and plugin translations: follow Docusaurus.
+
+The decision should follow the next file you need to write. For Pagekiln, that file is `content/pages/` for current usage, `content/posts/` for a dated change, or `themes/<name>/theme.ts` for a new Block.

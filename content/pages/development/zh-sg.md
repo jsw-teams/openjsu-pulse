@@ -1,39 +1,37 @@
 ---
-title: 二次开发从主题开始
-description: 先改主题里的 Pattern、Block 和统一样式，再用插件开关控制可选浏览器行为，把运行时需求放进 backend。
+title: 开发 Block 与主题扩展
+description: 以主题为起点新增 Block、注册资源、测试扩展并部署结果的实际流程。
 pattern: docs
 ---
 
-# 二次开发从主题开始
+# 开发 Block 与主题扩展
 
-我把 Pagekiln 的扩展边界放在主题。内容、集合、路由、语言、搜索、图片缓存和部署输出由核心负责；新页面结构和视觉语言先进入 `themes/<name>/`。
+Pagekiln 的二次开发从复制主题开始。编译器负责 Markdown、schema、路由、依赖、资源和输出；主题负责 Pattern、Block、布局、CSS、浏览器 ESM、图标和隐私呈现。本页描述当前扩展路径。
 
-## 内容边界保持明确
+## 1. 复制主题边界
 
-`content/pages/` 是首页、About、Guide、Reference 和目录页的当前状态来源；所描述的行为变化后，直接更新对应页面。`content/posts/` 是已经完成的决定、实现、发布、问题处理、部署和测量的有日期历史；每篇产品笔记都必须有 `date`，并进入归档和 Feed。`docs` 是 `pages` 条目使用的 Pattern，不是 collection。当前操作说明放在 pages，已完成变更的记录放在 posts。
-
-## 目录就是功能地图
+在新的主题目录开始，让原主题继续作为可运行的参考：
 
 ```text
-themes/default/
-├─ theme.yml                 Pattern、Block、资源和插件声明
-├─ theme.ts                  页面壳、Pattern、Block renderer
-├─ style.css                 全局布局、响应式和无障碍样式
-├─ i18n.yml                  主题 UI 本地化文案
-└─ scripts/                  需要同意后或页面需要的原生 ESM
+themes/<name>/
+├─ theme.yml
+├─ theme.ts
+├─ style.css
+├─ i18n.yml
+└─ scripts/                 可选的原生浏览器 ESM
 ```
 
-`src/` 是编译器和 Fetch router。`backend/` 只放请求、秘密、写入和 webhook。`config.yml` 只管理站点信息、内容集合、路由、能力开关和部署选项，不接受 CSS、HTML 或脚本注入。
+`theme.yml` 声明 `theme.ts`、`style.css`、i18n 资源、Pattern、Block 和插件资源。主题级 `plugins` 开关下放二级插件名称。主题 UI 文案放在 `themes/<name>/i18n.yml`，不放入站务根配置。
 
-## 主题合约
+## 2. 在 `theme.ts` 添加 Block
 
-主题模块导出 `defineTheme`：
+使用小型主题 API，让 Block schema 保持标量且明确：
 
 ```ts
 import { defineTheme } from '../../src/theme-api.ts';
 
 export default defineTheme({
-  name: 'default',
+  name: 'nebula',
   patterns: {
     document: { name: 'document', contexts: ['page'], render: content => content }
   },
@@ -41,45 +39,113 @@ export default defineTheme({
     notice: {
       name: 'notice',
       schema: { tone: 'string' },
-      render: (node, context) => `<aside class="notice">${context.renderNodes(node.children)}</aside>`
+      render: (node, context) => {
+        const tone = context.escapeHtml(node.attributes.tone || 'info');
+        return `<aside class="notice notice--${tone}">${context.renderNodes(node.children)}</aside>`;
+      }
     }
   }
 });
 ```
 
-Block 的属性先在 schema 中声明。渲染器使用 `context.escapeHtml`、`context.safeUrl` 和 `context.renderNodes`，不要把未经审查的输入拼成原始 HTML。真正可信的原始片段才进入 `unsafeHtml`，而且只在编译器边界审查。
+`context.renderNodes` 渲染 Markdown 子节点。文本和属性使用 `context.escapeHtml`，链接使用 `context.safeUrl`。不要把未经审查的 Markdown、Frontmatter 或配置值送进 `unsafeHtml`。
 
-## 从主题目录新增页面结构
+在 `theme.yml` 注册同一个 Block：
 
-1. 在 `theme.ts` 增加 Pattern 或 Block，并写出适用的 context。
-2. 在 `theme.yml` 注册名称、短属性、schema 示例和实际资源依赖。
-3. 在 `style.css` 或主题资源中完成桌面、窄屏和焦点状态；默认视觉系统不加入无意义动效。
-4. 运行 `npm run catalog`，再用 `pagekiln inspect block:<id>` 或 `pattern:<id>` 检查局部能力。
-5. 用一份真实 Markdown 运行 `pagekiln check` 与 `pagekiln g --profile`。
+```yaml
+name: nebula
+module: theme.ts
+style: style.css
+blocks:
+  - notice
+patterns:
+  - document
+plugins:
+  privacyConsent:
+    enabled: true
+```
 
-普通需求优先复用已有 Block。页面目录、产品笔记、语言切换、摘要、封面、Feed（产品笔记订阅清单）、站点地图和本地搜索都已经属于核心能力，不需要为每个站点复制一套页面代码。
+代码中的 schema 和 `theme.yml` 的注册共同构成一个契约。未注册的 Block 应由 discovery 或 check 报错，不要用编译器条件隐藏它。
 
-## 搜索怎样指出命中点
+## 3. 在 Markdown 使用 Block
 
-编译器为每个语言生成静态索引。默认主题在浏览器端按标题、摘要、章节、正文和路径加权；结果显示命中层级，截取命中附近的文字，并用 `<mark>` 标示实际匹配部分。单个英文字母会提示继续输入，避免输入 `n` 时返回一堆噪声；中文单字仍可搜索。
+在 `content/pages/` 下的页面加入指令：
 
-搜索脚本使用原生 Fetch 和 DOM API，不加载框架。索引超过分片阈值时，入口 JSON 只列出分片地址。
+```markdown
+:::notice{tone="info"}
+当前使用说明在 Guide 中。
+:::
+```
 
-## 移动端和动画边界
+指令属性保持短小且为标量。标题、段落、列表、表格、代码和链接继续使用普通 Markdown。描述当前行为的 Block 放在 page；记录有日期的实现决定则放在带必填 `date` 的 Product Note。
 
-默认主题使用单列阅读流、右侧可展开目录、带 `data-label` 的响应式表格和不依赖横向滚动条的窄屏布局。样式表刻意不使用 transition 或 keyframe 动画，交互通过颜色、边框、焦点和展开状态表达；`prefers-reduced-motion: reduce` 保留明确的滚动处理。新增组件要先检查 320px 宽度、长中文标题、长路径和键盘操作。
+## 4. 让一个样式文件拥有视觉行为
 
-## Cookie、资源与缓存
+把 Block 规则加入主题的 `style.css`：
 
-Cookie 类别、保存期限、文案和 provider 集成由 `config.yml` 的 `privacy.cookieConsent` 管理；`privacyConsent` 主题插件声明脚本并带有 `enabled` 开关。可选脚本在选择前只以 `<template>` 出现，保存同意后才插入脚本节点。人类访客从页脚打开设置；机器读取 `/.well-known/agent.json`。
+```css
+.notice{border-inline-start:3px solid var(--accent);padding:1rem 1.2rem;background:var(--panel);color:var(--ink)}
+```
 
-CSS 输出会压缩成单行，CSS 和浏览器 ESM 文件名带主题指纹，例如 `style.<fingerprint>.css`，资源链接不使用查询字符串。图片缓存键包含源文件、参数和 Sharp 版本；未变化图片不会再次处理。
+编译器会把 CSS 压缩为单行并为文件名加指纹。响应式布局、焦点状态、表格适配、图标尺寸和 reduced-motion 行为都放在这个样式文件或声明的主题资源中。新规则替代旧规则时删除重叠规则和无效兼容文件，不要依靠 cascade 顺序同时维持两套设计。
 
-## 构建图和可复现实验
+默认主题通过主题模块使用 Lucide 图标包。已有控件应复用已声明的图标库，不要为同一组控件再增加图标字体或另一套内联 SVG。
 
-一次 BuildContext 负责发现、加载、解析、校验、路由、渲染和写入。普通改稿通过 mtime 与 size 快速判断，变化后才计算 hash；受影响的页面和输出才会重新写入。`.pagekiln/manifest.json`、依赖图和输出 hash 可恢复，不需要数据库。
+## 5. 发现并测试扩展
 
-需要测量时使用临时夹具：
+按以下顺序运行：
+
+```bash
+npm run compile-theme
+npm run catalog
+pagekiln inspect block:notice
+pagekiln check
+pagekiln g --profile
+pagekiln s
+```
+
+`catalog` 确认当前主题的 Pattern、Block、插件、schema 名称和资源依赖。`inspect block:notice` 以结构化输出回答单个能力问题。`check` 会以源码位置报告未知 Block、无效属性、路由冲突和缺少必填字段。`g` 确认 Block 进入静态输出；`s` 确认 Markdown 或主题编辑后浏览器会刷新。
+
+## 6. 添加可选浏览器行为
+
+原生 ESM 放在 `themes/<name>/scripts/`，并在对应插件下声明。每个可选插件都要有明确开关：
+
+```yaml
+plugins:
+  privacyConsent:
+    enabled: true
+  search:
+    enabled: true
+```
+
+可选分析或广告脚本在访客同意对应 Cookie 类别前保持不活动。必要的同意存储由隐私契约启用；footer 打开与访客之后重新打开的同一个设置对话框。浏览器代码只加载一次，每个事件处理器只保留一个拥有者。旧脚本被替代时删除它，不要让两个处理器竞争。
+
+## 7. 分离站务配置与运行时代码
+
+`config.yml` 保存站点信息、语言、collection、路由、schema、隐私设置和部署位置，不保存 CSS 路径、任意 HTML 或浏览器脚本正文。需要动态请求、密钥、写入和 webhook 时，代码只放在 `backend/handler.ts`；使用共享 Fetch router，并在部署前编译后端。
+
+纯静态站点在 Pages 上关闭 backend，使用 CDN、Caddy 或 Nginx 提供 `dist/`。部署配置示例：
+
+```yaml
+deployment:
+  targets: [cloudflare-pages]
+  cloudflare:
+    apiTokenEnv: CLOUDFLARE_API_TOKEN
+    pages:
+      project: example-site
+      branch: production
+```
+
+```bash
+pagekiln d --dry-run
+pagekiln d
+```
+
+一次发布需要多个目的地时使用 `targets: [cloudflare-pages, github-pages, vps]`。在 `config.yml` 填写各供应商的项目、远程仓库、分支、SSH 主机、用户、端口、远程路径和密钥路径；密钥值留在环境变量或本机 SSH 配置中。
+
+## 8. 测量修改
+
+可选 fixture 会测量 100 个临时页面，并以 JSON 行报告 cold、no-change、edit、add、delete、theme 和 settings 变化：
 
 ```bash
 npm run compile-runtime
@@ -88,64 +154,18 @@ npm run compile-backend
 npm run bench -- 100
 ```
 
-夹具只用于本地测量，不读取示例站点内容，也不写入生产 `dist/`。完整 JSON 保留每个场景、阶段和机器信息。`maxRssMiB` 是 Node 构建进程的峰值常驻内存，1 MiB 等于 1,024² 字节，它不是 `dist/` 大小，也不是单页占用。
+`maxRssMiB` 是 Node 构建进程的峰值常驻内存，不是输出目录大小。fixture 运行后会移除，不构成产品性能承诺。
 
-## 部署边界
+## 9. 扩展完成清单
 
-- CDN、Caddy 和 Nginx 直接提供 `dist/`。
-- Cloudflare Workers 使用静态资源绑定和标准 module worker，静态请求先交给资源层。
-- Cloudflare Pages 在关闭 backend 时只部署静态文件，启用 backend 时生成 Advanced Mode `_worker.js`。
-- VPS 的动态入口使用 `Deno.serve`，静态文件仍由 Caddy 或 Nginx 提供。
-
-三种动态目标都导入同一个 Fetch handler。秘密只从运行时绑定或环境变量读取。
-
-`pagekiln d` 会先构建再发布。直接使用本源码仓库时运行 `npm run d`；执行 `npm link` 或安装 CLI 后才使用裸命令。`config.yml` 可以填写一个或多个目标及各自的发布位置，命令只接受用于检查的 `--dry-run`，多个目标按列表顺序执行。Cloudflare 目标调用 Wrangler，GitHub 使用 `git subtree`，`vps` 使用 OpenSSH SCP，`openai-sites` 需要已存在的 `.openai/hosting.json` 才能交给 Sites 连接器。
-
-```yaml
-deployment:
-  targets: [vps]
-  cloudflare:
-    accountId: CF_ACCOUNT_ID
-    apiTokenEnv: CLOUDFLARE_API_TOKEN
-    pages:
-      project: site-name
-      branch: production
-    workers:
-      name: site-worker
-      compatibilityDate: '2026-08-10'
-  github:
-    remote: origin
-    branch: gh-pages
-    tokenEnv: GITHUB_TOKEN
-  vps:
-    host: vps.example.com
-    user: deploy
-    port: 22
-    remotePath: /var/www/site
-    identityFile: ~/.ssh/id_ed25519
-    publicKeyFile: ~/.ssh/id_ed25519.pub
+```text
+[ ] theme.ts 通过 defineTheme 导出 Block
+[ ] theme.yml 注册 Block 和资源
+[ ] style.css 负责响应式及焦点状态
+[ ] 删除重复 CSS、JS 和兼容层
+[ ] 可选插件有明确开关
+[ ] i18n 留在 themes/<name>/i18n.yml
+[ ] pagekiln catalog 和 inspect 能描述 Block
+[ ] pagekiln check、build、test 和 preview 通过
+[ ] 检查生成的 dist/，不手动编辑
 ```
-
-`cloudflare.pages.project` 是 Pages 项目名；`cloudflare.workers.name` 和 `compatibilityDate` 用于生成 `dist/wrangler.toml`。配置 `cloudflare.apiTokenEnv` 时，部署从该环境变量读取 token；不配置时使用 Wrangler 本机登录状态。`github.remote` 和 `branch` 必须是本机已有的远程仓库与目标分支；HTTPS remote 可以通过 `github.tokenEnv` 使用环境 token，SSH remote 使用本机 SSH agent/config。VPS 必须填写 SSH 主机、用户、端口和已存在的远程目录；`identityFile` 是私钥，`publicKeyFile` 可选且公钥必须预先写入服务器 `authorized_keys`。凭据不写入此文件。
-
-OpenAI Sites 仍是可选适配，但本项目已移除 Sites 绑定。即使托管平台报告部署成功，也不能推导出所有地区都能访问；DNS、运营商路由、企业网络策略、平台区域可用性和自定义域名状态都可能造成部分地区失败。需要广泛可达性时，应从目标地区实测并保留 Cloudflare、GitHub Pages 或 VPS 的替代出口。
-
-```bash
-pagekiln d --dry-run
-pagekiln d
-```
-
-## 完成修改后的检查
-
-```bash
-npm run compile-runtime
-npm run compile-theme
-npm run compile-backend
-npm test
-pagekiln check
-npm run catalog
-npm run inspect -- home
-pagekiln g --profile
-```
-
-最后检查生成的 HTML、404、Feed、站点地图、搜索索引、`llms.txt`、部署文件和主题指纹文件是否都存在。`dist/` 是生成物，不要手动编辑。
