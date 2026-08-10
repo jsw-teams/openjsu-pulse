@@ -146,9 +146,10 @@ deployment:
     identityFile: ~/.ssh/id_ed25519
   openaiSites:
     metadata: .openai/hosting.json
+    staticDirectory: dist
 ```
 
-然后运行 `pagekiln d`；`pagekiln d --dry-run` 只检查所有已选动作。Cloudflare Pages 需要项目名，可选分支；Workers 需要 Worker 名称和兼容日期，Wrangler 凭据从环境变量或本机配置读取。GitHub 需要已存在的 remote 名称和目标分支。VPS 需要主机、用户、SSH 端口和已存在的远程目录，可选 `identityFile`；省略密钥时使用 OpenSSH agent/config。OpenAI Sites 只接受配置指定且已经存在的 `.openai/hosting.json`，把已构建状态交给 Sites 连接器完成源码推送、保存版本和部署，不在配置缺失时创建站点或伪造凭据。启用 backend 后，核心生成同一份 Fetch handler 的 Cloudflare Workers module、Cloudflare Pages Advanced Mode `_worker.js` 和 VPS `Deno.serve` 入口；静态请求优先读取静态文件，秘密只从运行时环境读取。
+然后运行 `pagekiln d`；`pagekiln d --dry-run` 只检查所有已选动作。Cloudflare Pages 需要项目名，可选分支；Workers 需要 Worker 名称和兼容日期，Wrangler 凭据从环境变量或本机配置读取。GitHub 需要已存在的 remote 名称和目标分支。VPS 需要主机、用户、SSH 端口和已存在的远程目录，可选 `identityFile`；省略密钥时使用 OpenSSH agent/config。OpenAI Sites 会先检查 `dist/server/index.js`、`dist/index.html` 和 `.openai/hosting.json`，再把已构建状态交给 Sites 连接器：推送当前源码 HEAD、保存一个版本、部署已保存版本并轮询状态；CLI 不创建站点、不伪造凭据。当前配置把静态根统一为 `dist`，Sites 入口同时生成静态资源回退，以便动态 Fetch 入口和静态页面使用同一份交付物。启用 backend 后，核心生成同一份 Fetch handler 的 Cloudflare Workers module、Cloudflare Pages Advanced Mode `_worker.js` 和 VPS `Deno.serve` 入口；秘密只从运行时环境读取。
 
 生产直接依赖有明确职责：`markdown-it` 和 `markdown-it-task-lists` 解析 GFM，`yaml` 解析 YAML 1.2，`sharp` 生成图片变体，`lucide` 提供成熟开源 SVG 图标。遍历、watch、hash、路由、RSS、站点地图、搜索序列化、原子写和测试使用 Node/Web Standard，未增加重复便利包。
 

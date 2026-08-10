@@ -31,7 +31,7 @@ type CachedDocument = { hash: string; outputs: string[]; dependencies?: string[]
 type CachedImage = { hash: string; output: string };
 type CacheManifest = { version: 2; rendererVersion?: string; configHash?: string; themeHash?: string; assetHash?: string; contentRoots?: Record<string, number>; routeCount?: number; documents: Record<string, CachedDocument>; images?: Record<string, CachedImage>; outputs: string[]; outputHashes?: Record<string, string> };
 export type BuildProfile = { discover: number; load: number; validate: number; parse: number; route: number; render: number; assets: number; write: number; total: number; documents: number; changedOutputs: number; imagesProcessed: number; imageCacheHits: number };
-const RENDERER_VERSION = '2.4.16';
+const RENDERER_VERSION = '2.4.18';
 const MAX_MARKDOWN_CACHE = 32;
 const MAX_SOURCE_PARSE_CACHE = 64;
 const LOAD_CONCURRENCY = 32;
@@ -1148,9 +1148,9 @@ async function writeDeployments(ctx: BuildContext) {
   const sitesBackendImport = backendEnabled ? `import { router } from './_pagekiln/backend/handler.js';\n` : 'const router = undefined;\n';
   const sites = deployment.openaiSites && typeof deployment.openaiSites === 'object' ? deployment.openaiSites : {};
   const staticDirectory = String(sites.staticDirectory || '').replace(/^\/+|\/+$/g, '');
-  const staticOption = staticDirectory && staticDirectory !== 'dist' ? `, staticDirectory: ${JSON.stringify(staticDirectory)}` : '';
-  const staticAssetsImport = staticDirectory && staticDirectory !== 'dist' ? `import { fetchStaticAsset } from './_pagekiln/static-assets.js';\n` : '';
-  const staticAssetsOption = staticDirectory && staticDirectory !== 'dist' ? ', assets: fetchStaticAsset' : '';
+  const staticOption = staticDirectory ? `, staticDirectory: ${JSON.stringify(staticDirectory)}` : '';
+  const staticAssetsImport = staticDirectory ? `import { fetchStaticAsset } from './_pagekiln/static-assets.js';\n` : '';
+  const staticAssetsOption = staticDirectory ? ', assets: fetchStaticAsset' : '';
   await writeIfChanged(ctx, 'server/index.js', `import { createSiteFetchHandler } from './_pagekiln/fetch-router.js';\n${sitesBackendImport}${staticAssetsImport}const fetchHandler = createSiteFetchHandler({ router, defaultLocale: '${locale}'${staticOption}${staticAssetsOption} });\nexport { fetchHandler };\nexport default { fetch: fetchHandler };\n`);
 }
 
@@ -1189,12 +1189,14 @@ function staticContentType(file: string): string {
 
 async function writeSiteStaticRuntime(ctx: BuildContext) {
   const staticDirectory = openaiSitesStaticDirectory(ctx);
-  if (!staticDirectory || staticDirectory === 'dist') return;
-  const staticRoot = path.join(ctx.out, staticDirectory);
+  if (!staticDirectory) return;
+  const staticRoot = staticDirectory === 'dist' ? ctx.out : path.join(ctx.out, staticDirectory);
+  const ignored = new Set(['.assetsignore', '_worker.js', 'cloudflare-worker.mjs', 'vps-server.mjs', 'wrangler.toml']);
   const entries: string[] = [];
   for (const file of await walk(staticRoot)) {
     const relative = normalizePath(path.relative(staticRoot, file));
     if (!relative || relative.startsWith('../')) continue;
+    if (staticDirectory === 'dist' && (ignored.has(relative) || relative.startsWith('.openai/') || relative.startsWith('.pagekiln/') || relative.startsWith('_pagekiln/') || relative.startsWith('server/') || relative.startsWith('static/'))) continue;
     const data = (await fs.readFile(file)).toString('base64');
     entries.push(`  ${JSON.stringify(`/${relative}`)}: [${JSON.stringify(staticContentType(file))}, ${JSON.stringify(data)}]`);
   }
@@ -1504,6 +1506,10 @@ export async function build(ctx: BuildContext): Promise<BuildContext> {
   await writeIfChanged(ctx, '.pagekiln/catalog.json', JSON.stringify(catalog(ctx), null, 2)); await writeDeployments(ctx); await copyThemeAndAssets(ctx); await writeSiteStaticDirectory(ctx); await writeSiteStaticRuntime(ctx); ctx.profile.assets = duration(assetStart);
   const previousOutputs = new Set(ctx.cache.outputs || []); const writeStart = performance.now();
   for (const old of previousOutputs) if (!ctx.outputs.has(old)) { const target = path.join(ctx.out, old); try { await fs.rm(target); } catch (error: any) { if (error.code !== 'ENOENT') throw error; } }
+  if (openaiSitesStaticDirectory(ctx) === 'dist') {
+    const legacyStaticDirectory = path.join(ctx.out, 'static');
+    await fs.rm(legacyStaticDirectory, { recursive: true, force: true });
+  }
   ctx.profile.write = duration(writeStart);
   ctx.outputs.add('.pagekiln/build-profile.json');
   const manifest: CacheManifest = { version: 2, rendererVersion: RENDERER_VERSION, configHash: ctx.configHash, themeHash: ctx.themeHash, assetHash: ctx.assetHash, contentRoots: ctx.contentRoots, routeCount: ctx.routes.size, documents: Object.fromEntries(ctx.docs.map(doc => {

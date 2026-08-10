@@ -78,11 +78,12 @@ export function deployHelp() {
     '  cloudflare-workers  wrangler deploy using dist/wrangler.toml',
     '  github              git subtree push dist to a selected remote branch',
     '  vps                 scp dist/ to user@host:/remote/path',
-    '  openai-sites        validate .openai/hosting.json for the Sites connector handoff',
+    '  openai-sites        validate dist/, dist/server/, and .openai/hosting.json for Sites',
     '',
     'Deployment:',
     '  Set deployment.targets to one value or a list, plus provider settings, in config.yml.',
     '  Use --dry-run to inspect the resolved action without uploading.',
+    '  OpenAI Sites then uses the connector: push exact source HEAD, save one version, deploy that version, and poll it.',
     '',
     'Options:',
     '  --dry-run           build and print the deployment action without uploading'
@@ -164,7 +165,7 @@ function commandFor(target, root, ctx, options) {
   throw new Error(`Unknown deployment target: ${options.target || target}`);
 }
 
-async function validateOpenAISites(root, metadataPath = '.openai/hosting.json') {
+async function validateOpenAISites(root, dist, settings = {}, metadataPath = '.openai/hosting.json') {
   const file = path.resolve(root, metadataPath);
   const relative = path.relative(root, file);
   if (relative.startsWith('..') || path.isAbsolute(relative)) throw new Error('deployment.openaiSites.metadata must stay inside the site root.');
@@ -172,7 +173,12 @@ async function validateOpenAISites(root, metadataPath = '.openai/hosting.json') 
   let metadata;
   try { metadata = JSON.parse(await fs.readFile(file, 'utf8')); } catch (error) { throw new Error(`Cannot parse ${relative}: ${error.message}`); }
   if (!metadata || typeof metadata.project_id !== 'string' || !metadata.project_id.trim()) throw new Error(`${relative} must contain the exact Sites project_id returned by the Sites connector.`);
-  return { file, projectId: metadata.project_id };
+  await requireFile(path.join(dist, 'server', 'index.js'), 'OpenAI Sites requires dist/server/index.js; run pagekiln g before the handoff.');
+  const rawStaticDirectory = cleanName(settings.staticDirectory, 'dist').replaceAll('\\', '/').replace(/^\/+|\/+$/g, '');
+  if (!rawStaticDirectory || rawStaticDirectory === '.' || rawStaticDirectory.split('/').includes('..')) throw new Error('deployment.openaiSites.staticDirectory must be a safe relative directory such as dist.');
+  const staticRoot = rawStaticDirectory === 'dist' ? dist : path.join(dist, rawStaticDirectory);
+  await requireFile(path.join(staticRoot, 'index.html'), `OpenAI Sites requires ${rawStaticDirectory}/index.html; run pagekiln g before the handoff.`);
+  return { file, projectId: metadata.project_id, staticDirectory: rawStaticDirectory };
 }
 
 export async function deploy(root, ctx, args = []) {
@@ -189,8 +195,8 @@ export async function deploy(root, ctx, args = []) {
     const action = commandFor(target, root, ctx, options);
     if (target === 'openai-sites') {
       const openaiSites = config.openaiSites && typeof config.openaiSites === 'object' ? config.openaiSites : {};
-      const sites = await validateOpenAISites(root, cleanName(openaiSites.metadata, '.openai/hosting.json'));
-      results.push({ target, label: TARGET_LABELS[target], status: 'handoff-required', projectId: sites.projectId, metadata: path.relative(root, sites.file), dist: path.relative(root, dist) });
+      const sites = await validateOpenAISites(root, dist, openaiSites, cleanName(openaiSites.metadata, '.openai/hosting.json'));
+      results.push({ target, label: TARGET_LABELS[target], status: 'handoff-required', projectId: sites.projectId, metadata: path.relative(root, sites.file), staticDirectory: sites.staticDirectory, dist: path.relative(root, dist) });
       continue;
     }
     if (options.dryRun) {

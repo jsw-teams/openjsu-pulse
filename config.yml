@@ -164,7 +164,7 @@ content:
         pattern: string
 
 deployment:
-  targets: []
+  targets: [openai-sites]
   cloudflare:
     accountId: null
     pages:
@@ -184,7 +184,7 @@ deployment:
     identityFile: null
   openaiSites:
     metadata: .openai/hosting.json
-    staticDirectory: static
+    staticDirectory: dist
   backend: true
   dynamicRoutes:
     - /api/health
