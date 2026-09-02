@@ -1,0 +1,54 @@
+name: Probe status snapshot
+
+on:
+  schedule:
+    # GitHub's shortest supported schedule interval is five minutes.
+    - cron: "7/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: probe-status
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source and status history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Restore the previous snapshot
+        shell: bash
+        run: |
+          mkdir -p status
+          if git fetch origin status-data:refs/remotes/origin/status-data; then
+            git show origin/status-data:status/probes.json > status/probes.json || true
+          fi
+
+      - name: Run configured probes
+        run: node .github/scripts/probe.mjs
+
+      - name: Publish the latest snapshot
+        shell: bash
+        run: |
+          snapshot="$(mktemp)"
+          cp status/probes.json "$snapshot"
+          git switch --orphan status-data
+          git rm -rf .
+          mkdir -p status
+          cp "$snapshot" status/probes.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add status/probes.json
+          git commit -m "chore: update probe status"
+          git push --force origin status-data

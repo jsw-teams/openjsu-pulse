@@ -157,6 +157,50 @@ function postCover(post: ThemeRenderContext['doc'], context: ThemeRenderContext,
   return `<div class="post-card-cover${cover ? ' has-image' : ''}">${image}<span>${context.escapeHtml(markerLabel)}</span></div>`;
 }
 
+const probeBands: Record<string, Array<{ key: string; label: string; max: number }>> = {
+  http: [
+    { key: 'green', label: '0–3000ms', max: 3000 },
+    { key: 'yellow', label: '3000–6000ms', max: 6000 },
+    { key: 'red', label: '>6000ms', max: Number.POSITIVE_INFINITY }
+  ],
+  ping: [
+    { key: 'green', label: '0–50ms', max: 50 },
+    { key: 'lime', label: '50–100ms', max: 100 },
+    { key: 'yellow', label: '100–150ms', max: 150 },
+    { key: 'orange', label: '150–200ms', max: 200 },
+    { key: 'red', label: '>200ms', max: Number.POSITIVE_INFINITY }
+  ],
+  tcp: [
+    { key: 'dark-green', label: '≤50ms', max: 50 },
+    { key: 'green', label: '51–100ms', max: 100 },
+    { key: 'lime', label: '101–200ms', max: 200 },
+    { key: 'yellow', label: '201–250ms', max: 250 },
+    { key: 'orange', label: '>250ms', max: Number.POSITIVE_INFINITY }
+  ],
+  dns: [
+    { key: 'green', label: '0–100ms', max: 100 },
+    { key: 'yellow', label: '100–500ms', max: 500 },
+    { key: 'red', label: '>500ms', max: Number.POSITIVE_INFINITY }
+  ]
+};
+
+function probeTypeLabel(type: string): string {
+  return ({ http: 'HTTP', ping: 'PING', tcp: 'TCP', dns: 'DNS' } as Record<string, string>)[type] || type.toUpperCase();
+}
+
+function probeLegendMarkup(type: string, context: ThemeRenderContext): string {
+  const title = `${probeTypeLabel(type)} 延迟标准`;
+  const items = (probeBands[type] || probeBands.http).map(band => `<span class="standard-legend-item"><i class="latency-swatch latency-${context.escapeHtml(band.key)}" aria-hidden="true"></i>${context.escapeHtml(band.label)}</span>`).join('');
+  return `<article class="standard-card standard-${context.escapeHtml(type)}"><div class="standard-card-heading"><span class="standard-type">${context.escapeHtml(probeTypeLabel(type))}</span><strong>${context.escapeHtml(title)}</strong></div><div class="standard-legend">${items}</div></article>`;
+}
+
+function renderProbeDashboard(node: DirectiveNode, context: ThemeRenderContext): string {
+  validateAttrs(node, blocks['probe-dashboard']);
+  const actionsHref = context.safeUrl('https://github.com/jsw-teams/openjsu-pulse/actions/workflows/probes.yml');
+  const configHref = context.safeUrl('https://github.com/jsw-teams/openjsu-pulse/blob/main/.github/probes.json');
+  return `<section class="probe-dashboard" data-probe-dashboard data-probe-data="" data-probe-repository="jsw-teams/openjsu-pulse"><div class="dashboard-hero"><div><p class="dashboard-kicker">OPENJSU / SERVICE STATUS</p><h1>服務狀態總覽</h1><p class="dashboard-lede">页面从 GitHub Actions 的最新快照动态读取公开端点状态，不把探测结果写进静态页面。</p></div><div class="dashboard-hero-actions"><span class="live-indicator"><i aria-hidden="true"></i><span data-overall-label>等待数据</span></span><button class="button button-light" type="button" data-probe-refresh>刷新快照</button></div></div><div class="status-banner status-waiting" data-overall-banner><span class="status-banner-icon" aria-hidden="true">${iconSvg(ShieldCheck, 'status-icon')}</span><div><strong data-overall-heading>等待首次探测</strong><p data-overall-description>页面会从 GitHub Actions 发布的状态快照加载结果。</p></div><span class="status-banner-time">最近更新 <time data-last-checked>—</time></span></div><div class="dashboard-toolbar"><div><span class="section-label">监控窗口</span><strong data-window-label>由 GitHub Actions 配置</strong></div><a class="text-link" href="${configHref}" target="_blank" rel="noreferrer">查看 GitHub 配置 <span aria-hidden="true">↗</span></a></div><div class="metric-grid"><article class="metric-card"><span class="metric-label">监控服务</span><strong data-metric="services">—</strong><span class="metric-support">配置文件中的端点</span></article><article class="metric-card"><span class="metric-label">平均响应</span><strong><span data-metric="latency">—</span><small> ms</small></strong><span class="metric-support">最新快照</span></article><article class="metric-card"><span class="metric-label">整体可用性</span><strong><span data-metric="uptime">—</span><small>%</small></strong><span class="metric-support">滚动检查窗口</span></article><article class="metric-card metric-card-accent"><span class="metric-label">探测频率</span><strong><span data-metric="interval">—</span><small> min</small></strong><span class="metric-support">配置文件中的间隔</span></article></div><section class="standards-panel panel" aria-labelledby="standards-title"><div class="panel-heading"><div><span class="section-label">延迟分档</span><h2 id="standards-title">检测结果</h2></div><span class="panel-caption">按检测类型</span></div><div class="standard-grid">${probeLegendMarkup('http', context)}${probeLegendMarkup('ping', context)}${probeLegendMarkup('tcp', context)}</div><p class="standards-source">GitHub Actions 默认是单点探针；页面不会伪造全国地域或运营商节点。</p></section><section class="service-section" aria-labelledby="service-section-title"><div class="section-heading"><div><span class="section-label">公开端点</span><h2 id="service-section-title">每个服务，都有自己的健康轨迹</h2></div><span class="section-count"><span data-service-count>—</span> targets</span></div><div class="service-grid" data-service-list><div class="probe-loading" data-probe-loading>正在读取 GitHub Actions 快照…</div></div><template data-service-template><article class="service-card" data-service-card><div class="service-card-top"><div class="service-identity"><span class="service-avatar" data-service-avatar aria-hidden="true"><span data-service-type-icon>·</span></span><div><p class="service-role" data-service-role></p><h3 data-service-title></h3></div></div><span class="status-pill" data-service-status-label><i aria-hidden="true"></i></span></div><p class="service-description" data-service-description></p><div class="service-card-meta"><div><span class="meta-label">响应时间</span><div class="latency-value"><strong data-service-latency>— <small>ms</small></strong><span class="latency-band" data-service-band-label>—</span></div></div><div><span class="meta-label">可用性</span><strong data-service-uptime>—</strong></div></div><div class="history-row"><span class="meta-label">最近检查</span><div class="history-bars" data-service-history></div></div></article></template></section><div class="dashboard-lower"><section class="panel recent-panel"><div class="panel-heading"><div><span class="section-label">探测记录</span><h2>最近一次检查</h2></div><span class="panel-caption" data-check-count>等待数据</span></div><ol class="recent-list" data-recent-checks><li class="probe-loading">等待 GitHub Actions 首次探测</li></ol></section><section class="panel workflow-panel"><div class="panel-heading"><div><span class="section-label">自动化来源</span><h2>由 GitHub Actions 驱动</h2></div><span class="workflow-mark" aria-hidden="true">${iconSvg(Settings2, 'workflow-icon')}</span></div><div class="workflow-steps"><div><span>01</span><p><strong>读取配置</strong><small>.github/probes.json 决定探针目标</small></p></div><div><span>02</span><p><strong>执行探测</strong><small>HTTP、TCP、Ping、DNS 统一记录</small></p></div><div><span>03</span><p><strong>更新快照</strong><small>状态分支仅更新 JSON，不重新部署页面</small></p></div></div><a class="button button-dark" href="${actionsHref}" target="_blank" rel="noreferrer">打开 Actions 执行记录 <span aria-hidden="true">↗</span></a></section></div><p class="dashboard-source" data-probe-source><span aria-hidden="true">✦</span> 状态数据由 GitHub Actions 动态更新，页面打开时读取最新快照。</p></section>`;
+}
+
 const blocks: Record<string, ThemeBlockDefinition> = {
   hero: { name: 'hero', schema: { tone: 'string', align: 'string' }, defaults: { tone: 'default', align: 'left' }, render: (node, context) => { validateAttrs(node, blocks.hero); const tone = enumAttr(node, 'tone', ['default', 'brand', 'muted'], 'default'); const align = enumAttr(node, 'align', ['left', 'center', 'right'], 'left'); return `<section class="block hero tone-${context.escapeHtml(tone)} align-${context.escapeHtml(align)}"><span class="hero-tool-mark" aria-hidden="true">${iconSvg(Wrench, 'hero-tool-icon')}</span>${context.renderNodes(node.children)}</section>`; } },
   'feature-grid': { name: 'feature-grid', schema: { columns: 'number' }, defaults: { columns: '3' }, render: (node, context) => { validateAttrs(node, blocks['feature-grid']); const columns = numberAttr(node, 'columns', 1, 6, 3); return `<section class="block feature-grid" style="--columns:${columns}">${groupedContent(node.children, context).map((content, index) => `<article><span class="feature-icon" aria-hidden="true">${iconSvg(featureIcons[index % featureIcons.length], 'ui-icon')}</span>${content}</article>`).join('')}</section>`; } },
@@ -169,7 +213,8 @@ const blocks: Record<string, ThemeBlockDefinition> = {
   pipeline: { name: 'pipeline', schema: {}, render: (node, context) => { validateAttrs(node, blocks.pipeline); const label = context.translate('pipeline', 'Compiler pipeline'); return `<section class="block pipeline" aria-label="${context.escapeHtml(label)}"><div class="pipeline-track">${pipelineSteps(node.children, context)}</div></section>`; } },
   'post-list': { name: 'post-list', schema: { limit: 'number' }, defaults: { limit: '6' }, dependencies: (_node, context) => [`collection:posts:${context.doc.locale}`], render: (node, context) => { validateAttrs(node, blocks['post-list']); const limit = numberAttr(node, 'limit', 1, 50, 6); const posts = context.collection('posts').slice(0, limit); const heading = context.translate('latestPosts', 'Latest product notes'); return `<section class="block post-list"><div class="post-list-heading"><h2>${context.escapeHtml(heading)}</h2><a href="${context.safeUrl(`/${context.doc.locale}/posts/`)}">${context.escapeHtml(context.translate('allPosts', 'View all product notes'))}</a></div>${posts.length ? `<div class="post-list-grid">${posts.map((post, index) => `<article class="post-card">${postCover(post, context, index)}<div class="post-card-body"><h3><a href="${context.safeUrl(context.routeFor(post))}">${context.escapeHtml(post.title)}</a></h3>${post.date ? `<time datetime="${context.escapeHtml(post.date)}">${context.escapeHtml(context.formatDate(post.date))}</time>` : ''}${postExcerpt(post, context) ? `<p class="post-excerpt">${postExcerpt(post, context)}</p>` : ''}</div></article>`).join('')}</div>` : `<p class="empty">${context.escapeHtml(context.translate('noPosts', 'No product notes yet.'))}</p>`}</section>`; } },
   toc: { name: 'toc', schema: {}, render: (_node, context) => { const headings = context.doc.nodes.filter(node => node.kind === 'heading' && node.depth > 1) as Extract<MarkdownNode, { kind: 'heading' }>[]; const label = context.translate('toc.title', 'Table of contents'); const onThisPage = context.translate('toc.onThisPage', 'On this page'); return `<nav class="block toc" aria-label="${context.escapeHtml(label)}"><strong>${context.escapeHtml(onThisPage)}</strong><ul>${headings.map(heading => `<li><a href="#${context.escapeHtml(heading.id)}">${context.renderInline(heading.text)}</a></li>`).join('')}</ul></nav>`; } },
-  cta: { name: 'cta', schema: { href: 'string' }, render: (node, context) => { validateAttrs(node, blocks.cta); const href = node.attrs.href ? context.safeUrl(node.attrs.href) : '#'; const label = context.translate('continue', 'Continue'); return `<section class="block landing-cta">${context.renderNodes(node.children)}${node.attrs.href ? `<a class="button" href="${href}">${context.escapeHtml(label)}</a>` : ''}</section>`; } }
+  cta: { name: 'cta', schema: { href: 'string' }, render: (node, context) => { validateAttrs(node, blocks.cta); const href = node.attrs.href ? context.safeUrl(node.attrs.href) : '#'; const label = context.translate('continue', 'Continue'); return `<section class="block landing-cta">${context.renderNodes(node.children)}${node.attrs.href ? `<a class="button" href="${href}">${context.escapeHtml(label)}</a>` : ''}</section>`; } },
+  'probe-dashboard': { name: 'probe-dashboard', schema: {}, contexts: ['page'], resources: { scripts: ['scripts/probe-dashboard.js'] }, render: renderProbeDashboard }
 };
 
 function shell(context: ThemeShellContext) {
@@ -178,7 +223,7 @@ function shell(context: ThemeShellContext) {
   const archiveCollection = String(context.config.archive?.collection || 'posts');
   const collectionKey = context.doc.collection === 'archive' ? archiveCollection : context.doc.collection;
   const collectionLabel = context.translate(`collections.${collectionKey}`, collectionKey);
-  const pageHeader = context.doc.source.startsWith('generated:') ? '' : `<header class="page-header"><p class="eyebrow">${context.escapeHtml(collectionLabel)}</p><h1>${context.escapeHtml(context.doc.title)}</h1>${context.doc.description ? `<p>${context.escapeHtml(context.doc.description)}</p>` : ''}${languageNav}</header>`;
+  const pageHeader = context.doc.source.startsWith('generated:') || context.doc.pattern === 'monitoring' ? '' : `<header class="page-header"><p class="eyebrow">${context.escapeHtml(collectionLabel)}</p><h1>${context.escapeHtml(context.doc.title)}</h1>${context.doc.description ? `<p>${context.escapeHtml(context.doc.description)}</p>` : ''}${languageNav}</header>`;
   const primaryNav = context.navigationLinks ? `<nav class="primary-nav" aria-label="${context.escapeHtml(context.navigationLabel)}">${context.navigationLinks}</nav>` : '';
   const headerActions = `${context.searchMarkup}${primaryNav}`;
   const siteMapLabel = context.translate('siteMap', context.doc.locale.startsWith('zh-tw') ? '網站地圖' : context.doc.locale.startsWith('zh') ? '站点地图' : 'Site map');
@@ -197,6 +242,7 @@ export default defineTheme({
   blocks,
   patterns: {
     landing: { name: 'landing', contexts: ['page'], render: content => content },
+    monitoring: { name: 'monitoring', contexts: ['page'], render: content => content },
     document: { name: 'document', contexts: ['page', 'custom'], render: (content, context) => `<div class="document-layout">${automaticToc(context)}<article class="document-body">${content}</article></div>` },
     docs: { name: 'docs', contexts: ['page', 'docs'], render: (content, context) => `<div class="document-layout docs-layout">${automaticToc(context)}<article class="document-body">${content}</article></div>` },
   blog: { name: 'blog', contexts: ['post', 'blog'], render: (content, context) => { const postLabel = context.translate('collections.posts', 'Product notes'); return `<div class="document-layout post-layout">${automaticToc(context)}<article class="post"><header class="post-cover post-cover-detail${context.doc.data?.cover ? ' has-image' : ''}">${context.doc.data?.cover ? `<img src="${context.safeUrl(String(context.doc.data.cover))}" alt="" loading="eager" decoding="async">` : ''}<span>${context.escapeHtml(postLabel)}</span><h2>${context.escapeHtml(context.doc.title)}</h2>${context.doc.description ? `<p>${context.escapeHtml(context.doc.description)}</p>` : ''}</header>${context.doc.date ? `<p class="post-date"><time datetime="${context.escapeHtml(context.doc.date)}">${context.escapeHtml(context.formatDate(context.doc.date))}</time></p>` : ''}${content}${blogRelations(context)}</article></div>`; } }

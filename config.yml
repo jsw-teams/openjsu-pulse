@@ -1,44 +1,30 @@
-siteUrl: https://pagekiln.pages.dev
-defaultLocale: en
+siteUrl: https://status.openjsu.com
+defaultLocale: zh-tw
 activeLocales:
-  - zh-sg
   - zh-tw
-  - en
 siteName:
-  zh-sg: Pagekiln
-  zh-tw: Pagekiln
-  en: Pagekiln
+  zh-tw: OpenJSU Pulse
 description:
-  zh-sg: 把 Markdown、受约束 Block 与站点配置编译成可检查静态产物。
-  zh-tw: 把 Markdown、受約束 Block 與網站設定編譯成可檢查靜態產物。
-  en: Compile Markdown, constrained Blocks, and site config into inspectable static output.
+  zh-tw: OpenJSU 公開服務的即時探針狀態與可用性總覽。
 author:
-  zh-sg: Site Owner
-  zh-tw: Site Owner
-  en: Site Owner
+  zh-tw: OpenJSU Operations
 theme:
   name: default
   nav:
     links:
       - key: home
         href: /:locale/
-      - key: about
-        href: /:locale/about/
-      - key: guide
-        href: /:locale/guide/
-      - key: development
-        href: /:locale/development/
-      - key: posts
-        href: /:locale/posts/
+      - key: actions
+        href: https://github.com/jsw-teams/openjsu-pulse/actions/workflows/probes.yml
     utilityLinks: []
 
 # Site configuration selects built-in capabilities; markup, CSS, and browser code stay in the theme.
 plugins:
   search:
-    enabled: true
+    enabled: false
     provider: Pagekiln
   privacyConsent:
-    enabled: true
+    enabled: false
     provider: Pagekiln
 
 icons:
@@ -52,15 +38,15 @@ icons:
 
 branding:
   showAttribution: false
-  attributionUrl: https://github.com/jsw-teams/pagekiln
+  attributionUrl: https://github.com/jsw-teams/openjsu-pulse
   attribution:
     zh-sg: Pagekiln by JSW Teams
     zh-tw: Pagekiln by JSW Teams
     en: Pagekiln by JSW Teams
 
 pwa:
-  backgroundColor: "#f3f0e8"
-  themeColor: "#155b68"
+  backgroundColor: "#f4f7fb"
+  themeColor: "#14263d"
 
 images:
   social: assets/og-default-product.webp
@@ -72,13 +58,6 @@ images:
       fit: cover
       format: webp
       quality: 82
-    - source: product-note-cover-source.png
-      output: assets/product-note-cover.webp
-      width: 1200
-      height: 800
-      fit: cover
-      format: webp
-      quality: 82
 
 robots:
   rules:
@@ -87,14 +66,14 @@ robots:
         - /
 
 llms:
-  title: Pagekiln
-  description: The static-first website compiler for content that scales.
+  title: OpenJSU Pulse
+  description: OpenJSU public service probe status and availability dashboard.
   full:
     enabled: true
     shardSize: 250
 
 search:
-  enabled: true
+  enabled: false
   maxResults: 8
   shardSize: 500
 
@@ -102,21 +81,18 @@ outputs:
   markdownMirrors: true
 
 archive:
-  pageSize: 50
-  collection: posts
+  enabled: false
 
 feed:
-  title: Pagekiln
-  limit: 20
-  collection: posts
+  enabled: false
 
 privacy:
   controller:
-    name: Site Owner
-    contactUrl: https://github.com/jsw-teams/pagekiln
+    name: OpenJSU Operations
+    contactUrl: https://github.com/jsw-teams/openjsu-pulse
     supervisoryAuthorityUrl: https://edpb.europa.eu/about-edpb/about-edpb_en
   cookieConsent:
-    enabled: true
+    enabled: false
     policyRoute: /:locale/privacy/
     agentRoute: /.well-known/agent.json
     storage: cookie
@@ -136,35 +112,34 @@ privacy:
         retentionDays: 0
 content:
   collections:
-    pages:
-      contentType: page
-      pattern: document
-      route: /:locale/:id/
-      schema:
+      pages:
+        contentType: page
+        pattern: document
+        route: /:locale/:id/
+        schema:
         title:
           type: string
           required: true
-        description: string
-        pattern: string
-    posts:
-      contentType: post
-      pattern: blog
-      route: /:locale/posts/:id/
-      feed: true
-      archive: true
-      orderBy: date:desc
-      schema:
-        title:
-          type: string
-          required: true
-        description: string
-        date:
-          type: string
-          required: true
-        cover: string
-        ogImage: string
-        pattern: string
-
+          description: string
+          pattern: string
+      posts:
+        contentType: post
+        pattern: blog
+        route: /:locale/posts/:id/
+        feed: true
+        archive: true
+        orderBy: date:desc
+        schema:
+          title:
+            type: string
+            required: true
+          description: string
+          date:
+            type: string
+            required: true
+          cover: string
+          ogImage: string
+          pattern: string
 deployment:
   targets: []
   cloudflare:

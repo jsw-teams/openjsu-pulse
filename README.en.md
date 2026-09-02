@@ -1,180 +1,39 @@
-# Pagekiln
+# OpenJSU Pulse
 
-Pagekiln 2.0 is a TypeScript/Node 22+ static-first website compiler. YAML 1.2 Frontmatter, CommonMark/GFM Markdown, Patterns, Blocks, and Schema Data compile into inspectable, deployable `dist/` output. Authors write content in Markdown, themes own structure and visual language, and the compiler owns routes, locales, assets, and delivery files.
+OpenJSU Pulse is a public service status page built with [Pagekiln](https://github.com/jsw-teams/pagekiln). The root `/` keeps Pagekiln's language picker; the current status dashboard is at `/zh-tw/`. There is no admin page. Detection points and thresholds are managed in `.github/probes.json`.
 
-## Quick Start
+The example configuration checks `blog.openjsu.com` over HTTP, `dns.openjsu.com` as a recursive DNS resolver, and `openjsu.com` over HTTP. No probe result is committed to the source branch. Before the first scheduled run, the page stays in a waiting state.
+
+The Pages workflow deploys the static dashboard shell when source files change. The scheduled probe workflow runs every five minutes, writes the latest JSON snapshot to `status-data/status/probes.json`, and never redeploys Pages. The browser fetches that branch at runtime with a cache-busting query string.
+
+Edit `.github/probes.json` and push to `main`. A target has an `id`, `name`, and `type`. Supported types are `http`, `tcp`, `ping`, and `dns`:
+
+```json
+{
+  "version": 1,
+  "intervalMinutes": 5,
+  "timeoutMs": 10000,
+  "historyLimit": 12,
+  "dns": { "query": "example.com" },
+  "targets": [
+    { "id": "portal", "name": "openjsu.com", "role": "Portal", "type": "http", "url": "https://openjsu.com", "expectedStatus": [200] },
+    { "id": "resolver", "name": "dns.openjsu.com", "role": "Recursive DNS", "type": "dns", "host": "dns.openjsu.com", "query": "example.com" },
+    { "id": "tls", "name": "openjsu.com:443", "role": "TCP", "type": "tcp", "host": "openjsu.com", "port": 443 },
+    { "id": "icmp", "name": "openjsu.com ICMP", "role": "Ping", "type": "ping", "host": "openjsu.com" }
+  ]
+}
+```
+
+Latency bands match the supplied references: HTTP `0–3000ms` / `3000–6000ms` / `>6000ms`; PING `0–50ms` / `50–100ms` / `100–150ms` / `150–200ms` / `>200ms`; TCP `≤50ms` / `51–100ms` / `101–200ms` / `201–250ms` / `>250ms`, with timeouts shown in red. DNS uses `0–100ms` / `100–500ms` / `>500ms`.
+
+GitHub-hosted Actions is a single probe location. The project does not invent nationwide or carrier-specific map points. That view needs multiple self-hosted runners or an external probe service.
+
+For deployment, create a new public repository, set Pages to “GitHub Actions”, push `main`, and manually run `Probe status snapshot` once. If the repository token is read-only, allow read/write workflow permissions; the workflow requires `contents: write` to update `status-data`. Scheduled workflows have a five-minute minimum, run in UTC on the default branch, can be delayed under load, and may be disabled after 60 days without repository activity. Standard runners in public repositories are generally free; larger runners and private-repository usage follow account billing and quota rules. See the [Actions billing](https://docs.github.com/en/billing/concepts/product-billing/github-actions), [runner selection](https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflows-run/choose-the-runner-for-a-job), [scheduled events](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows), [Actions limits](https://docs.github.com/en/enterprise-cloud@latest/actions/reference/limits), and [Pages limits](https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits) documentation.
 
 ```bash
-npm install
-npm run g -- --profile
+npm ci
 npm run check
-npm run s
+npm run build
 ```
 
-Use `npm run g`, `npm run check`, and `npm run s` from a source checkout. After linking the project with `npm link` or installing a published CLI, use `pagekiln g`, `pagekiln check`, and `pagekiln s`. Open `http://127.0.0.1:4173/` to choose a site version. The picker keeps each language name in its own language: `简体中文`, `繁體中文`, and `English`. `g --profile` reports discover, load, validate, parse, route, render, assets, and write timings. A static build does not start an HTTP or Fetch lifecycle for each page; `src/runtime/` contains precompiled JavaScript.
-
-## Start Writing
-
-### Content paths
-
-`pages` stores the site's current effective content in `content/pages/<id>/<locale>.md`; home, About, Guide, Reference, and directory pages belong there. Update the relevant page when Pagekiln behavior changes. `docs` is a document-presentation Pattern inside `pages`, not a third collection. `posts` stores dated records of completed product decisions, implementations, releases, incidents, deployments, or measured results in `content/posts/<id>/<locale>.md`; every Product Note requires `date` and enters the date-ordered archive and Feed. Write current usage in `pages` and historical records in `posts`. Put assets in `content/assets/`. The default site provides `zh-sg`, `zh-tw`, and `en`; the final locale segment defines translation groups, routes, and hreflang.
-
-```markdown
----
-title: Search results gained hit locations
-description: Record the 2026-08-10 product change that added visible hit-location labels.
-pattern: blog
-date: 2026-08-10
-cover: /assets/product-note-cover.webp
----
-
-# Search results gained hit locations
-
-This note records one completed change. Current search usage belongs in the Guide under `content/pages/`; text before `<more>` becomes the archive excerpt.
-
-<more>
-
-The full note remains ordinary Markdown.
-```
-
-### Markdown model
-
-The body supports GFM tables, task lists, strikethrough, blockquotes, fenced code, and autolinks. Block Directive attributes stay short and scalar; headings, lists, tables, and explanations stay in Markdown:
-
-```markdown
-:::feature-grid{columns="3"}
-### Pages
-`pages` stores current home, guide, reference, and directory content. Update the relevant page when behavior changes.
-
-### Product notes
-`posts` stores dated decisions, implementations, releases, and incidents that already happened; it is not the current usage manual.
-
-### Themes
-Themes own Patterns, Blocks, visual language, and optional browser behavior.
-:::
-```
-
-Unknown Blocks, invalid attributes, missing schema fields, and route collisions report the source file, line, column, and a repair suggestion. Raw HTML is escaped by default; only reviewed trusted values may use `unsafeHtml`. MDX, JSX, virtual DOM, and HTML-comment Slots are outside the compiler path.
-
-### Built-in outputs
-
-The default site emits static HTML, a custom 404 page, a feed (an RSS/Atom-style update subscription file), `sitemap.xml` (a search-engine site map), a local search index, `llms.txt` (a concise site entry point for Agents), `.pagekiln/catalog.json` (theme capabilities and content contexts), and `.well-known/agent.json`. Search results label the matching title, description, heading, body, or path instead of returning an unexplained title-only hit. `pagekiln catalog` builds its capability view directly from config, content, and theme source; it does not render the site or require an existing `dist/`.
-
-## Secondary Development
-
-### Project structure
-
-```text
-config.yml                 site information, locales, routes, collections, plugin switches
-starter/                   minimal buildable project copied by `pagekiln init`
-content/                   Markdown content and user-owned assets
-themes/default/            theme.yml, i18n.yml, theme.ts, style.css, plugin scripts, Pattern/Block resources
-src/compiler.ts            BuildContext, parsing, schemas, graph, cache, static output
-src/theme-api.ts           Pattern, Block, and Shell theme contract
-src/lib/                   Markdown, SafeHtml, URL, and small core helpers
-src/fetch-router.ts        shared Web Standard Fetch router
-backend/handler.ts         only source for dynamic business logic and secrets
-test/                      unit, integration, and output-contract tests
-scripts/benchmark.mjs      temporary scale fixture, never production dist
-```
-
-`src/runtime/`, `.pagekiln/`, and `dist/` are generated and must not be hand-edited. The root `src/` tree no longer preserves empty layers from the previous engine; check the theme and existing Blocks before adding a new content capability.
-
-### Commands
-
-| Command | Purpose |
-| --- | --- |
-| `pagekiln init` | Create a neutral project without a production domain, token, or identity |
-| `pagekiln g --profile` | Generate the static site and write a machine-readable build profile |
-| `pagekiln s [port]` | Keep one BuildContext alive for incremental preview |
-| `pagekiln d --dry-run` | Preview the deployment action from `config.yml` without uploading |
-| `pagekiln d` | Build and upload `dist/` using the target in `config.yml` |
-| `pagekiln check` | Validate Markdown, schemas, Blocks, routes, and outputs |
-| `pagekiln catalog` | Inspect source-backed Patterns, Blocks, schemas, plugins, and dependencies without a full build |
-| `pagekiln inspect <query>` | Inspect content or the `page:`, `block:`, `pattern:`, `collection:`, and `plugin:` namespaces as structured JSON |
-
-`pagekiln inspect <id>` still queries content by id; explicit namespaces avoid ambiguity when content and capabilities share names. A missing object returns a non-zero exit code and stable `INSPECT_NOT_FOUND` JSON error.
-
-### Theme-first extension
-
-Start secondary development in `themes/<name>/`. Copy the default theme, add a Pattern or Block in `theme.ts`, declare its schema in `theme.yml`, keep styles in the unified `style.css`, and keep optional capabilities under nested `plugins.<name>` entries with an `enabled: true|false` switch. Put localized UI messages in the separate `i18n.yml`. The page shell, mobile breakpoints, expandable outline, hit-location search labels, no-motion default, and Cookie selector are theme concerns. Ordinary pages do not hydrate.
-
-Pattern → Block → Schema Data is the intended composition. Collections, locale fallback, feeds, site maps, search, image caching, incremental dependency graphs, and deployment output remain compiler capabilities so each page does not need a private template.
-
-### Configuration boundaries
-
-`config.yml` manages site information, locales, navigation, collections, routes, schemas, image variants, search, privacy, and deployment settings. It is not a CSS, HTML, browser-script, or `unsafeHtml` injection surface. Visual behavior belongs in the theme; dynamic behavior belongs in `backend/handler.ts`. The raw `config.yml`, `content/`, and `themes/` files are the source of truth; `.pagekiln/catalog.json` and `.well-known/agent.json` are generated discovery; `AGENTS.md` is operational guidance only.
-
-The default theme keeps styles in the unified `style.css`. CSS builds as one compressed line, and CSS/native ESM filenames receive content fingerprints without query-string cache keys. OG and product-note covers are produced from configured image variants, with default source images when a page has no asset.
-
-### Privacy and accessibility
-
-The `privacyConsent` theme plugin declares the Cookie selector, and its `enabled` switch can be combined with the site-level `config.yml` switch. Essential categories remain available; optional categories start disabled, and optional scripts are not inserted before consent. Human visitors open one localized settings control from the footer, while Agents read a separate machine-readable disclosure; the two audiences do not share an entry point. Output includes a skip link, semantic headings, keyboard focus, ARIA state, hreflang, and a site map. On mobile, tables become labeled vertical rows and the outline expands with the page instead of relying on a native horizontal scroller.
-
-Optional services are configured under `privacy.cookieConsent.integrations` in `config.yml`, without adding script paths there. Built-in providers are `googleAnalytics` (`measurementId`), `googleAds` (`conversionId`), `cloudflareWebAnalytics` (`token`), and `baiduTongji` (`siteId`). Each provider loads only after its category is selected; Google receives Consent Mode updates, Baidu's official async code is preserved, and Cloudflare Web Analytics remains an optional data transmission even though its beacon does not use cookies.
-
-```yaml
-privacy:
-  cookieConsent:
-    integrations:
-      googleAnalytics: { enabled: true, measurementId: G-XXXXXXXXXX, category: analytics }
-      googleAds: { enabled: true, conversionId: AW-XXXXXXXXXX, category: advertising }
-      cloudflareWebAnalytics: { enabled: true, token: YOUR_CLOUDFLARE_TOKEN, category: analytics }
-      baiduTongji: { enabled: true, siteId: YOUR_BAIDU_SITE_ID, category: analytics }
-```
-
-### Deployments and dependencies
-
-The unified `dist/` can be served directly by a CDN, Caddy, or Nginx. Put one or more deployment targets and their destinations in the site-root `config.yml`; targets run in list order:
-
-```yaml
-deployment:
-  targets: [vps, cloudflare-pages]
-  cloudflare:
-    accountId: CF_ACCOUNT_ID
-    apiTokenEnv: CLOUDFLARE_API_TOKEN
-    pages:
-      project: site-name
-      branch: production
-    workers:
-      name: site-worker
-      compatibilityDate: '2026-08-10'
-  github:
-    remote: origin
-    branch: gh-pages
-    tokenEnv: GITHUB_TOKEN
-  vps:
-    host: vps.example.com
-    user: deploy
-    port: 22
-    remotePath: /var/www/site
-    identityFile: ~/.ssh/id_ed25519
-    publicKeyFile: ~/.ssh/id_ed25519.pub
-```
-
-Then run `pagekiln d`; `pagekiln d --dry-run` inspects every selected action. Cloudflare Pages needs a project name and optional branch; Workers needs a Worker name and compatibility date. When `cloudflare.apiTokenEnv` is set, the script reads the Cloudflare API token only from that environment variable; omit it or set it to `null` to let Wrangler use its local login. GitHub needs an existing remote name and target branch; when `github.tokenEnv` is set, an HTTPS remote receives authorization through the child process environment rather than command-line arguments, while an SSH remote continues to use the local SSH agent/config. VPS needs a host, user, SSH port, and an existing remote directory; `identityFile` is the private key and `publicKeyFile` is optional to assert that the companion public-key file exists. The public key must already be in the server's `authorized_keys`; Pagekiln never uploads keys. Credentials remain in the runtime environment or local key files. OpenAI Sites remains an optional adapter, but this project has removed its Sites binding and will not publish there by default.
-
-The credential boundary follows [GitHub's HTTPS token guidance](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens), [Wrangler's Cloudflare authentication guidance](https://developers.cloudflare.com/workers/wrangler/commands/general/), and [OpenSSH scp's `-i` identity-file option](https://man.openbsd.org/scp.1). A successful deployment only means that the hosting platform accepted and published the output; it does not guarantee access from every region. DNS, ISP routing, enterprise network policy, platform regional availability, and custom-domain state can still make a site unreachable in some locations. Test from target regions and keep Cloudflare, GitHub Pages, or VPS as alternative delivery paths when broad reachability matters.
-
-Production dependencies have narrow roles: `markdown-it` and `markdown-it-task-lists` parse GFM, `yaml` parses YAML 1.2, `sharp` creates image variants, and `lucide` supplies mature open-source SVG icon nodes. Traversal, watch, hashing, routing, feeds, site maps, search serialization, atomic writes, and tests use Node/Web Standards rather than convenience packages.
-
-### Verification and limits
-
-```bash
-npm run compile-runtime
-npm run compile-theme
-npm run compile-backend
-npm test
-pagekiln g --profile
-pagekiln check
-npm run catalog
-npm run inspect -- home
-npm run bench -- 100
-npm run bench:compare -- --sizes=100 --scenario=cold --tools=pagekiln,astro,eleventy,hugo
-```
-
-The scale fixture is created in the system temporary directory and removed after the run. The documented default is 100 entries; `--locales=3` adds the three locales, `--images` exercises the image cache, and `--quick` measures cold and no-change builds. Each JSON line records the machine, phases, scenarios, output counts, and image counters. `maxRssMiB` is peak resident memory of the Node process (RSS, KiB divided by 1,024), not `dist/` size or the memory of one page. Temporary build JSON is not committed or exposed as a product claim.
-
-The comparison page uses only capabilities confirmed by official tool documentation and separates tool execution time from Pagekiln’s additional delivery contract. See `content/pages/about/`, `content/pages/guide/`, and `content/pages/development/` for the current implementation, reproduction details, and explicit limits.
-
-Preserve the MIT license, `NOTICE`, existing user assets, and the optional `Pagekiln by JSW Teams` attribution policy. `branding.showAttribution` controls only the footer credit; it does not change license obligations.
+`status/probes.json` is runtime output and belongs on `status-data`, not on `main`.

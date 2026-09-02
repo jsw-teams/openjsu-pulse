@@ -155,7 +155,7 @@ test('dated Product Notes enter the archive and Feed in descending date order wh
   }
 });
 
-test('Starter posts contract matches the formal example and the new Product Note is one translation group', async () => {
+test('Starter posts contract remains available while the status site ships no post content', async () => {
   const formal = await createContext(repoRoot);
   const starterRoot = await mkdtemp(path.join(os.tmpdir(), 'pagekiln-starter-contract-'));
   try {
@@ -166,13 +166,13 @@ test('Starter posts contract matches the formal example and the new Product Note
     const inspected = await inspect(formal, 'collection:posts');
     assert.equal(inspected.item.schema.date.required, true);
 
-    const notes = formal.docs.filter(doc => doc.collection === 'posts' && doc.id === 'prompt-skill-after-models');
-    assert.deepEqual(notes.map(doc => doc.locale).sort(), ['en', 'zh-sg', 'zh-tw']);
-    assert.ok(notes.every(doc => doc.data.cover === '/assets/product-note-cover.webp'));
+    assert.equal(formal.docs.some(doc => doc.collection === 'posts'), false);
     await build(formal);
-    const home = await readFile(path.join(repoRoot, 'dist/zh-sg/index.html'), 'utf8');
-    assert.match(home, /product-note-cover\.webp/);
-    assert.equal((home.match(/模型越来越强之后/g) || []).length, 1);
+    const picker = await readFile(path.join(repoRoot, 'dist/index.html'), 'utf8');
+    const home = await readFile(path.join(repoRoot, 'dist/zh-tw/index.html'), 'utf8');
+    assert.match(picker, /language-picker/);
+    assert.match(home, /data-probe-dashboard/);
+    assert.doesNotMatch(home, /Product notes|產品筆記|产品笔记/);
   } finally {
     await rm(starterRoot, { recursive: true, force: true });
   }

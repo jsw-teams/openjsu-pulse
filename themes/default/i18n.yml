@@ -19,11 +19,8 @@ messages:
       zh-tw: 繁體中文
       en: English
     navigation:
-      home: 首页
-      about: 对比研究
-      guide: 使用文档
-      development: 二次开发
-      posts: 产品笔记
+      home: 状态总览
+      actions: GitHub Actions
     collections:
       pages: 页面
       posts: 产品笔记
@@ -70,7 +67,7 @@ messages:
       previousPage: 上一页
       nextPage: 下一页
     shell:
-      headerNote: 把内容变成可发布的网站
+      headerNote: GitHub Actions · 每 5 分钟探测
       skipToContent: 跳至内容
       languages: 语言
       navigation: 主导航
@@ -110,11 +107,8 @@ messages:
       zh-tw: 繁體中文
       en: English
     navigation:
-      home: 首頁
-      about: 對比研究
-      guide: 使用文件
-      development: 二次開發
-      posts: 產品筆記
+      home: 狀態總覽
+      actions: GitHub Actions
     collections:
       pages: 頁面
       posts: 產品筆記
@@ -161,7 +155,7 @@ messages:
       previousPage: 上一頁
       nextPage: 下一頁
     shell:
-      headerNote: 把內容變成可發布的網站
+      headerNote: GitHub Actions · 每 5 分鐘探測
       skipToContent: 跳至內容
       languages: 語言
       navigation: 主導覽
@@ -201,11 +195,8 @@ messages:
       zh-tw: 繁體中文
       en: English
     navigation:
-      home: Home
-      about: Research
-      guide: Guide
-      development: Development
-      posts: Product notes
+      home: Status
+      actions: GitHub Actions
     collections:
       pages: Pages
       posts: Product notes
@@ -252,7 +243,7 @@ messages:
       previousPage: Previous page
       nextPage: Next page
     shell:
-      headerNote: Content to publishable sites
+      headerNote: GitHub Actions · 5-minute probes
       skipToContent: Skip to content
       languages: Languages
       navigation: Primary navigation

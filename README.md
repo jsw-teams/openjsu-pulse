@@ -1,180 +1,174 @@
-# Pagekiln
+# OpenJSU Pulse
 
-Pagekiln 2.0 是 TypeScript/Node 22+ 的静态优先网站编译器。它把 YAML 1.2 Frontmatter、CommonMark/GFM Markdown、Pattern、Block 和 Schema Data 编译成可检查、可部署的 `dist/`。页面内容写在 Markdown，主题负责结构与视觉，编译器负责路由、翻译、资源和交付文件。
+OpenJSU Pulse 是一个基于 [Pagekiln](https://github.com/jsw-teams/pagekiln) 的公开服务状态页。`/` 保留 Pagekiln 的语言选择页，当前状态面板位于 `/zh-tw/`；没有管理页，检测点、检测类型和阈值全部由仓库中的 `.github/probes.json` 决定。
 
-## Quick Start
+当前配置示例包含：
 
-```bash
-npm install
-npm run g -- --profile
-npm run check
-npm run s
-```
+- `blog.openjsu.com`：博客，HTTP 检测
+- `dns.openjsu.com`：递归解析器，DNS 检测
+- `openjsu.com`：门户，HTTP 检测
 
-源码仓库使用 `npm run g`、`npm run check` 和 `npm run s`；将项目用 `npm link` 链接到本机或安装已发布 CLI 后，才使用 `pagekiln g`、`pagekiln check` 和 `pagekiln s`。打开 `http://127.0.0.1:4173/` 选择网站版本。语言选择页保留语言自称：`简体中文`、`繁體中文` 和 `English`。`g --profile` 会输出 discover、load、validate、parse、route、render、assets、write 各阶段时间。构建后的页面不为每页启动 HTTP 或 Fetch 生命周期；`src/runtime/` 是预编译 JavaScript。
+仓库中不包含任何预填的探测结果。首次运行 GitHub Actions 前，页面显示等待状态。
 
-## Start Writing
+## 动态数据链路
 
-### Content paths
-
-`pages` 保存站点当前有效的内容，放在 `content/pages/<id>/<locale>.md`；首页、About、Guide、Reference 和目录页都属于这里。Pagekiln 行为变化后，更新对应页面。`docs` 只是 `pages` 中的文档呈现 Pattern，不是第三个 collection。`posts` 保存已经发生的产品决定、实现、发布、问题处理、部署或测量结果，放在 `content/posts/<id>/<locale>.md`；每篇 Product Note 的 `date` 必填，并进入按日期排列的归档和 Feed。当前使用说明写在 `pages`，历史记录写在 `posts`。资源放在 `content/assets/`。默认站点提供 `zh-sg`、`zh-tw`、`en`，文件名最后的 locale 决定翻译关系、路由和 hreflang。
-
-```markdown
----
-title: 搜索结果新增命中位置
-description: 记录 2026-08-10 新增可见命中位置标签的产品变更。
-pattern: blog
-date: 2026-08-10
-cover: /assets/product-note-cover.webp
----
-
-# 搜索结果新增命中位置
-
-这篇笔记记录一次已经完成的变更。当前搜索使用方式回到 `content/pages/` 中的 Guide；`<more>` 前的内容会成为归档摘要。
-
-<more>
-
-这里是完整正文，仍然是普通 Markdown。
-```
-
-### Markdown model
-
-正文支持 GFM 表格、任务列表、删除线、引用、代码围栏和自动链接。Block Directive 只承载短标量属性，标题、列表、表格和说明保留在 Markdown：
-
-```markdown
-:::feature-grid{columns="3"}
-### 页面
-`pages` 保存当前有效的首页、说明和目录。行为变化后，直接更新对应页面。
-
-### 产品笔记
-`posts` 保存有日期的已发生决定、实现、发布和问题处理，不是当前使用文档。
-
-### 主题
-主题负责 Pattern、Block、视觉和可选浏览器行为。
-:::
-```
-
-未知 Block、错误属性、缺少 schema 字段和路由冲突会报告源文件、行列和修复建议。原始 HTML 默认转义；只有经过代码审阅的可信值才可使用 `unsafeHtml`。MDX、JSX、虚拟 DOM 和 HTML comment Slot 不在编译路径中。
-
-### Built-in outputs
-
-站点默认生成静态 HTML、404、自定义 Feed（RSS/Atom 类的更新订阅文件）、`sitemap.xml`（搜索引擎站点地图）、本地搜索索引、`llms.txt`（给 Agent 读取站点入口的简明文本）、`.pagekiln/catalog.json`（列出主题能力和内容上下文）以及 `.well-known/agent.json`。搜索结果会标注命中标题、摘要、正文小节或路径，而不是只给出模糊标题。`pagekiln catalog` 直接从配置、内容和主题源码建立能力目录，不渲染全站或依赖已有 `dist/`。
-
-## Secondary Development
-
-### Project structure
+页面代码只发布一次静态展示壳。`Probe status snapshot` 工作流按计划运行探针，将最新结果写入独立的 `status-data` 分支中的 `status/probes.json`；浏览器打开页面或点击“刷新快照”时，直接读取该 JSON。每次探测不会触发 Pages 重新构建。
 
 ```text
-config.yml                 站点信息、语言、路由、collection 和插件开关
-starter/                   `pagekiln init` 复制的最小可构建项目模板
-content/                   Markdown 内容与用户资产
-themes/default/            theme.yml、i18n.yml、theme.ts、style.css、插件脚本和 Pattern/Block 资源
-src/compiler.ts            BuildContext、解析、schema、依赖图、缓存和静态输出
-src/theme-api.ts           主题 Pattern、Block、Shell 契约
-src/lib/                   Markdown、SafeHtml、URL 与小型基础模块
-src/fetch-router.ts        共享 Web Standard Fetch 路由器
-backend/handler.ts         动态业务和秘密读取的唯一来源
-test/                      单元、集成和输出契约测试
-scripts/benchmark.mjs      临时规模夹具，不写入生产 dist
+.github/probes.json
+        │
+        ▼
+GitHub Actions（每 5 分钟）
+        │
+        ▼
+status-data/status/probes.json
+        │
+        ▼
+首页运行时 fetch 最新快照
 ```
 
-`src/runtime/`、`.pagekiln/` 和 `dist/` 都是生成物，不手动编辑。项目根目录的 `src/` 不再保留空的旧层；需要新的内容能力先检查主题和现有 Block。
+探测工作流只更新 `status-data`，Pages 工作流只在页面源文件变化时部署。因此，状态结果是动态反馈的，同时页面布局仍是可缓存的静态文件。
 
-### Commands
+## 配置一个或多个检测点
 
-| 命令 | 用途 |
+编辑 `.github/probes.json` 后提交到 `main`。`targets` 至少要有一项，每个检测点需要唯一的 `id`、显示名称 `name` 和 `type`。
+
+### 单个 HTTP 检测点
+
+```json
+{
+  "version": 1,
+  "intervalMinutes": 5,
+  "timeoutMs": 10000,
+  "historyLimit": 12,
+  "targets": [
+    {
+      "id": "portal",
+      "name": "openjsu.com",
+      "role": "门户",
+      "type": "http",
+      "url": "https://openjsu.com",
+      "method": "GET",
+      "expectedStatus": [200],
+      "description": "OpenJSU 主门户与服务入口",
+      "degradedAboveMs": 1200
+    }
+  ]
+}
+```
+
+### 多个检测点
+
+将对象继续放入同一个 `targets` 数组即可：
+
+```json
+{
+  "version": 1,
+  "intervalMinutes": 5,
+  "timeoutMs": 10000,
+  "historyLimit": 12,
+  "dns": { "query": "example.com" },
+  "targets": [
+    {
+      "id": "blog",
+      "name": "blog.openjsu.com",
+      "role": "博客",
+      "type": "http",
+      "url": "https://blog.openjsu.com"
+    },
+    {
+      "id": "dns",
+      "name": "dns.openjsu.com",
+      "role": "递归解析器",
+      "type": "dns",
+      "host": "dns.openjsu.com",
+      "query": "example.com"
+    },
+    {
+      "id": "portal-tcp",
+      "name": "openjsu.com:443",
+      "role": "TLS 端口",
+      "type": "tcp",
+      "host": "openjsu.com",
+      "port": 443
+    },
+    {
+      "id": "portal-ping",
+      "name": "openjsu.com ICMP",
+      "role": "网络连通性",
+      "type": "ping",
+      "host": "openjsu.com"
+    }
+  ]
+}
+```
+
+支持的字段：
+
+| 字段 | 适用类型 | 作用 |
+| --- | --- | --- |
+| `intervalMinutes` | 全局 | 页面显示的计划周期；当前工作流按 5 分钟运行 |
+| `timeoutMs` | 全局/单点 | 超时时间，范围 500–30000ms |
+| `historyLimit` | 全局 | 每个检测点保留的历史次数，范围 1–100 |
+| `url` | `http` | HTTP/HTTPS 地址 |
+| `method` | `http` | HTTP 方法，默认 `GET` |
+| `expectedStatus` | `http` | 允许的状态码，可以是 `200` 或 `[200, 204]`；未配置时接受 2xx/3xx |
+| `host` | `tcp`/`ping`/`dns` | 主机名或 IP 地址 |
+| `port` | `tcp` | TCP 端口，1–65535 |
+| `query` | `dns` | 要解析的域名；未配置时使用全局 `dns.query` 或 `example.com` |
+| `degradedAboveMs` | 单点 | 超过此延迟标记为“性能下降”，不改变延迟颜色分档 |
+
+检测状态和延迟颜色是两个维度：请求失败或状态码不符合预期是“中断”；请求成功但超过 `degradedAboveMs` 是“性能下降”。
+
+## 延迟展示标准
+
+页面按参考图使用以下分档：
+
+| 类型 | 分档 |
 | --- | --- |
-| `pagekiln init` | 创建不含生产域名、令牌和个人身份的中性项目 |
-| `pagekiln g --profile` | 生成静态站点并写入机器可读构建剖面 |
-| `pagekiln s [port]` | 保持 BuildContext 的增量预览 |
-| `pagekiln d --dry-run` | 按 `config.yml` 预览部署动作，不上传 |
-| `pagekiln d` | 按 `config.yml` 将 `dist/` 上传到明确目标 |
-| `pagekiln check` | 检查 Markdown、schema、Block、路由和输出 |
-| `pagekiln catalog` | 从当前源码查看 Pattern、Block、schema、插件和资源依赖；不执行完整构建 |
-| `pagekiln inspect <query>` | 以结构化 JSON 查看内容或 `page:`, `block:`, `pattern:`, `collection:`, `plugin:` 命名空间对象 |
+| HTTP | 绿色 `0–3000ms`；黄色 `3000–6000ms`；红色 `>6000ms` |
+| PING | 绿色 `0–50ms`；浅绿 `50–100ms`；黄色 `100–150ms`；橙色 `150–200ms`；红色 `>200ms` |
+| TCP | 深绿 `≤50ms`；绿色 `51–100ms`；浅绿 `101–200ms`；黄色 `201–250ms`；橙色 `>250ms`；超时显示红色 |
+| DNS | 绿色 `0–100ms`；黄色 `100–500ms`；红色 `>500ms` |
 
-`pagekiln inspect <id>` 仍按内容 id 查询；命名空间查询用于避免内容和能力同名时产生歧义。找不到对象会返回非零退出码和稳定的 `INSPECT_NOT_FOUND` JSON 错误。
+GitHub-hosted runner 是单个执行点，不会伪造全国地域或中国电信/联通/移动等多运营商节点。要做截图中的多地域地图，需要增加不同地域的 self-hosted runners 或外部探针，并扩展结果模型。
 
-### Theme-first extension
+## GitHub 部署
 
-二次开发从 `themes/<name>/` 开始。复制默认主题后，在 `theme.ts` 中新增 Pattern 或 Block，在 `theme.yml` 中声明 schema，把样式统一写入 `style.css`，并把可选能力放在带 `enabled: true|false` 开关的 `plugins.<name>` 二级节点；本地化 UI 文案放进独立的 `i18n.yml`。页面 shell、移动端断点、目录展开、搜索命中标注、无动效默认和 Cookie 选择器都属于主题边界。普通页面不 hydration。
+这是一个独立项目，应创建新的公共仓库，不要推送回上游 Pagekiln 仓库。
 
-Pattern → Block → Schema Data 是推荐组合方式。集合、翻译 fallback、Feed、站点地图、搜索、图片缓存、增量依赖图和部署产物由核心提供，避免为每个页面重复写模板。
+1. 将本项目推送到新的 public repository，默认分支使用 `main`。
+2. 在仓库 `Settings → Pages` 将构建来源设置为 `GitHub Actions`。
+3. `Build and publish Pages` 会构建 Pagekiln 输出并部署首页；它不会读取或打包探测结果。
+4. 在 `Actions → Probe status snapshot` 中手动运行一次，确认 `status-data` 分支产生 `status/probes.json`。
+5. 如果使用 `status.openjsu.com`，在 Pages 设置中绑定自定义域名并按 GitHub 给出的指引配置 DNS；`config.yml` 的 `siteUrl` 已按该域名预留。
 
-### Configuration boundaries
+修改 `.github/probes.json` 后，探测工作流下一次运行会读取新配置。修改页面、主题或工作流源文件时，Pages 工作流才会重新部署。
 
-`config.yml` 只管理站点信息、语言、导航、collection、路由、schema、图片处理、搜索、隐私和部署等设置。它不是 CSS、HTML、浏览器脚本或 `unsafeHtml` 注入入口。视觉与行为进入主题目录，动态业务进入 `backend/handler.ts`。原始 `config.yml`、`content/` 和 `themes/` 是事实来源；`.pagekiln/catalog.json` 与 `.well-known/agent.json` 是生成的发现层；`AGENTS.md` 只提供操作约束。
+如果组织策略把 `GITHUB_TOKEN` 默认权限设为只读，需要在仓库 `Settings → Actions → General → Workflow permissions` 允许工作流读写仓库内容；工作流本身也声明了 `contents: write`。`status-data` 是专门的数据分支，若为它启用分支保护，需允许 Actions bot 更新该分支。
 
-默认主题只保留实际使用的 `style.css`。CSS 构建为压缩单行文件，CSS 和原生 ESM 文件名使用内容指纹版本化，不依赖查询字符串缓存。OG 图和产品笔记封面由图片变体配置生成，未提供页面资源时使用默认源图。
+## GitHub Free 与公共仓库限制
 
-### Privacy and accessibility
+本项目选择 `ubuntu-latest` 标准 GitHub-hosted runner。公共仓库使用标准 runner 通常不消耗付费 Actions 分钟；larger runner、私有仓库配额和其他计费情形仍以账户页面为准。参见 [GitHub Actions 产品计费](https://docs.github.com/en/billing/concepts/product-billing/github-actions) 与 [选择 runner](https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflows-run/choose-the-runner-for-a-job)。
 
-Cookie 选择器由主题的 `privacyConsent` 插件声明，并可由主题和 `config.yml` 中的 `enabled` 开关关闭。必要类别默认存在，可选类别默认关闭；未同意前不会插入可选脚本。人类访客从页脚打开本地化设置，Agent 读取单独的 JSON 披露文件，两者不混在同一入口中。输出包含跳过链接、语义标题、键盘焦点、`aria` 状态、hreflang 和站点地图；移动端表格转为带字段标签的纵向内容，目录展开后随页面流动，不依赖原生横向滑动条。
+需要留意：
 
-可选服务写在 `config.yml` 的 `privacy.cookieConsent.integrations` 中，不填写脚本路径。内置 provider 包括 `googleAnalytics`（`measurementId`）、`googleAds`（`conversionId`）、`cloudflareWebAnalytics`（`token`）和 `baiduTongji`（`siteId`）；它们只有在对应类别获得选择后才加载，Google 同步 Consent Mode，百度保留官方异步代码，Cloudflare Web Analytics 即使不使用 Cookie 也作为可选数据发送服务处理。
+- GitHub schedule 的最短间隔是 5 分钟，按 UTC 解释，且只在默认分支上运行；高负载时可能延迟，公共仓库连续 60 天没有活动时，计划工作流可能被自动禁用。参见 [触发工作流的事件](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows)。
+- GitHub 的公共仓库仍受并发数、单个 job 最长运行时间和 workflow 文件大小等平台上限约束；本项目单 job、单 runner、单 JSON 分支更新，远低于这些上限。参见 [Actions limits](https://docs.github.com/en/enterprise-cloud@latest/actions/reference/limits)。
+- GitHub Pages 适合公开状态页，但不是高可用探针平台；官方列出的站点发布容量、软带宽和部署时间限制见 [GitHub Pages limits](https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits)。Pages 工作流写法参见 [使用自定义工作流发布 Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows)。
 
-```yaml
-privacy:
-  cookieConsent:
-    integrations:
-      googleAnalytics: { enabled: true, measurementId: G-XXXXXXXXXX, category: analytics }
-      googleAds: { enabled: true, conversionId: AW-XXXXXXXXXX, category: advertising }
-      cloudflareWebAnalytics: { enabled: true, token: YOUR_CLOUDFLARE_TOKEN, category: analytics }
-      baiduTongji: { enabled: true, siteId: YOUR_BAIDU_SITE_ID, category: analytics }
-```
+计划任务不是严格实时调度。如果需要秒级、跨地域或有 SLA 的监测，应把 GitHub Actions 作为补充探针，另接专业监控系统或自托管 runner。
 
-### Deployments and dependencies
-
-统一 `dist/` 可直接交给 CDN、Caddy 或 Nginx。部署目标和路径只写在站点根目录 `config.yml`；`targets` 可以填一个目标，也可以填多个目标，按列表顺序执行：
-
-```yaml
-deployment:
-  targets: [vps, cloudflare-pages]
-  cloudflare:
-    accountId: CF_ACCOUNT_ID
-    apiTokenEnv: CLOUDFLARE_API_TOKEN
-    pages:
-      project: site-name
-      branch: production
-    workers:
-      name: site-worker
-      compatibilityDate: '2026-08-10'
-  github:
-    remote: origin
-    branch: gh-pages
-    tokenEnv: GITHUB_TOKEN
-  vps:
-    host: vps.example.com
-    user: deploy
-    port: 22
-    remotePath: /var/www/site
-    identityFile: ~/.ssh/id_ed25519
-    publicKeyFile: ~/.ssh/id_ed25519.pub
-```
-
-然后运行 `pagekiln d`；`pagekiln d --dry-run` 只检查所有已选动作。Cloudflare Pages 需要项目名，可选分支；Workers 需要 Worker 名称和兼容日期。配置 `cloudflare.apiTokenEnv` 后，脚本只从该环境变量读取 Cloudflare API token；省略或设为 `null` 时交给 Wrangler 使用本机登录状态。GitHub 需要已存在的 remote 名称和目标分支；配置 `github.tokenEnv` 后，HTTPS remote 使用子进程环境中的 Git authorization header，token 不进入命令行、配置或日志，SSH remote 则继续使用本机 SSH agent/config。VPS 需要主机、用户、SSH 端口和已存在的远程目录；`identityFile` 是私钥，`publicKeyFile` 可选用于确认配套公钥文件存在，公钥必须预先放在服务器的 `authorized_keys` 中，Pagekiln 不上传密钥。所有凭据只存在运行时环境或本机密钥文件中。OpenAI Sites 目标仍是可选适配，但本项目已移除 Sites 绑定，不会再默认发布到该平台。
-
-凭据边界遵循 [GitHub 的 HTTPS token 说明](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)、[Wrangler 的 Cloudflare API token 说明](https://developers.cloudflare.com/workers/wrangler/commands/general/) 和 [OpenSSH scp 的 `-i` 私钥参数](https://man.openbsd.org/scp.1)。部署成功只代表托管平台接收并发布了产物，不代表所有地区都能访问；DNS、运营商路由、企业网络策略、平台区域可用性和自定义域名状态都可能造成部分地区打不开。面向多地区访客时，应从目标地区实测，并准备 Cloudflare、GitHub Pages 或 VPS 等替代出口。
-
-生产直接依赖有明确职责：`markdown-it` 和 `markdown-it-task-lists` 解析 GFM，`yaml` 解析 YAML 1.2，`sharp` 生成图片变体，`lucide` 提供成熟开源 SVG 图标。遍历、watch、hash、路由、RSS、站点地图、搜索序列化、原子写和测试使用 Node/Web Standard，未增加重复便利包。
-
-### Verification and limits
+## 本地检查
 
 ```bash
-npm run compile-runtime
-npm run compile-theme
-npm run compile-backend
-npm test
-pagekiln g --profile
-pagekiln check
-npm run catalog
-npm run inspect -- home
-npm run bench -- 100
-npm run bench:compare -- --sizes=100 --scenario=cold --tools=pagekiln,astro,eleventy,hugo
+npm ci
+npm run check
+npm run build
 ```
 
-规模夹具在系统临时目录生成并在运行结束清理，默认测 100 份内容，可用 `--locales=3` 测三语言、`--images` 测图片缓存、`--quick` 测冷构建与无变化构建。每行 JSON 包含机器、阶段、场景、输出数量、图片计数和 `maxRssMiB`；它表示 Node 进程峰值常驻内存（RSS，KiB 除以 1024 得到 MiB），不是 `dist/` 大小，也不是单页占用。仓库不提交临时构建 JSON，也不把夹具结果伪装成产品承诺。
+`status/probes.json` 是运行时输出，不应提交到 `main`；探测工作流会把它发布到 `status-data` 分支。页面在没有该文件时保持等待状态，而不会展示编造的结果。
 
-对比研究页只使用各工具官方文档可确认的能力，并将工具本身耗时与 Pagekiln 额外交付契约分开记录。完整边界和复现方式见 `content/pages/about/`、`content/pages/guide/` 与 `content/pages/development/`。
+## License
 
-MIT 许可证、`NOTICE`、现有用户资产和可选的 `Pagekiln by JSW Teams` 署名策略必须保留。`branding.showAttribution` 只控制页脚是否显示署名，不改变许可证义务。
+沿用 Pagekiln 的 MIT License；本项目的页面、配置和工作流改动属于 OpenJSU Pulse。

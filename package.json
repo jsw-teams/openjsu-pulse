@@ -1,7 +1,7 @@
 {
-  "name": "pagekiln",
+  "name": "openjsu-pulse",
   "version": "2.0.0",
-  "description": "Pagekiln 2.0: a TypeScript, static-first, schema-driven website compiler.",
+  "description": "OpenJSU public service status page powered by Pagekiln and GitHub Actions.",
   "license": "MIT",
   "type": "module",
   "packageManager": "npm@10.9.8",
@@ -36,13 +36,13 @@
     "typescript",
     "incremental-build"
   ],
-  "homepage": "https://github.com/jsw-teams/pagekiln#readme",
+  "homepage": "https://github.com/jsw-teams/openjsu-pulse#readme",
   "bugs": {
-    "url": "https://github.com/jsw-teams/pagekiln/issues"
+    "url": "https://github.com/jsw-teams/openjsu-pulse/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jsw-teams/pagekiln.git"
+    "url": "git+https://github.com/jsw-teams/openjsu-pulse.git"
   },
   "publishConfig": {
     "access": "public"
