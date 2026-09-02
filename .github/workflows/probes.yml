@@ -5,6 +5,12 @@ on:
     # GitHub's shortest supported schedule interval is five minutes.
     - cron: "7/5 * * * *"
   workflow_dispatch:
+    inputs:
+      reset_history:
+        description: "Discard the previous status-data history and start with this run"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -28,6 +34,7 @@ jobs:
           node-version: 22
 
       - name: Restore the previous snapshot
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.reset_history != true }}
         shell: bash
         run: |
           mkdir -p status

@@ -35,6 +35,8 @@ For TCP and PING, add targets like these:
 
 Each target keeps up to 100 checks. The workflow restores the previous `status-data/status/probes.json` before each run, writes the new result plus history, and force-updates that same file so history is carried forward rather than replaced with fabricated data.
 
+If the target set or probe protocols change and the old history should be discarded, run `Actions → Probe status snapshot → Run workflow` with `reset_history` enabled. That run skips the old snapshot and creates a new history from real probe results; scheduled runs then append to it normally.
+
 Latency bands match the supplied references: HTTP `0–3000ms` / `3000–6000ms` / `>6000ms`; PING `0–50ms` / `50–100ms` / `100–150ms` / `150–200ms` / `>200ms`; TCP `≤50ms` / `51–100ms` / `101–200ms` / `201–250ms` / `>250ms`, with timeouts shown in red. DNS uses `0–100ms` / `100–500ms` / `>500ms`.
 
 The page exposes exactly three status indicators: “服务正常” (successful and within the normal threshold), “性能下降” (successful but above `degradedAboveMs`), and “服务异常” (failed, timed out, or in the red latency band). `uptime` is the percentage of recent checks that were “服务正常”; each service shows 100 history bars, with empty slots until enough real checks exist.

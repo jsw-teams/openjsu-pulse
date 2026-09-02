@@ -385,3 +385,108 @@ main.pattern-monitoring { width: 100%; max-width: none; margin: 0; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
+
+/*
+ * Public status surface
+ * Keep the page quiet and scannable: one summary, one service list, and the
+ * 100-check history strip for each service.
+ */
+body { background: #f7f7f8; }
+.site-header { background: rgba(255, 255, 255, 0.94); border-bottom-color: #e7e7e9; backdrop-filter: blur(14px); }
+.probe-dashboard { width: min(960px, calc(100% - 48px)); padding: 54px 0 62px; }
+
+.status-page-intro { display: flex; align-items: flex-end; justify-content: space-between; gap: 28px; }
+.status-page-heading { min-width: 0; }
+.status-page-heading .dashboard-kicker { margin-bottom: 12px; color: #767982; font-size: 10px; letter-spacing: 0.14em; }
+.status-page-heading h1 { margin: 0; color: #17181b; font-size: clamp(32px, 4vw, 42px); font-weight: 760; letter-spacing: -0.055em; line-height: 1.05; }
+.status-page-lede { margin: 10px 0 0; color: #777a82; font-size: 13px; }
+.status-page-actions { display: flex; align-items: center; gap: 16px; padding-bottom: 2px; }
+.status-page-actions .button { min-height: 34px; padding: 6px 13px; border-radius: 8px; font-size: 11px; }
+.status-page-actions .button-secondary { color: #303238; background: #fff; border: 1px solid #dfe1e5; box-shadow: 0 1px 2px rgba(23, 24, 27, 0.04); }
+.status-page-actions .button-secondary:hover { background: #fafafa; box-shadow: 0 3px 8px rgba(23, 24, 27, 0.08); }
+
+.status-banner { align-items: center; margin-top: 30px; padding: 21px 23px; border: 1px solid #dcefe3; border-left: 1px solid #dcefe3; border-radius: 14px; box-shadow: 0 1px 2px rgba(23, 24, 27, 0.03); }
+.status-banner.status-degraded { border-color: #f0e5c8; }
+.status-banner.status-down { border-color: #f2d9de; }
+.status-banner.status-waiting { border-color: #dce5f4; }
+.summary-status-mark { display: grid; flex: 0 0 12px; width: 12px; height: 12px; place-items: center; color: var(--green); }
+.summary-status-mark i { width: 10px; height: 10px; background: currentColor; border-radius: 50%; box-shadow: 0 0 0 5px color-mix(in srgb, currentColor 14%, transparent); }
+.status-degraded .summary-status-mark { color: var(--amber); }
+.status-down .summary-status-mark { color: var(--red); }
+.status-waiting .summary-status-mark { color: var(--blue); }
+.summary-copy { min-width: 0; }
+.summary-copy strong { color: #202126; font-size: 17px; font-weight: 760; letter-spacing: -0.025em; }
+.summary-copy p { margin: 2px 0 0; color: #777a82; font-size: 12px; }
+.summary-last-updated { display: grid; flex: 0 0 auto; gap: 1px; margin-left: auto; color: #8a8d94; font-size: 10px; text-align: right; }
+.summary-last-updated time { color: #3e4148; font-size: 11px; font-weight: 720; font-variant-numeric: tabular-nums; }
+
+.status-overview-meta { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 21px 3px 19px; border-bottom: 1px solid #e5e5e7; }
+.summary-stats { display: flex; align-items: center; gap: 32px; }
+.summary-stats > div { display: flex; align-items: baseline; gap: 6px; }
+.summary-stats strong { color: #24262b; font-size: 18px; font-weight: 760; letter-spacing: -0.04em; line-height: 1; }
+.summary-stats strong small { color: #6f727a; font-size: 10px; font-weight: 740; letter-spacing: 0; }
+.summary-stats span:last-child { color: #858890; font-size: 11px; }
+.status-key { display: flex; align-items: center; gap: 13px; }
+.status-key-label { color: #9a9ca2; font-size: 10px; font-weight: 750; }
+.status-key .status-legend-item { display: inline-flex; min-height: 0; padding: 0; gap: 6px; color: #7b7e86; background: transparent; border: 0; border-radius: 0; font-size: 10px; font-weight: 650; white-space: nowrap; }
+.status-key .status-legend-swatch { width: 7px; height: 7px; }
+
+.service-section { margin-top: 43px; }
+.section-heading { align-items: flex-end; }
+.section-heading h2 { margin-top: 6px; color: #202126; font-size: 24px; font-weight: 760; }
+.section-heading-meta { display: flex; align-items: center; gap: 16px; }
+.section-count { color: #8a8d94; font-size: 11px; font-weight: 650; }
+.service-list { display: block; margin-top: 18px; overflow: hidden; background: #fff; border: 1px solid #e2e3e6; border-radius: 14px; box-shadow: 0 2px 5px rgba(23, 24, 27, 0.035); }
+.service-row { display: grid; grid-template-columns: minmax(190px, 1.55fr) minmax(120px, 0.78fr) minmax(90px, 0.62fr) minmax(90px, 0.62fr) minmax(245px, 1.8fr); align-items: center; gap: 20px; min-height: 106px; padding: 21px 22px; }
+.service-row + .service-row { border-top: 1px solid #ededee; }
+.service-row .service-identity { gap: 11px; }
+.service-row .service-avatar { display: block; flex: 0 0 10px; width: 10px; height: 10px; background: var(--green); border-radius: 50%; }
+.service-row .service-avatar span { display: none; }
+.service-row[data-service-status="degraded"] .service-avatar { background: var(--amber); }
+.service-row[data-service-status="down"] .service-avatar { background: var(--red); }
+.service-row[data-service-status="waiting"] .service-avatar { background: var(--blue); }
+.service-row .service-role { margin-bottom: 3px; color: #989ba2; font-size: 9px; letter-spacing: 0.09em; }
+.service-row h3 { color: #26282e; font-size: 14px; font-weight: 730; }
+.service-state, .service-response, .service-uptime, .service-history { min-width: 0; }
+.service-row .meta-label { margin-bottom: 5px; color: #9a9ca2; font-size: 9px; letter-spacing: 0.08em; }
+.service-row .status-pill { width: max-content; padding: 4px 8px; border: 1px solid #d9efe1; color: #16804b; background: #f2fbf5; font-size: 10px; font-weight: 720; }
+.service-row .status-pill.status-degraded { border-color: #f0e4c6; color: #9b7000; background: #fffaf0; }
+.service-row .status-pill.status-down { border-color: #f1d6db; color: #bf3e51; background: #fff5f6; }
+.service-row .status-pill.status-waiting { border-color: #d9e5f8; color: #3b72c7; background: #f4f8ff; }
+.row-metric { display: block; overflow: hidden; color: #303238; font-size: 15px; font-weight: 730; letter-spacing: -0.025em; text-overflow: ellipsis; white-space: nowrap; }
+.row-metric small { color: #8a8d94; font-size: 10px; font-weight: 650; letter-spacing: 0; }
+.service-uptime .row-metric { font-variant-numeric: tabular-nums; }
+.service-history .history-header { margin-bottom: 8px; }
+.service-history .history-header strong { color: #4b4e56; font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.service-history .history-bars { height: 15px; gap: 2px; }
+.service-history .history-bar { height: 15px; border-radius: 1px; }
+.service-list .probe-loading { min-height: 104px; background: #fff; border: 0; border-radius: 0; }
+.dashboard-source { margin: 18px 2px 0; color: #989ba2; font-size: 10px; }
+
+@media (max-width: 900px) {
+  .probe-dashboard { width: min(100% - 40px, 720px); }
+  .status-page-intro { align-items: flex-start; flex-direction: column; gap: 16px; }
+  .status-page-actions { padding-bottom: 0; }
+  .status-overview-meta { align-items: flex-start; flex-direction: column; gap: 18px; }
+  .service-row { grid-template-columns: minmax(190px, 1.55fr) minmax(120px, 0.78fr) minmax(90px, 0.62fr) minmax(90px, 0.62fr); }
+  .service-history { grid-column: 1 / -1; }
+}
+
+@media (max-width: 620px) {
+  .probe-dashboard { width: min(100% - 24px, 560px); padding-top: 32px; }
+  .status-page-heading h1 { font-size: 35px; }
+  .status-page-actions { width: 100%; justify-content: space-between; }
+  .status-banner { align-items: flex-start; padding: 18px; }
+  .summary-last-updated { margin-top: 1px; }
+  .summary-stats { width: 100%; justify-content: space-between; gap: 10px; }
+  .summary-stats > div { align-items: flex-start; flex-direction: column; gap: 4px; }
+  .status-key { flex-wrap: wrap; gap: 9px 13px; }
+  .section-heading, .section-heading-meta { align-items: flex-start; flex-direction: column; gap: 9px; }
+  .section-heading-meta { width: 100%; flex-direction: row; justify-content: space-between; }
+  .service-row { grid-template-columns: minmax(0, 1fr) auto; gap: 16px 14px; padding: 19px 17px; }
+  .service-identity { grid-column: 1 / -1; }
+  .service-state { grid-column: 2; grid-row: 2; }
+  .service-response { grid-column: 1; grid-row: 2; }
+  .service-uptime { grid-column: 1 / -1; grid-row: 3; }
+  .service-history { grid-column: 1 / -1; grid-row: 4; padding-top: 14px; border-top: 1px solid #ededee; }
+}

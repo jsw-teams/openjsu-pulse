@@ -29,6 +29,8 @@ status-data/status/probes.json
 
 探测工作流每次会先恢复 `status-data` 上一版的 `status/probes.json`，再把本次真实探测结果放在历史最前面，并覆盖写回同一个文件；每个检测点最多保留 100 条历史。它只更新 `status-data`，Pages 工作流只在页面源文件变化时部署。因此，状态结果是动态反馈的，同时页面布局仍是可缓存的静态文件。
 
+如果更换了一批检测点或检测协议，需要清除旧历史时，可在 `Actions → Probe status snapshot → Run workflow` 中勾选 `reset_history`。这会跳过旧快照，仅由本次 Action 生成新的真实结果；之后的定时运行会继续从这份新历史追加。
+
 ## 配置一个或多个检测点
 
 编辑 `.github/probes.json` 后提交到 `main`。`targets` 至少要有一项，每个检测点需要唯一的 `id`、显示名称 `name` 和 `type`。
