@@ -1,5 +1,6 @@
 import { execFile as execFileCallback } from 'node:child_process';
-import { promises as dnsPromises, Resolver } from 'node:dns';
+import { promises as dnsPromises } from 'node:dns';
+import { Resolver } from 'node:dns/promises';
 import { promises as fs } from 'node:fs';
 import net from 'node:net';
 import path from 'node:path';
