@@ -44,7 +44,7 @@ jobs:
           snapshot="$(mktemp)"
           cp status/probes.json "$snapshot"
           git switch --orphan status-data
-          git rm -rf .
+          git rm -rf --ignore-unmatch .
           mkdir -p status
           cp "$snapshot" status/probes.json
           git config user.name "github-actions[bot]"
