@@ -12,7 +12,7 @@ const configPath = path.join(root, '.github', 'probes.json');
 const outputPath = path.join(root, 'status', 'probes.json');
 const supportedTypes = new Set(['http', 'tcp', 'ping', 'dns']);
 const defaultTimeoutMs = 10_000;
-const defaultHistoryLimit = 12;
+const defaultHistoryLimit = 100;
 
 const bandDefinitions = {
   http: [
@@ -61,12 +61,14 @@ function bandFor(type, responseTime, failed = false) {
 }
 
 function defaultDegradedAboveMs(type) {
-  return { http: 3000, ping: 100, tcp: 100, dns: 500 }[type] || 3000;
+  return { http: 3000, ping: 100, tcp: 200, dns: 500 }[type] || 3000;
 }
 
 function checkStatus(target, outcome) {
   if (!outcome.ok) return 'down';
   if (target.type === 'http' && outcome.httpStatus >= 400) return outcome.httpStatus >= 500 ? 'down' : 'degraded';
+  const band = bandFor(target.type, outcome.responseTime);
+  if (band.key === 'red') return 'down';
   const threshold = finiteNumber(target.degradedAboveMs, defaultDegradedAboveMs(target.type));
   return Number.isFinite(outcome.responseTime) && outcome.responseTime > threshold ? 'degraded' : 'operational';
 }
@@ -243,8 +245,8 @@ async function main() {
       ...(outcome.httpStatus ? { httpStatus: outcome.httpStatus } : {})
     };
     const checks = [check, ...priorChecks].filter(item => item.checkedAt || item === check).slice(0, historyLimit);
-    const successfulChecks = checks.filter(item => item.status !== 'down');
-    const uptime = checks.length ? Number((successfulChecks.length / checks.length * 100).toFixed(2)) : 0;
+    const normalChecks = checks.filter(item => item.status === 'operational');
+    const uptime = checks.length ? Number((normalChecks.length / checks.length * 100).toFixed(2)) : 0;
     return {
       ...publicTarget(target),
       status: outcome.status,

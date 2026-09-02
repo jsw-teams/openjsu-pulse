@@ -3,16 +3,16 @@
   if (!root) return;
 
   const statusLabels = {
-    operational: '运行正常',
+    operational: '服务正常',
     degraded: '性能下降',
-    down: '中断',
+    down: '服务异常',
     waiting: '等待数据'
   };
 
   const statusDescriptions = {
-    operational: '目前没有检测到中断，所有公开服务都在稳定响应。',
-    degraded: '部分服务响应变慢，请查看下方端点明细。',
-    down: '至少一个服务没有响应，请查看下方端点明细。',
+    operational: '所有公开服务当前均正常响应。',
+    degraded: '部分服务响应变慢，当前状态为性能下降。',
+    down: '至少一个服务无法正常响应，当前状态为服务异常。',
     waiting: '页面正在等待 GitHub Actions 发布首次状态快照。'
   };
 
@@ -147,26 +147,37 @@
     }
     const bandLabel = card.querySelector('[data-service-band-label]');
     if (bandLabel) {
-      bandLabel.className = `latency-band latency-${band.key}`;
-      bandLabel.textContent = band.label;
+      bandLabel.className = `status-indicator status-indicator-${safeClass(status, 'degraded')}`;
+      bandLabel.textContent = statusLabels[status] || statusLabels.degraded;
+      bandLabel.title = band.label;
     }
     const uptime = card.querySelector('[data-service-uptime]');
+    const uptimeValue = Number(service.uptime);
     if (uptime) {
-      const uptimeValue = Number(service.uptime);
-      uptime.textContent = `${Number.isFinite(uptimeValue) ? uptimeValue.toFixed(2) : '—'}%`;
+      uptime.textContent = (Number.isFinite(uptimeValue) ? uptimeValue.toFixed(2) : '—') + '%';
     }
+    const historyLabel = card.querySelector('[data-history-label]');
+    if (historyLabel) historyLabel.textContent = (Number.isFinite(uptimeValue) ? uptimeValue.toFixed(2) : '—') + '% 正常';
     const history = card.querySelector('[data-service-history]');
     if (history) {
-      const checks = Array.isArray(service.checks) ? service.checks.slice(0, historyLimit) : [];
-      history.replaceChildren(...checks.map(check => {
+      const historySlots = 100;
+      const checks = Array.isArray(service.checks) ? service.checks.slice(0, historySlots).reverse() : [];
+      const emptySlots = Math.max(0, historySlots - checks.length);
+      const bars = Array.from({ length: historySlots }, (_, index) => {
         const bar = document.createElement('span');
+        if (index < emptySlots) {
+          bar.className = 'history-bar history-empty';
+          bar.title = '尚无历史数据';
+          return bar;
+        }
+        const check = checks[index - emptySlots];
         const checkStatus = typeof check === 'string' ? check : check?.status;
         const normalizedStatus = statusLabels[checkStatus] ? checkStatus : 'degraded';
-        const checkBand = checkBandFor(type, check, normalizedStatus);
-        bar.className = `history-bar history-${checkBand.key}`;
-        bar.title = checkBand.label;
+        bar.className = 'history-bar history-' + safeClass(normalizedStatus, 'degraded');
+        bar.title = statusLabels[normalizedStatus] || statusLabels.degraded;
         return bar;
-      }));
+      });
+      history.replaceChildren(...bars);
     }
   }
 
@@ -245,7 +256,7 @@
     const label = query('[data-overall-label]');
     if (label) label.textContent = statusLabels[overall];
     const heading = query('[data-overall-heading]');
-    if (heading) heading.textContent = overall === 'operational' ? '所有系统正常' : statusLabels[overall];
+    if (heading) heading.textContent = statusLabels[overall];
     const description = query('[data-overall-description]');
     if (description) description.textContent = statusDescriptions[overall];
     const lastChecked = query('[data-last-checked]');
@@ -263,8 +274,7 @@
     if (intervalMetric) intervalMetric.textContent = text(snapshot.intervalMinutes, '5');
     const serviceCount = query('[data-service-count]');
     if (serviceCount) serviceCount.textContent = String(services.length);
-    renderServiceList(services, Math.max(1, Number(snapshot.historyLimit) || 12));
-    renderRecentChecks(services);
+    renderServiceList(services, 100);
     const source = query('[data-probe-source]');
     if (source) source.replaceChildren(document.createTextNode(`数据来自 GitHub Actions 最近一次成功探测 · ${latest ? formatTime(latest) : '等待首次探测'}`));
   }

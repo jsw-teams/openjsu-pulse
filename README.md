@@ -5,7 +5,7 @@ OpenJSU Pulse 是一个基于 [Pagekiln](https://github.com/jsw-teams/pagekiln) 
 当前配置示例包含：
 
 - `blog.openjsu.com`：博客，HTTP 检测
-- `dns.openjsu.com`：递归解析器，DNS 检测
+- `dns.openjsu.com`：递归解析器入口，HTTP 检测
 - `openjsu.com`：门户，HTTP 检测
 
 仓库中不包含任何预填的探测结果。首次运行 GitHub Actions 前，页面显示等待状态。
@@ -27,7 +27,7 @@ status-data/status/probes.json
 首页运行时 fetch 最新快照
 ```
 
-探测工作流只更新 `status-data`，Pages 工作流只在页面源文件变化时部署。因此，状态结果是动态反馈的，同时页面布局仍是可缓存的静态文件。
+探测工作流每次会先恢复 `status-data` 上一版的 `status/probes.json`，再把本次真实探测结果放在历史最前面，并覆盖写回同一个文件；每个检测点最多保留 100 条历史。它只更新 `status-data`，Pages 工作流只在页面源文件变化时部署。因此，状态结果是动态反馈的，同时页面布局仍是可缓存的静态文件。
 
 ## 配置一个或多个检测点
 
@@ -40,7 +40,7 @@ status-data/status/probes.json
   "version": 1,
   "intervalMinutes": 5,
   "timeoutMs": 10000,
-  "historyLimit": 12,
+  "historyLimit": 100,
   "targets": [
     {
       "id": "portal",
@@ -51,7 +51,7 @@ status-data/status/probes.json
       "method": "GET",
       "expectedStatus": [200],
       "description": "OpenJSU 主门户与服务入口",
-      "degradedAboveMs": 1200
+      "degradedAboveMs": 3000
     }
   ]
 }
@@ -59,48 +59,68 @@ status-data/status/probes.json
 
 ### 多个检测点
 
-将对象继续放入同一个 `targets` 数组即可：
+将对象继续放入同一个 `targets` 数组即可。当前示例统一使用 HTTP：
 
 ```json
 {
   "version": 1,
   "intervalMinutes": 5,
   "timeoutMs": 10000,
-  "historyLimit": 12,
-  "dns": { "query": "example.com" },
+  "historyLimit": 100,
   "targets": [
     {
       "id": "blog",
       "name": "blog.openjsu.com",
       "role": "博客",
       "type": "http",
-      "url": "https://blog.openjsu.com"
+      "url": "https://blog.openjsu.com",
+      "expectedStatus": [200],
+      "degradedAboveMs": 3000
     },
     {
       "id": "dns",
       "name": "dns.openjsu.com",
       "role": "递归解析器",
-      "type": "dns",
-      "host": "dns.openjsu.com",
-      "query": "example.com"
+      "type": "http",
+      "url": "https://dns.openjsu.com",
+      "expectedStatus": [200],
+      "degradedAboveMs": 3000
     },
     {
-      "id": "portal-tcp",
-      "name": "openjsu.com:443",
-      "role": "TLS 端口",
-      "type": "tcp",
-      "host": "openjsu.com",
-      "port": 443
-    },
-    {
-      "id": "portal-ping",
-      "name": "openjsu.com ICMP",
-      "role": "网络连通性",
-      "type": "ping",
-      "host": "openjsu.com"
+      "id": "portal",
+      "name": "openjsu.com",
+      "role": "门户",
+      "type": "http",
+      "url": "https://openjsu.com",
+      "expectedStatus": [200],
+      "degradedAboveMs": 3000
     }
   ]
 }
+```
+
+### TCP 与 PING 检测格式
+
+需要启用其他探针时，在 `targets` 中加入对应对象即可：
+
+```json
+[
+  {
+    "id": "portal-tcp",
+    "name": "openjsu.com:443",
+    "role": "TLS 端口",
+    "type": "tcp",
+    "host": "openjsu.com",
+    "port": 443
+  },
+  {
+    "id": "portal-ping",
+    "name": "openjsu.com ICMP",
+    "role": "网络连通性",
+    "type": "ping",
+    "host": "openjsu.com"
+  }
+]
 ```
 
 支持的字段：
@@ -118,11 +138,11 @@ status-data/status/probes.json
 | `query` | `dns` | 要解析的域名；未配置时使用全局 `dns.query` 或 `example.com` |
 | `degradedAboveMs` | 单点 | 超过此延迟标记为“性能下降”，不改变延迟颜色分档 |
 
-检测状态和延迟颜色是两个维度：请求失败或状态码不符合预期是“中断”；请求成功但超过 `degradedAboveMs` 是“性能下降”。
+页面状态统一显示为三个指标：探测成功且处于正常延迟阈值内是“服务正常”；探测成功但超过 `degradedAboveMs` 是“性能下降”；请求失败、超时、HTTP 关键错误或进入红色延迟分档是“服务异常”。`uptime` 表示最近历史检查中“服务正常”的百分比，页面固定展示最近 100 次检查，历史不足 100 次时剩余柱位留空。
 
-## 延迟展示标准
+## 状态指标与延迟分档
 
-页面按参考图使用以下分档：
+页面对外只展示“服务正常”“性能下降”“服务异常”三个状态。探针仍按参考图保留以下内部延迟分档，用于判断服务异常和保留结果明细：
 
 | 类型 | 分档 |
 | --- | --- |

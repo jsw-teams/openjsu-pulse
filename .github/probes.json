@@ -2,10 +2,7 @@
   "version": 1,
   "intervalMinutes": 5,
   "timeoutMs": 10000,
-  "historyLimit": 12,
-  "dns": {
-    "query": "example.com"
-  },
+  "historyLimit": 100,
   "targets": [
     {
       "id": "blog",
@@ -14,17 +11,16 @@
       "type": "http",
       "url": "https://blog.openjsu.com",
       "description": "OpenJSU 内容与技术博客",
-      "degradedAboveMs": 1200
+      "degradedAboveMs": 3000
     },
     {
       "id": "dns",
       "name": "dns.openjsu.com",
       "role": "递归解析器",
-      "type": "dns",
-      "host": "dns.openjsu.com",
-      "query": "example.com",
-      "description": "OpenJSU 公共递归 DNS 服务",
-      "degradedAboveMs": 500
+      "type": "http",
+      "url": "https://dns.openjsu.com",
+      "description": "OpenJSU 递归解析器入口",
+      "degradedAboveMs": 3000
     },
     {
       "id": "portal",
@@ -33,7 +29,7 @@
       "type": "http",
       "url": "https://openjsu.com",
       "description": "OpenJSU 主门户与服务入口",
-      "degradedAboveMs": 1200
+      "degradedAboveMs": 3000
     }
   ]
 }
