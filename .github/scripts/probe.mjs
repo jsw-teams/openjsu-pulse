@@ -194,17 +194,15 @@ async function probeTarget(target, config) {
 }
 
 function normalizeHistoryItem(item) {
-  if (typeof item === 'string') return { status: item, checkedAt: null, responseTime: null, band: null, bandLabel: null };
+  if (typeof item === 'string') return { status: item, checkedAt: null, responseTime: null };
   if (!item || typeof item !== 'object') return null;
   return {
     status: String(item.status || 'down'),
     checkedAt: item.checkedAt || null,
-    responseTime: Number.isFinite(Number(item.responseTime)) ? Number(item.responseTime) : null,
-    band: item.band || null,
-    bandLabel: item.bandLabel || null,
-    message: item.message || null
+    responseTime: Number.isFinite(Number(item.responseTime)) ? Number(item.responseTime) : null
   };
 }
+
 
 async function readPreviousSnapshot() {
   try {
@@ -215,9 +213,14 @@ async function readPreviousSnapshot() {
 }
 
 function publicTarget(target) {
-  const fields = ['id', 'name', 'role', 'type', 'url', 'host', 'port', 'query', 'description', 'method', 'expectedStatus', 'degradedAboveMs'];
-  return Object.fromEntries(fields.filter(field => target[field] !== undefined && target[field] !== '').map(field => [field, target[field]]));
+  const candidate = String(target.name || target.id).trim();
+  const looksLikeAddress = /^(?:https?:\/\/|www\.)|^(?:[a-z0-9-]+\.)+[a-z]{2,}(?::\d+)?(?:[/?#:]|$)/i.test(candidate);
+  return {
+    id: target.id,
+    name: looksLikeAddress ? target.id : candidate
+  };
 }
+
 
 async function main() {
   const config = JSON.parse(await fs.readFile(configPath, 'utf8'));
@@ -238,11 +241,7 @@ async function main() {
     const check = {
       status: outcome.status,
       responseTime: outcome.responseTime,
-      checkedAt: outcome.checkedAt,
-      band: outcome.band,
-      bandLabel: outcome.bandLabel,
-      message: outcome.message,
-      ...(outcome.httpStatus ? { httpStatus: outcome.httpStatus } : {})
+      checkedAt: outcome.checkedAt
     };
     const checks = [check, ...priorChecks].filter(item => item.checkedAt || item === check).slice(0, historyLimit);
     const normalChecks = checks.filter(item => item.status === 'operational');
@@ -253,25 +252,20 @@ async function main() {
       responseTime: outcome.responseTime,
       lastChecked: outcome.checkedAt,
       uptime,
-      band: outcome.band,
-      bandLabel: outcome.bandLabel,
-      message: outcome.message,
-      ...(outcome.httpStatus ? { httpStatus: outcome.httpStatus } : {}),
       checks
     };
   });
   const snapshot = {
     version: 1,
     generatedAt: new Date().toISOString(),
-    source: 'GitHub Actions',
-    workflowRun: process.env.GITHUB_RUN_ID && process.env.GITHUB_REPOSITORY ? `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}` : 'local',
     intervalMinutes: Math.max(1, Math.round(finiteNumber(config.intervalMinutes, 5))),
     historyLimit,
     services
   };
+
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
   await fs.writeFile(outputPath, `${JSON.stringify(snapshot, null, 2)}\n`, 'utf8');
-  for (const service of services) console.log(`${service.status.padEnd(11)} ${service.type.padEnd(5)} ${service.name} ${service.responseTime ?? '—'}ms ${service.message}`);
+  for (const service of services) console.log(`${service.status.padEnd(11)} ${service.name} ${service.responseTime ?? '—'}ms`);
 }
 
 try {

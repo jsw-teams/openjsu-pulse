@@ -2,20 +2,24 @@ siteUrl: https://status.openjsu.com
 defaultLocale: zh-tw
 activeLocales:
   - zh-tw
+  - zh-cn
+  - en
 siteName:
   zh-tw: OpenJSU Pulse
+  zh-cn: OpenJSU Pulse
+  en: OpenJSU Pulse
 description:
   zh-tw: OpenJSU 公開服務的即時探針狀態與可用性總覽。
+  zh-cn: OpenJSU 公开服务的实时状态与可用性总览。
+  en: Public service status and availability overview for OpenJSU.
 author:
   zh-tw: OpenJSU Operations
+  zh-cn: OpenJSU 运营
+  en: OpenJSU Operations
 theme:
   name: default
   nav:
-    links:
-      - key: home
-        href: /:locale/
-      - key: actions
-        href: https://github.com/jsw-teams/openjsu-pulse/actions/workflows/probes.yml
+    links: []
     utilityLinks: []
 
 # Site configuration selects built-in capabilities; markup, CSS, and browser code stay in the theme.
@@ -40,8 +44,8 @@ branding:
   showAttribution: false
   attributionUrl: https://github.com/jsw-teams/openjsu-pulse
   attribution:
-    zh-sg: Pagekiln by JSW Teams
     zh-tw: Pagekiln by JSW Teams
+    zh-cn: Pagekiln by JSW Teams
     en: Pagekiln by JSW Teams
 
 pwa:
@@ -146,8 +150,8 @@ deployment:
     accountId: null
     apiTokenEnv: CLOUDFLARE_API_TOKEN
     pages:
-      project: null
-      branch: null
+      project: openjsu-pulse
+      branch: main
     workers:
       name: null
       compatibilityDate: '2026-08-10'

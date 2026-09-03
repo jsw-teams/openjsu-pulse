@@ -6,29 +6,23 @@
   "targets": [
     {
       "id": "blog",
-      "name": "blog.openjsu.com",
-      "role": "博客",
+      "name": "博客",
       "type": "http",
       "url": "https://blog.openjsu.com",
-      "description": "OpenJSU 内容与技术博客",
       "degradedAboveMs": 3000
     },
     {
       "id": "dns",
-      "name": "dns.openjsu.com",
-      "role": "递归解析器",
+      "name": "递归解析器",
       "type": "http",
       "url": "https://dns.openjsu.com",
-      "description": "OpenJSU 递归解析器入口",
       "degradedAboveMs": 3000
     },
     {
       "id": "portal",
-      "name": "openjsu.com",
-      "role": "门户",
+      "name": "门户",
       "type": "http",
       "url": "https://openjsu.com",
-      "description": "OpenJSU 主门户与服务入口",
       "degradedAboveMs": 3000
     }
   ]

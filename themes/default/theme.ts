@@ -157,40 +157,166 @@ function postCover(post: ThemeRenderContext['doc'], context: ThemeRenderContext,
   return `<div class="post-card-cover${cover ? ' has-image' : ''}">${image}<span>${context.escapeHtml(markerLabel)}</span></div>`;
 }
 
-function statusLegendMarkup(context: ThemeRenderContext): string {
-  const statuses = [
-    { key: 'operational', label: '服务正常' },
-    { key: 'degraded', label: '性能下降' },
-    { key: 'down', label: '服务异常' }
-  ];
-  return statuses.map(status => `<span class="status-legend-item status-${status.key}"><i class="status-legend-swatch" aria-hidden="true"></i>${context.escapeHtml(status.label)}</span>`).join('');
+type ProbeLocale = 'zh-tw' | 'zh-cn' | 'en';
+
+type ProbeCopy = {
+  title: string;
+  lede: string;
+  refresh: string;
+  waiting: string;
+  waitingDescription: string;
+  partialDescription: string;
+  lastUpdated: string;
+  serviceSummary: string;
+  servicesUnit: string;
+  uptime: string;
+  averageResponse: string;
+  statusLabel: string;
+  systemStatus: string;
+  monitoredServices: string;
+  serviceCountUnit: string;
+  currentStatus: string;
+  responseTime: string;
+  history: string;
+  historyAria: string;
+  loading: string;
+  noServices: string;
+  unavailable: string;
+  retry: string;
+  normalSuffix: string;
+  status: Record<'operational' | 'degraded' | 'down' | 'waiting', string>;
+  description: Record<'operational' | 'degraded' | 'down' | 'waiting', string>;
+};
+
+const probeCopies: Record<ProbeLocale, ProbeCopy> = {
+  'zh-tw': {
+    title: '服務狀態',
+    lede: 'OpenJSU 公開服務的即時狀態與可用性總覽。',
+    refresh: '重新整理',
+    waiting: '等待資料',
+    waitingDescription: '最新狀態資料尚未發布。',
+    partialDescription: '部分服務需要關注，請查看下方服務明細。',
+    lastUpdated: '最近更新',
+    serviceSummary: '服務摘要',
+    servicesUnit: '項服務',
+    uptime: '正常率',
+    averageResponse: '平均回應',
+    statusLabel: '狀態',
+    systemStatus: '系統狀態',
+    monitoredServices: '監測服務',
+    serviceCountUnit: '項服務',
+    currentStatus: '目前狀態',
+    responseTime: '回應時間',
+    history: '最近 100 次檢查',
+    historyAria: '最近 100 次檢查',
+    loading: '正在讀取最新狀態…',
+    noServices: '目前沒有可顯示的服務。',
+    unavailable: '暫時無法讀取最新狀態，請稍後再試。',
+    retry: '重新讀取',
+    normalSuffix: '正常',
+    status: { operational: '服務正常', degraded: '效能下降', down: '服務異常', waiting: '等待資料' },
+    description: {
+      operational: '所有服務目前正常運作。',
+      degraded: '部分服務目前效能下降。',
+      down: '目前沒有服務正常回應。',
+      waiting: '最新狀態資料尚未發布。'
+    }
+  },
+  'zh-cn': {
+    title: '服务状态',
+    lede: 'OpenJSU 公开服务的实时状态与可用性总览。',
+    refresh: '刷新',
+    waiting: '等待数据',
+    waitingDescription: '最新状态数据尚未发布。',
+    partialDescription: '部分服务需要关注，请查看下方服务明细。',
+    lastUpdated: '最近更新',
+    serviceSummary: '服务摘要',
+    servicesUnit: '项服务',
+    uptime: '正常率',
+    averageResponse: '平均响应',
+    statusLabel: '状态',
+    systemStatus: '系统状态',
+    monitoredServices: '监测服务',
+    serviceCountUnit: '项服务',
+    currentStatus: '当前状态',
+    responseTime: '响应时间',
+    history: '最近 100 次检查',
+    historyAria: '最近 100 次检查',
+    loading: '正在读取最新状态…',
+    noServices: '目前没有可显示的服务。',
+    unavailable: '暂时无法读取最新状态，请稍后重试。',
+    retry: '重新读取',
+    normalSuffix: '正常',
+    status: { operational: '服务正常', degraded: '性能下降', down: '服务异常', waiting: '等待数据' },
+    description: {
+      operational: '所有服务当前正常运行。',
+      degraded: '部分服务当前性能下降。',
+      down: '当前没有服务正常响应。',
+      waiting: '最新状态数据尚未发布。'
+    }
+  },
+  en: {
+    title: 'Service status',
+    lede: 'Public service status and availability overview for OpenJSU.',
+    refresh: 'Refresh',
+    waiting: 'Waiting for data',
+    waitingDescription: 'The latest status data has not been published yet.',
+    partialDescription: 'Some services need attention. See the service details below.',
+    lastUpdated: 'Last updated',
+    serviceSummary: 'Service summary',
+    servicesUnit: 'services',
+    uptime: 'Normal rate',
+    averageResponse: 'Average response',
+    statusLabel: 'Status',
+    systemStatus: 'System status',
+    monitoredServices: 'Monitored services',
+    serviceCountUnit: 'services',
+    currentStatus: 'Current status',
+    responseTime: 'Response time',
+    history: 'Last 100 checks',
+    historyAria: 'Last 100 checks',
+    loading: 'Reading the latest status…',
+    noServices: 'There are no services to display.',
+    unavailable: 'The latest status is temporarily unavailable. Please try again later.',
+    retry: 'Try again',
+    normalSuffix: 'normal',
+    status: { operational: 'Operational', degraded: 'Performance degraded', down: 'Service unavailable', waiting: 'Waiting for data' },
+    description: {
+      operational: 'All services are operating normally.',
+      degraded: 'Some services are experiencing degraded performance.',
+      down: 'No services are responding normally right now.',
+      waiting: 'The latest status data has not been published yet.'
+    }
+  }
+};
+
+function probeLocale(context: ThemeRenderContext): ProbeLocale {
+  const locale = context.doc.locale.toLowerCase();
+  if (locale === 'en' || locale.startsWith('en-')) return 'en';
+  if (locale === 'zh-cn' || locale === 'zh-sg' || locale.startsWith('zh-cn-')) return 'zh-cn';
+  return 'zh-tw';
 }
 
-function probeLegendMarkup(_type: string, context: ThemeRenderContext): string {
-  return statusLegendMarkup(context);
+function probeCopy(context: ThemeRenderContext): ProbeCopy {
+  return probeCopies[probeLocale(context)];
+}
+
+function statusLegendMarkup(context: ThemeRenderContext): string {
+  const statuses = ['operational', 'degraded', 'down'] as const;
+  const copy = probeCopy(context);
+  return statuses.map(key => '<span class="status-legend-item status-' + key + '"><i class="status-legend-swatch" aria-hidden="true"></i>' + context.escapeHtml(copy.status[key]) + '</span>').join('');
 }
 
 function renderProbeDashboard(node: DirectiveNode, context: ThemeRenderContext): string {
   validateAttrs(node, blocks['probe-dashboard']);
-  const actionsHref = context.safeUrl('https://github.com/jsw-teams/openjsu-pulse/actions/workflows/probes.yml');
-  const configHref = context.safeUrl('https://github.com/jsw-teams/openjsu-pulse/blob/main/.github/probes.json');
-  return '<section class="probe-dashboard" data-probe-dashboard data-probe-data="" data-probe-repository="jsw-teams/openjsu-pulse">' +
-    '<div class="status-page-intro">' +
-      '<div class="status-page-heading"><p class="dashboard-kicker">OPENJSU STATUS</p><h1>服务状态</h1><p class="status-page-lede">OpenJSU 公开服务的实时监测结果。</p></div>' +
-      '<div class="status-page-actions"><a class="text-link" href="' + configHref + '" target="_blank" rel="noreferrer">GitHub 配置 ↗</a><button class="button button-secondary" type="button" data-probe-refresh>刷新</button></div>' +
-    '</div>' +
-    '<div class="status-banner status-waiting" data-overall-banner><span class="summary-status-mark" aria-hidden="true"><i></i></span><div class="summary-copy"><strong data-overall-heading data-overall-label>等待数据</strong><p data-overall-description>等待 GitHub Actions 发布首次状态快照。</p></div><div class="summary-last-updated"><span>最近更新</span><time data-last-checked>—</time></div></div>' +
-    '<div class="status-overview-meta"><div class="summary-stats" aria-label="服务摘要"><div><strong data-metric="services">—</strong><span>项服务</span></div><div><strong><span data-metric="uptime">—</span><small>%</small></strong><span>正常率</span></div><div><strong><span data-metric="latency">—</span><small> ms</small></strong><span>平均响应</span></div></div><div class="status-key" aria-label="服务状态指标"><span class="status-key-label">状态</span>' + statusLegendMarkup(context) + '</div></div>' +
-    '<section class="service-section" aria-labelledby="service-section-title"><div class="section-heading"><div><span class="section-label">系统状态</span><h2 id="service-section-title">监控服务</h2></div><div class="section-heading-meta"><span class="section-count"><span data-service-count>—</span> 个服务</span><a class="text-link" href="' + actionsHref + '" target="_blank" rel="noreferrer">查看 Actions ↗</a></div></div><div class="service-list" data-service-list><div class="probe-loading" data-probe-loading>正在读取 GitHub Actions 快照…</div></div><template data-service-template><article class="service-row" data-service-card><div class="service-identity"><span class="service-avatar" data-service-avatar aria-hidden="true"><span data-service-type-icon>·</span></span><div><p class="service-role" data-service-role></p><h3 data-service-title></h3></div></div><div class="service-state"><span class="meta-label">当前状态</span><span class="status-pill" data-service-status-label><i aria-hidden="true"></i></span></div><div class="service-response"><span class="meta-label">响应时间</span><strong class="row-metric" data-service-latency>— <small>ms</small></strong></div><div class="service-uptime"><span class="meta-label">正常率</span><strong class="row-metric" data-service-uptime>—</strong></div><div class="service-history"><div class="history-header"><span class="meta-label">最近 100 次检查</span><strong data-history-label>—</strong></div><div class="history-bars" data-service-history aria-label="最近 100 次检查"></div></div></article></template></section>' +
-    '<p class="dashboard-source" data-probe-source>GitHub Actions 状态快照 · 等待首次探测</p>' +
+  const copy = probeCopy(context);
+  const e = (value: string) => context.escapeHtml(value);
+  return '<section class="probe-dashboard" data-probe-dashboard data-probe-data="" data-probe-repository="jsw-teams/openjsu-pulse" data-probe-locale="' + e(probeLocale(context)) + '">' +
+    '<div class="status-page-intro"><div class="status-page-heading"><h1>' + e(copy.title) + '</h1><p class="status-page-lede">' + e(copy.lede) + '</p></div><div class="status-page-actions"><button class="button button-secondary" type="button" data-probe-refresh>' + e(copy.refresh) + '</button></div></div>' +
+    '<div class="status-banner status-waiting" data-overall-banner><span class="summary-status-mark" aria-hidden="true"><i></i></span><div class="summary-copy"><strong data-overall-heading data-overall-label>' + e(copy.waiting) + '</strong><p data-overall-description>' + e(copy.waitingDescription) + '</p></div><div class="summary-last-updated"><span>' + e(copy.lastUpdated) + '</span><time data-last-checked>—</time></div></div>' +
+    '<div class="status-overview-meta"><div class="summary-stats" aria-label="' + e(copy.serviceSummary) + '"><div><strong data-metric="services">—</strong><span>' + e(copy.servicesUnit) + '</span></div><div><strong><span data-metric="uptime">—</span><small>%</small></strong><span>' + e(copy.uptime) + '</span></div><div><strong><span data-metric="latency">—</span><small> ms</small></strong><span>' + e(copy.averageResponse) + '</span></div></div><div class="status-key" aria-label="' + e(copy.statusLabel) + '"><span class="status-key-label">' + e(copy.statusLabel) + '</span>' + statusLegendMarkup(context) + '</div></div>' +
+    '<section class="service-section" aria-labelledby="service-section-title"><div class="section-heading"><div><span class="section-label">' + e(copy.systemStatus) + '</span><h2 id="service-section-title">' + e(copy.monitoredServices) + '</h2></div><span class="section-count"><span data-service-count>—</span> ' + e(copy.serviceCountUnit) + '</span></div><div class="service-list" data-service-list><div class="probe-loading" data-probe-loading>' + e(copy.loading) + '</div></div><template data-service-template><article class="service-row" data-service-card><div class="service-identity"><span class="service-avatar" data-service-avatar aria-hidden="true"></span><div><h3 data-service-title></h3></div></div><div class="service-state"><span class="meta-label">' + e(copy.currentStatus) + '</span><span class="status-pill" data-service-status-label><i aria-hidden="true"></i></span></div><div class="service-response"><span class="meta-label">' + e(copy.responseTime) + '</span><strong class="row-metric" data-service-latency>— <small>ms</small></strong></div><div class="service-uptime"><span class="meta-label">' + e(copy.uptime) + '</span><strong class="row-metric" data-service-uptime>—</strong></div><div class="service-history"><div class="history-header"><span class="meta-label">' + e(copy.history) + '</span><strong data-history-label>—</strong></div><div class="history-bars" data-service-history aria-label="' + e(copy.historyAria) + '"></div></div></article></template></section>' +
   '</section>';
-}
-
-function renderProbeDashboardLegacy(node: DirectiveNode, context: ThemeRenderContext): string {
-  validateAttrs(node, blocks['probe-dashboard']);
-  const actionsHref = context.safeUrl('https://github.com/jsw-teams/openjsu-pulse/actions/workflows/probes.yml');
-  const configHref = context.safeUrl('https://github.com/jsw-teams/openjsu-pulse/blob/main/.github/probes.json');
-  return `<section class="probe-dashboard" data-probe-dashboard data-probe-data="" data-probe-repository="jsw-teams/openjsu-pulse"><div class="dashboard-hero"><div><p class="dashboard-kicker">OPENJSU / SERVICE STATUS</p><h1>服務狀態總覽</h1><p class="dashboard-lede">页面从 GitHub Actions 的最新快照动态读取公开端点状态，不把探测结果写进静态页面。</p></div><div class="dashboard-hero-actions"><span class="live-indicator"><i aria-hidden="true"></i><span data-overall-label>等待数据</span></span><button class="button button-light" type="button" data-probe-refresh>刷新快照</button></div></div><div class="status-banner status-waiting" data-overall-banner><span class="status-banner-icon" aria-hidden="true">${iconSvg(ShieldCheck, 'status-icon')}</span><div><strong data-overall-heading>等待首次探测</strong><p data-overall-description>页面会从 GitHub Actions 发布的状态快照加载结果。</p></div><span class="status-banner-time">最近更新 <time data-last-checked>—</time></span></div><div class="dashboard-toolbar"><div><span class="section-label">监控窗口</span><strong data-window-label>由 GitHub Actions 配置</strong></div><a class="text-link" href="${configHref}" target="_blank" rel="noreferrer">查看 GitHub 配置 <span aria-hidden="true">↗</span></a></div><div class="metric-grid"><article class="metric-card"><span class="metric-label">监控服务</span><strong data-metric="services">—</strong><span class="metric-support">配置文件中的端点</span></article><article class="metric-card"><span class="metric-label">平均响应</span><strong><span data-metric="latency">—</span><small> ms</small></strong><span class="metric-support">最新快照</span></article><article class="metric-card"><span class="metric-label">整体可用性</span><strong><span data-metric="uptime">—</span><small>%</small></strong><span class="metric-support">滚动检查窗口</span></article><article class="metric-card metric-card-accent"><span class="metric-label">探测频率</span><strong><span data-metric="interval">—</span><small> min</small></strong><span class="metric-support">配置文件中的间隔</span></article></div><section class="standards-panel panel" aria-labelledby="standards-title"><div class="panel-heading"><div><span class="section-label">状态指标</span><h2 id="standards-title">服务状态</h2></div><span class="panel-caption">三类结果</span></div><div class="status-legend">${statusLegendMarkup(context)}</div><p class="standards-source">延迟判断继续使用 HTTP、PING、TCP 的配置标准；页面状态统一显示为三类指标。</p></section><section class="service-section" aria-labelledby="service-section-title"><div class="section-heading"><div><span class="section-label">公开端点</span><h2 id="service-section-title">每个服务，都有自己的健康轨迹</h2></div><span class="section-count"><span data-service-count>—</span> targets</span></div><div class="service-grid" data-service-list><div class="probe-loading" data-probe-loading>正在读取 GitHub Actions 快照…</div></div><template data-service-template><article class="service-card" data-service-card><div class="service-card-top"><div class="service-identity"><span class="service-avatar" data-service-avatar aria-hidden="true"><span data-service-type-icon>·</span></span><div><p class="service-role" data-service-role></p><h3 data-service-title></h3></div></div><span class="status-pill" data-service-status-label><i aria-hidden="true"></i></span></div><p class="service-description" data-service-description></p><div class="service-card-meta"><div><span class="meta-label">响应时间</span><div class="latency-value"><strong data-service-latency>— <small>ms</small></strong><span class="latency-band" data-service-band-label>—</span></div></div><div><span class="meta-label">可用性</span><strong data-service-uptime>—</strong></div></div><div class="history-row"><span class="meta-label">最近检查</span><div class="history-bars" data-service-history></div></div></article></template></section><div class="dashboard-lower"><section class="panel recent-panel"><div class="panel-heading"><div><span class="section-label">探测记录</span><h2>最近一次检查</h2></div><span class="panel-caption" data-check-count>等待数据</span></div><ol class="recent-list" data-recent-checks><li class="probe-loading">等待 GitHub Actions 首次探测</li></ol></section><section class="panel workflow-panel"><div class="panel-heading"><div><span class="section-label">自动化来源</span><h2>由 GitHub Actions 驱动</h2></div><span class="workflow-mark" aria-hidden="true">${iconSvg(Settings2, 'workflow-icon')}</span></div><div class="workflow-steps"><div><span>01</span><p><strong>读取配置</strong><small>.github/probes.json 决定探针目标</small></p></div><div><span>02</span><p><strong>执行探测</strong><small>HTTP、TCP、Ping、DNS 统一记录</small></p></div><div><span>03</span><p><strong>更新快照</strong><small>状态分支仅更新 JSON，不重新部署页面</small></p></div></div><a class="button button-dark" href="${actionsHref}" target="_blank" rel="noreferrer">打开 Actions 执行记录 <span aria-hidden="true">↗</span></a></section></div><p class="dashboard-source" data-probe-source><span aria-hidden="true">✦</span> 状态数据由 GitHub Actions 动态更新，页面打开时读取最新快照。</p></section>`;
 }
 
 const blocks: Record<string, ThemeBlockDefinition> = {
@@ -210,19 +336,19 @@ const blocks: Record<string, ThemeBlockDefinition> = {
 };
 
 function shell(context: ThemeShellContext) {
-  const pageLanguages = context.doc.collection === 'posts' ? context.languageLinks : '';
+  const pageLanguages = context.languageLinks;
   const languageNav = pageLanguages ? `<nav class="languages" aria-label="${context.escapeHtml(context.languageLabel)}"><span class="languages-heading" aria-hidden="true">${context.escapeHtml(context.languageLabel)}</span><div class="languages-list">${pageLanguages}</div></nav>` : '';
   const archiveCollection = String(context.config.archive?.collection || 'posts');
   const collectionKey = context.doc.collection === 'archive' ? archiveCollection : context.doc.collection;
   const collectionLabel = context.translate(`collections.${collectionKey}`, collectionKey);
-  const pageHeader = context.doc.source.startsWith('generated:') || context.doc.pattern === 'monitoring' ? '' : `<header class="page-header"><p class="eyebrow">${context.escapeHtml(collectionLabel)}</p><h1>${context.escapeHtml(context.doc.title)}</h1>${context.doc.description ? `<p>${context.escapeHtml(context.doc.description)}</p>` : ''}${languageNav}</header>`;
+  const pageHeader = context.doc.source.startsWith('generated:') || context.doc.pattern === 'monitoring' ? '' : `<header class="page-header"><p class="eyebrow">${context.escapeHtml(collectionLabel)}</p><h1>${context.escapeHtml(context.doc.title)}</h1>${context.doc.description ? `<p>${context.escapeHtml(context.doc.description)}</p>` : ''}</header>`;
   const primaryNav = context.navigationLinks ? `<nav class="primary-nav" aria-label="${context.escapeHtml(context.navigationLabel)}">${context.navigationLinks}</nav>` : '';
-  const headerActions = `${context.searchMarkup}${primaryNav}`;
+  const headerActions = `${context.searchMarkup}${primaryNav}${languageNav}`;
   const siteMapLabel = context.translate('siteMap', context.doc.locale.startsWith('zh-tw') ? '網站地圖' : context.doc.locale.startsWith('zh') ? '站点地图' : 'Site map');
   const privacyPolicy = context.privacy.enabled ? `<a class="footer-tool-link" href="${context.safeUrl(context.privacy.policyHref)}">${footerIcon(ShieldCheck)}<span>${context.escapeHtml(context.privacy.policyLabel)}</span></a>` : '';
   const privacyTrigger = context.privacyTriggerMarkup ? context.privacyTriggerMarkup.replace('>', `>${footerIcon(Cookie)}`) : '';
   const footerTools = `<nav class="footer-tools" aria-label="${context.escapeHtml(siteMapLabel)}"><a class="footer-tool-link" href="/sitemap.xml">${footerIcon(Map)}<span>${context.escapeHtml(siteMapLabel)}</span></a>${privacyPolicy}${privacyTrigger}</nav>`;
-  return `<!doctype html><html lang="${context.escapeHtml(context.doc.locale)}"><head>${context.head}</head><body class="${context.bodyClass}" data-pattern="${context.escapeHtml(context.doc.pattern)}">${context.privacyMarkup}<a class="skip" href="#main">${context.escapeHtml(context.skipLabel)}</a><header class="site-header"><div class="header-inner"><a class="brand" href="${context.homeHref}"><img class="brand-mark" src="${context.brandIcon}" alt="" width="32" height="32"><span class="brand-copy"><strong>${context.escapeHtml(context.siteName)}</strong><small>${context.escapeHtml(context.headerNote)}</small></span></a>${headerActions ? `<div class="header-actions">${headerActions}</div>` : ''}</div></header><main id="main" class="${context.mainClass}">${pageHeader}${context.content}</main><footer class="site-footer"><div class="footer-grid">${footerTools}</div>${context.showAttribution ? `<div class="footer-bottom"><span class="footer-credit">${context.attribution}</span></div>` : ''}</footer></body></html>`;
+  return `<!doctype html><html lang="${context.escapeHtml(context.doc.locale)}"><head>${context.head}</head><body class="${context.bodyClass}" data-pattern="${context.escapeHtml(context.doc.pattern)}">${context.privacyMarkup}<a class="skip" href="#main">${context.escapeHtml(context.skipLabel)}</a><header class="site-header"><div class="header-inner"><a class="brand" href="${context.homeHref}"><img class="brand-mark" src="${context.brandIcon}" alt="" width="32" height="32"><span class="brand-copy"><strong>${context.escapeHtml(context.siteName)}</strong></span></a>${headerActions ? `<div class="header-actions">${headerActions}</div>` : ''}</div></header><main id="main" class="${context.mainClass}">${pageHeader}${context.content}</main><footer class="site-footer"><div class="footer-grid">${footerTools}</div>${context.showAttribution ? `<div class="footer-bottom"><span class="footer-credit">${context.attribution}</span></div>` : ''}</footer></body></html>`;
 }
 
 function shellWithPrivacy(context: ThemeShellContext) {
