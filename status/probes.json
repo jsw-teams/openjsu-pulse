@@ -1,0 +1,368 @@
+{
+  "version": 1,
+  "generatedAt": "2026-09-05T20:39:16.739Z",
+  "intervalMinutes": 5,
+  "historyLimit": 100,
+  "services": [
+    {
+      "id": "blog",
+      "name": "博客",
+      "status": "operational",
+      "responseTime": 183,
+      "lastChecked": "2026-09-05T20:39:15.243Z",
+      "uptime": 100,
+      "checks": [
+        {
+          "status": "operational",
+          "responseTime": 183,
+          "checkedAt": "2026-09-05T20:39:15.243Z"
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-05T18:25:19.894Z",
+          "responseTime": 214
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-05T16:15:28.211Z",
+          "responseTime": 581
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-05T13:34:21.817Z",
+          "responseTime": 179
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-05T10:45:09.113Z",
+          "responseTime": 142
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-05T06:15:55.436Z",
+          "responseTime": 144
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-05T01:26:39.415Z",
+          "responseTime": 210
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-04T23:39:51.537Z",
+          "responseTime": 357
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-04T21:51:05.916Z",
+          "responseTime": 211
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-04T19:39:51.634Z",
+          "responseTime": 378
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-04T17:11:28.589Z",
+          "responseTime": 257
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-04T13:46:21.452Z",
+          "responseTime": 238
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-04T09:33:53.215Z",
+          "responseTime": 664
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-04T04:59:02.893Z",
+          "responseTime": 403
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-04T00:25:02.955Z",
+          "responseTime": 423
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-03T22:36:33.729Z",
+          "responseTime": 750
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-03T20:09:26.510Z",
+          "responseTime": 215
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-03T17:45:16.839Z",
+          "responseTime": 408
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-03T13:55:00.911Z",
+          "responseTime": 295
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-03T09:42:13.111Z",
+          "responseTime": 253
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-03T05:02:29.369Z",
+          "responseTime": 225
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-03T01:03:37.225Z",
+          "responseTime": 604
+        }
+      ]
+    },
+    {
+      "id": "dns",
+      "name": "递归解析器",
+      "status": "operational",
+      "responseTime": 157,
+      "lastChecked": "2026-09-05T20:39:15.249Z",
+      "uptime": 95.45,
+      "checks": [
+        {
+          "status": "operational",
+          "responseTime": 157,
+          "checkedAt": "2026-09-05T20:39:15.249Z"
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-05T18:25:19.904Z",
+          "responseTime": 186
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-05T16:15:27.942Z",
+          "responseTime": 266
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-05T13:34:21.810Z",
+          "responseTime": 129
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-05T10:45:09.213Z",
+          "responseTime": 214
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-05T06:15:55.521Z",
+          "responseTime": 191
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-05T01:26:39.547Z",
+          "responseTime": 300
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-04T23:39:51.457Z",
+          "responseTime": 243
+        },
+        {
+          "status": "degraded",
+          "checkedAt": "2026-09-04T21:51:11.728Z",
+          "responseTime": 5982
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-04T19:39:51.741Z",
+          "responseTime": 449
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-04T17:11:28.641Z",
+          "responseTime": 262
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-04T13:46:21.463Z",
+          "responseTime": 214
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-04T09:33:53.336Z",
+          "responseTime": 679
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-04T04:59:02.956Z",
+          "responseTime": 438
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-04T00:25:02.878Z",
+          "responseTime": 297
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-03T22:36:33.782Z",
+          "responseTime": 769
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-03T20:09:26.478Z",
+          "responseTime": 124
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-03T17:45:16.882Z",
+          "responseTime": 418
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-03T13:55:00.970Z",
+          "responseTime": 236
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-03T09:42:13.146Z",
+          "responseTime": 176
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-03T05:02:29.420Z",
+          "responseTime": 231
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-03T01:03:37.124Z",
+          "responseTime": 445
+        }
+      ]
+    },
+    {
+      "id": "portal",
+      "name": "门户",
+      "status": "operational",
+      "responseTime": 1644,
+      "lastChecked": "2026-09-05T20:39:16.738Z",
+      "uptime": 100,
+      "checks": [
+        {
+          "status": "operational",
+          "responseTime": 1644,
+          "checkedAt": "2026-09-05T20:39:16.738Z"
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-05T18:25:21.501Z",
+          "responseTime": 1781
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-05T16:15:29.251Z",
+          "responseTime": 1577
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-05T13:34:23.021Z",
+          "responseTime": 1341
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-05T10:45:10.390Z",
+          "responseTime": 1390
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-05T06:15:56.800Z",
+          "responseTime": 1469
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-05T01:26:40.546Z",
+          "responseTime": 1298
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-04T23:39:52.577Z",
+          "responseTime": 1365
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-04T21:51:07.216Z",
+          "responseTime": 1468
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-04T19:39:52.918Z",
+          "responseTime": 1625
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-04T17:11:29.498Z",
+          "responseTime": 1118
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-04T13:46:22.534Z",
+          "responseTime": 1284
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-04T09:33:54.573Z",
+          "responseTime": 1915
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-04T04:59:04.300Z",
+          "responseTime": 1781
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-04T00:25:04.449Z",
+          "responseTime": 1869
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-03T22:36:35.178Z",
+          "responseTime": 2164
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-03T20:09:28.037Z",
+          "responseTime": 1685
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-03T17:45:17.960Z",
+          "responseTime": 1495
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-03T13:55:02.701Z",
+          "responseTime": 1965
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-03T09:42:14.440Z",
+          "responseTime": 1469
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-03T05:02:30.610Z",
+          "responseTime": 1419
+        },
+        {
+          "status": "operational",
+          "checkedAt": "2026-09-03T01:03:38.140Z",
+          "responseTime": 1462
+        }
+      ]
+    }
+  ]
+}
